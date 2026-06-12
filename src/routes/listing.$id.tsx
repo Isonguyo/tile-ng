@@ -29,9 +29,11 @@ function ListingDetail() {
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listings").select("*, profiles!listings_user_id_fkey(full_name, avatar_url, is_verified)").eq("id", id).maybeSingle();
+      const { data, error } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      const { data: prof } = await supabase.from("profiles").select("full_name, avatar_url, is_verified").eq("id", data.user_id).maybeSingle();
+      return { ...data, profile: prof };
     },
   });
 
@@ -149,12 +151,12 @@ function ListingDetail() {
           <Card className="p-5 space-y-3">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold">
-                {(listing.profiles?.full_name ?? "U")[0]}
+                {(listing.profile?.full_name ?? "U")[0]}
               </div>
               <div>
                 <p className="font-semibold flex items-center gap-1">
-                  {listing.profiles?.full_name ?? "Vendor"}
-                  {listing.profiles?.is_verified && <Badge className="bg-accent text-accent-foreground ml-1">Verified</Badge>}
+                  {listing.profile?.full_name ?? "Vendor"}
+                  {listing.profile?.is_verified && <Badge className="bg-accent text-accent-foreground ml-1">Verified</Badge>}
                 </p>
               </div>
             </div>
