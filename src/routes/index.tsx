@@ -69,7 +69,7 @@ function Index() {
             const Icon = (Icons as never as Record<string, React.ComponentType<{ className?: string }>>)[c.icon] ?? Icons.Tag;
             const active = cat === c.slug;
             return (
-              <Link key={c.slug} to="/" search={(p) => ({ ...p, cat: active ? undefined : c.slug })}
+              <Link key={c.slug} to="/" search={(p: { q?: string; loc?: string; cat?: string }) => ({ ...p, cat: active ? undefined : c.slug })}
                 className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition ${active ? "border-accent bg-accent/10" : "border-border bg-card hover:border-accent/50"}`}>
                 <Icon className="h-6 w-6 text-primary" />
                 <span className="text-xs text-center font-medium">{c.label}</span>
