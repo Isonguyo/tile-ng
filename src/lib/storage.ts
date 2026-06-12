@@ -16,7 +16,7 @@ export async function getSignedUrls(paths: string[]): Promise<string[]> {
   if (!paths.length) return [];
   const { data, error } = await supabase.storage.from("listings").createSignedUrls(paths, 60 * 60);
   if (error) return [];
-  return data.map((d) => d.signedUrl);
+  return data.map((d) => d.signedUrl).filter((u): u is string => !!u);
 }
 
 export async function getSignedUrl(path: string): Promise<string | null> {
