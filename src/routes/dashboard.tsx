@@ -8,12 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { formatNaira } from "@/lib/categories";
-import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck } from "lucide-react";
+import { formatNaira, LOCATIONS } from "@/lib/categories";
+import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
+import { TierBadge } from "@/components/tier-badge";
+import { QRCodeSVG } from "qrcode.react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Tile" }] }),
@@ -60,7 +65,10 @@ function Dashboard() {
       <SiteHeader />
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-baseline justify-between mb-4">
-          <h1 className="text-3xl font-bold">Welcome, {profile.full_name}</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            Welcome, {profile.full_name}
+            <TierBadge tier={profile.subscription_tier} />
+          </h1>
           <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90"><Link to="/post-ad"><Plus className="h-4 w-4 mr-1" />Post Ad</Link></Button>
         </div>
 
@@ -100,6 +108,8 @@ function Dashboard() {
           </TabsContent>
 
           <TabsContent value="merchant" className="space-y-6 mt-4">
+            {!profile.is_merchant && <MerchantOnboarding onDone={refreshProfile} />}
+            {profile.is_merchant && profile.shop_slug && <ShopLinkCard slug={profile.shop_slug} />}
             <div className="grid md:grid-cols-3 gap-4">
               <Card className="p-5 col-span-2">
                 <h3 className="font-semibold flex items-center gap-2 mb-3"><Package className="h-5 w-5 text-accent" /> Your listings</h3>
@@ -119,7 +129,9 @@ function Dashboard() {
               </Card>
               <WalletCard balance={profile.wallet_balance} onTopup={() => { refreshProfile(); qc.invalidateQueries(); }} />
             </div>
+            <BillingCard tier={profile.subscription_tier ?? "free"} until={profile.subscription_until} onChange={refreshProfile} />
             <KycCard status={profile.kyc_status} onUpload={refreshProfile} />
+            <AdminCodeCard onRedeemed={refreshProfile} />
           </TabsContent>
         </Tabs>
       </div>
@@ -196,6 +208,147 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
           <Button asChild variant="outline"><span>{busy ? "Uploading…" : "Upload government ID"}</span></Button>
         </label>
       )}
+    </Card>
+  );
+}
+
+function MerchantOnboarding({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({ business_name: "", state: "", bio: "", whatsapp: "", bank_name: "", bank_account: "", bank_account_name: "" });
+
+  const submit = async () => {
+    if (!user || !form.business_name) return toast.error("Business name required");
+    setBusy(true);
+    const { data: slug } = await supabase.rpc("gen_shop_slug", { _name: form.business_name });
+    const { error } = await supabase.from("profiles").update({
+      ...form, is_merchant: true, shop_slug: slug,
+    }).eq("id", user.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Your shop is live");
+    setOpen(false); onDone();
+  };
+
+  return (
+    <Card className="p-5 border-accent/40 bg-accent/5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2"><Store className="h-5 w-5 text-accent" /> Open your personal shop</h3>
+          <p className="text-sm text-muted-foreground mt-1">Get a shareable shop URL, QR code, WhatsApp button, and Paystack-verified payouts.</p>
+        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild><Button className="bg-accent text-accent-foreground">Become a merchant</Button></DialogTrigger>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Merchant onboarding</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Business name *</Label><Input value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></div>
+              <div><Label>State</Label>
+                <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
+                  <SelectTrigger><SelectValue placeholder="Pick a state" /></SelectTrigger>
+                  <SelectContent>{LOCATIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Bio</Label><Textarea rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} /></div>
+              <div><Label>WhatsApp number</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="+234…" /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Bank name</Label><Input value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} /></div>
+                <div><Label>Account #</Label><Input value={form.bank_account} onChange={(e) => setForm({ ...form, bank_account: e.target.value })} /></div>
+              </div>
+              <div><Label>Account name (Paystack verified — simulated)</Label><Input value={form.bank_account_name} onChange={(e) => setForm({ ...form, bank_account_name: e.target.value })} /></div>
+            </div>
+            <DialogFooter><Button disabled={busy} onClick={submit} className="bg-accent text-accent-foreground">{busy ? "Saving…" : "Open my shop"}</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </Card>
+  );
+}
+
+function ShopLinkCard({ slug }: { slug: string }) {
+  const url = typeof window !== "undefined" ? `${window.location.origin}/shop/${slug}` : `/shop/${slug}`;
+  const copy = async () => { await navigator.clipboard.writeText(url); toast.success("Link copied"); };
+  return (
+    <Card className="p-5">
+      <h3 className="font-semibold flex items-center gap-2 mb-3"><Store className="h-5 w-5 text-accent" /> Your shop</h3>
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="bg-white p-2 rounded"><QRCodeSVG value={url} size={120} /></div>
+        <div className="flex-1 w-full">
+          <p className="text-sm text-muted-foreground">Public URL</p>
+          <code className="block text-accent break-all text-sm mt-1">{url}</code>
+          <div className="flex gap-2 mt-3">
+            <Button onClick={copy} variant="outline" size="sm"><Share2 className="h-3 w-3 mr-1" />Copy link</Button>
+            <Button asChild size="sm" className="bg-accent text-accent-foreground"><Link to="/shop/$slug" params={{ slug }}>Visit shop</Link></Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+const PLANS: { tier: "lite" | "pro" | "vip"; price: number; perks: string[] }[] = [
+  { tier: "lite", price: 5000, perks: ["1 'Top Ad' pin per week", "Verified Vendor green tag", "+20% chat priority"] },
+  { tier: "pro", price: 15000, perks: ["5 Top Ads pinned", "Custom shop link", "PRO banner on profile"] },
+  { tier: "vip", price: 40000, perks: ["Unlimited listings", "15 continuous Top Ads", "Google/Meta cross-posting", "Analytics dashboard"] },
+];
+
+function BillingCard({ tier, until, onChange }: { tier: string; until?: string | null; onChange: () => void }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const activate = async (t: "lite" | "pro" | "vip") => {
+    setBusy(t);
+    const { error } = await supabase.rpc("activate_subscription", { _tier: t });
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success(`${t.toUpperCase()} plan activated`);
+    onChange();
+  };
+  return (
+    <Card className="p-5">
+      <h3 className="font-semibold flex items-center gap-2 mb-1"><Crown className="h-5 w-5 text-accent" /> Subscriptions & billing</h3>
+      <p className="text-sm text-muted-foreground">
+        Current plan: <Badge className="capitalize ml-1">{tier}</Badge>
+        {until && tier !== "free" && <span className="ml-2">renews {new Date(until).toLocaleDateString()}</span>}
+      </p>
+      <div className="grid md:grid-cols-3 gap-3 mt-4">
+        {PLANS.map((p) => (
+          <div key={p.tier} className={`p-4 rounded-lg border-2 ${tier === p.tier ? "border-accent" : "border-border"}`}>
+            <p className="font-semibold uppercase">{p.tier}</p>
+            <p className="text-2xl font-extrabold text-accent">{formatNaira(p.price)}<span className="text-xs text-muted-foreground">/mo</span></p>
+            <ul className="text-xs mt-2 space-y-1 text-muted-foreground">{p.perks.map((x) => <li key={x}>• {x}</li>)}</ul>
+            <Button size="sm" disabled={busy === p.tier || tier === p.tier} onClick={() => activate(p.tier)} className="w-full mt-3 bg-accent text-accent-foreground">
+              {tier === p.tier ? "Active" : busy === p.tier ? "Activating…" : "Activate"}
+            </Button>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground mt-3">Paid from your Tile wallet. Top up first if balance is low.</p>
+    </Card>
+  );
+}
+
+function AdminCodeCard({ onRedeemed }: { onRedeemed: () => void }) {
+  const { isAdmin } = useAuth();
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (isAdmin) return null;
+  const submit = async () => {
+    if (!code) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc("redeem_admin_code", { _code: code.trim() });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    if (data) { toast.success("Admin access granted"); onRedeemed(); }
+    else toast.error("Invalid or used code");
+  };
+  return (
+    <Card className="p-5">
+      <h3 className="font-semibold flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent" /> Admin invite code</h3>
+      <p className="text-sm text-muted-foreground mt-1">Have a one-time admin code? Redeem it here to unlock the Admin Cabin.</p>
+      <div className="flex gap-2 mt-3">
+        <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="TILE-ADMIN-XXXXXX" />
+        <Button disabled={busy} onClick={submit} className="bg-accent text-accent-foreground">Redeem</Button>
+      </div>
     </Card>
   );
 }

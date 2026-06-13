@@ -13,7 +13,12 @@ export const CATEGORIES = [
   { slug: "events", label: "Event Planning", icon: "PartyPopper", type: "service" },
 ] as const;
 
-export const LOCATIONS = ["Lagos", "Abuja", "Port Harcourt", "Ibadan", "Kano", "Benin City", "Enugu", "Kaduna"];
+export const LOCATIONS = [
+  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River",
+  "Delta","Ebonyi","Edo","Ekiti","Enugu","FCT - Abuja","Gombe","Imo","Jigawa","Kaduna",
+  "Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun",
+  "Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara",
+];
 
 export const formatNaira = (n: number | null | undefined) =>
   n == null ? "—" : new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);

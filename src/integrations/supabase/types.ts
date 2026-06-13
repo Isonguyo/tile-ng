@@ -405,27 +405,48 @@ export type Database = {
       public_profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          business_name: string | null
           created_at: string | null
           full_name: string | null
           id: string | null
           is_verified: boolean | null
           location: string | null
+          phone: string | null
+          shop_slug: string | null
+          state: string | null
+          subscription_tier: Database["public"]["Enums"]["sub_tier"] | null
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          business_name?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string | null
           is_verified?: boolean | null
           location?: string | null
+          phone?: string | null
+          shop_slug?: string | null
+          state?: string | null
+          subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          business_name?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string | null
           is_verified?: boolean | null
           location?: string | null
+          phone?: string | null
+          shop_slug?: string | null
+          state?: string | null
+          subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
