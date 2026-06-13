@@ -32,7 +32,11 @@ function ListingDetail() {
       const { data, error } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      const { data: prof } = await supabase.from("profiles").select("full_name, avatar_url, is_verified").eq("id", data.user_id).maybeSingle();
+      const { data: prof } = await supabase
+        .from("public_profiles")
+        .select("full_name, avatar_url, is_verified")
+        .eq("id", data.user_id)
+        .maybeSingle();
       return { ...data, profile: prof };
     },
   });
