@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       chats: {
         Row: {
           buyer_id: string
@@ -170,45 +191,123 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          avg_rating: number
+          bank_account: string | null
+          bank_account_name: string | null
+          bank_name: string | null
+          bio: string | null
+          business_name: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_merchant: boolean
           is_verified: boolean
           kyc_doc_url: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
+          lga: string | null
           location: string | null
           phone: string | null
+          portfolio_url: string | null
+          response_minutes: number
+          shop_slug: string | null
+          state: string | null
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
+          subscription_until: string | null
+          total_sales: number
           updated_at: string
           wallet_balance: number
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
+          avg_rating?: number
+          bank_account?: string | null
+          bank_account_name?: string | null
+          bank_name?: string | null
+          bio?: string | null
+          business_name?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          is_merchant?: boolean
           is_verified?: boolean
           kyc_doc_url?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          lga?: string | null
           location?: string | null
           phone?: string | null
+          portfolio_url?: string | null
+          response_minutes?: number
+          shop_slug?: string | null
+          state?: string | null
+          subscription_tier?: Database["public"]["Enums"]["sub_tier"]
+          subscription_until?: string | null
+          total_sales?: number
           updated_at?: string
           wallet_balance?: number
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
+          avg_rating?: number
+          bank_account?: string | null
+          bank_account_name?: string | null
+          bank_name?: string | null
+          bio?: string | null
+          business_name?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_merchant?: boolean
           is_verified?: boolean
           kyc_doc_url?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          lga?: string | null
           location?: string | null
           phone?: string | null
+          portfolio_url?: string | null
+          response_minutes?: number
+          shop_slug?: string | null
+          state?: string | null
+          subscription_tier?: Database["public"]["Enums"]["sub_tier"]
+          subscription_until?: string | null
+          total_sales?: number
           updated_at?: string
           wallet_balance?: number
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -330,22 +429,133 @@ export type Database = {
         }
         Relationships: []
       }
+      shops: {
+        Row: {
+          avatar_url: string | null
+          avg_rating: number | null
+          bio: string | null
+          business_name: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string | null
+          is_verified: boolean | null
+          lga: string | null
+          location: string | null
+          response_minutes: number | null
+          shop_slug: string | null
+          state: string | null
+          subscription_tier: Database["public"]["Enums"]["sub_tier"] | null
+          tier: string | null
+          total_sales: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          bio?: string | null
+          business_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          lga?: string | null
+          location?: string | null
+          response_minutes?: number | null
+          shop_slug?: string | null
+          state?: string | null
+          subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
+          tier?: never
+          total_sales?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          bio?: string | null
+          business_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          lga?: string | null
+          location?: string | null
+          response_minutes?: number | null
+          shop_slug?: string | null
+          state?: string | null
+          subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
+          tier?: never
+          total_sales?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      activate_subscription: {
+        Args: { _tier: Database["public"]["Enums"]["sub_tier"] }
+        Returns: {
+          avatar_url: string | null
+          avg_rating: number
+          bank_account: string | null
+          bank_account_name: string | null
+          bank_name: string | null
+          bio: string | null
+          business_name: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          is_merchant: boolean
+          is_verified: boolean
+          kyc_doc_url: string | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          lga: string | null
+          location: string | null
+          phone: string | null
+          portfolio_url: string | null
+          response_minutes: number
+          shop_slug: string | null
+          state: string | null
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
+          subscription_until: string | null
+          total_sales: number
+          updated_at: string
+          wallet_balance: number
+          whatsapp: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_list_pending_kyc: {
         Args: never
         Returns: {
           avatar_url: string | null
+          avg_rating: number
+          bank_account: string | null
+          bank_account_name: string | null
+          bank_name: string | null
+          bio: string | null
+          business_name: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_merchant: boolean
           is_verified: boolean
           kyc_doc_url: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
+          lga: string | null
           location: string | null
           phone: string | null
+          portfolio_url: string | null
+          response_minutes: number
+          shop_slug: string | null
+          state: string | null
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
+          subscription_until: string | null
+          total_sales: number
           updated_at: string
           wallet_balance: number
+          whatsapp: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -354,20 +564,47 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      compute_tier: {
+        Args: {
+          _age_days: number
+          _kyc_verified: boolean
+          _rating: number
+          _response_min: number
+          _sales: number
+        }
+        Returns: string
+      }
+      gen_shop_slug: { Args: { _name: string }; Returns: string }
       get_my_profile: {
         Args: never
         Returns: {
           avatar_url: string | null
+          avg_rating: number
+          bank_account: string | null
+          bank_account_name: string | null
+          bank_name: string | null
+          bio: string | null
+          business_name: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_merchant: boolean
           is_verified: boolean
           kyc_doc_url: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
+          lga: string | null
           location: string | null
           phone: string | null
+          portfolio_url: string | null
+          response_minutes: number
+          shop_slug: string | null
+          state: string | null
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
+          subscription_until: string | null
+          total_sales: number
           updated_at: string
           wallet_balance: number
+          whatsapp: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -383,6 +620,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_notifications_read: { Args: never; Returns: undefined }
+      redeem_admin_code: { Args: { _code: string }; Returns: boolean }
       topup_wallet: {
         Args: { _amount: number; _reference: string }
         Returns: number
@@ -395,6 +634,7 @@ export type Database = {
       listing_status: "pending" | "approved" | "rejected" | "flagged"
       listing_type: "goods" | "service"
       service_mode: "remote" | "in_person" | "both"
+      sub_tier: "free" | "lite" | "pro" | "vip"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -528,6 +768,7 @@ export const Constants = {
       listing_status: ["pending", "approved", "rejected", "flagged"],
       listing_type: ["goods", "service"],
       service_mode: ["remote", "in_person", "both"],
+      sub_tier: ["free", "lite", "pro", "vip"],
     },
   },
 } as const
