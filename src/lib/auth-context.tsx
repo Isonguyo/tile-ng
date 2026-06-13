@@ -10,6 +10,14 @@ type Profile = {
   wallet_balance: number;
   kyc_status: string;
   is_verified: boolean;
+  business_name?: string | null;
+  shop_slug?: string | null;
+  is_merchant?: boolean | null;
+  subscription_tier?: string | null;
+  subscription_until?: string | null;
+  state?: string | null;
+  bio?: string | null;
+  whatsapp?: string | null;
 };
 
 type AuthCtx = {

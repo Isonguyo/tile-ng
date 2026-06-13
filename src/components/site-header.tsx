@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/lib/auth-context";
 import { LOCATIONS } from "@/lib/categories";
 import { useState } from "react";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function SiteHeader() {
   const { user, profile, isAdmin, signOut } = useAuth();
@@ -49,6 +50,7 @@ export function SiteHeader() {
         </form>
 
         <div className="flex items-center gap-2">
+          <NotificationsBell />
           <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
             <Link to="/post-ad"><Plus className="h-4 w-4 mr-1" /> Post Ad</Link>
           </Button>
