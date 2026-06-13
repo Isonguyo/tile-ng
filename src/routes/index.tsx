@@ -16,12 +16,17 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
+      meta: [
       { title: "Tile — Buy, Sell & Hire in Nigeria" },
       { name: "description", content: "The classifieds marketplace for goods and services across Nigeria." },
       { property: "og:title", content: "Tile Marketplace" },
       { property: "og:description", content: "Buy, sell, and hire across Nigeria — all in one place." },
     ],
+    links: [
+      { rel: "icon", type: "image/png", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
+      { rel: "apple-touch-icon", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" }
+    ],
+
   }),
   validateSearch: searchSchema,
   component: Index,
