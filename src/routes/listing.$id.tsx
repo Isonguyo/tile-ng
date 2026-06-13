@@ -32,17 +32,18 @@ function ListingDetail() {
       const cols = "id,user_id,type,title,description,category,location,price,images,status,is_promoted,condition,brand,years_experience,service_mode,created_at,updated_at";
       const { data, error } = await supabase
         .from("listings")
-        .select(user ? cols + ",phone" : cols)
+        .select((user ? cols + ",phone" : cols) as "*")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
+      const row = data as Record<string, unknown> & { user_id: string };
       const { data: prof } = await supabase
         .from("public_profiles")
         .select("full_name, avatar_url, is_verified")
-        .eq("id", data.user_id)
+        .eq("id", row.user_id)
         .maybeSingle();
-      return { ...data, profile: prof };
+      return { ...row, profile: prof } as any;
     },
   });
 
