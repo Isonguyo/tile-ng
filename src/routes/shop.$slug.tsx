@@ -51,7 +51,7 @@ function ShopPage() {
   const url = typeof window !== "undefined" ? window.location.href : "";
   const share = async () => {
     try {
-      if (navigator.share) await navigator.share({ title: shop.business_name ?? shop.full_name, url });
+      if (navigator.share) await navigator.share({ title: shop.business_name ?? shop.full_name ?? "Shop", url });
       else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
     } catch { /* ignore */ }
   };
