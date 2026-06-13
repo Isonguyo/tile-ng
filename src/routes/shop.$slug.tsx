@@ -20,11 +20,17 @@ export const Route = createFileRoute("/shop/$slug")({
 function ShopPage() {
   const { slug } = Route.useParams();
 
-  const { data: shop, isLoading } = useQuery({
+  type Shop = {
+    id: string; full_name: string | null; avatar_url: string | null; is_verified: boolean | null;
+    business_name?: string | null; shop_slug?: string | null; subscription_tier?: string | null;
+    state?: string | null; bio?: string | null; phone?: string | null; whatsapp?: string | null;
+  };
+  const { data: shop, isLoading } = useQuery<Shop | null>({
     queryKey: ["shop", slug],
     queryFn: async () => {
-      const { data } = await supabase.from("public_profiles").select("*").eq("shop_slug", slug).maybeSingle();
-      return data;
+      const { data } = await (supabase.from("public_profiles") as unknown as { select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: Shop | null }> } } })
+        .select("*").eq("shop_slug", slug).maybeSingle();
+      return data ?? null;
     },
   });
 
@@ -34,7 +40,7 @@ function ShopPage() {
     queryFn: async () => {
       const { data } = await supabase.from("listings")
         .select("id,title,price,type,location,images,is_promoted,category")
-        .eq("user_id", shop!.id).eq("status", "approved").order("is_promoted", { ascending: false });
+        .eq("user_id", shop!.id!).eq("status", "approved").order("is_promoted", { ascending: false });
       return (data ?? []) as ListingCardData[];
     },
   });
