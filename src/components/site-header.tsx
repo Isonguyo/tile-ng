@@ -25,10 +25,22 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto flex flex-wrap items-center gap-3 px-4 py-3">
-        <Link to="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          <div className="h-8 w-8 rounded-md bg-accent grid place-items-center text-accent-foreground font-black">T</div>
-          <span>Tile</span>
-        </Link>
+       <Link to="/" className="flex items-center gap-3 group">
+  {/* Cloudinary Logo Image Wrapper */}
+  <div className="relative h-9 w-9 overflow-hidden rounded-lg transition-transform duration-300 group-hover:scale-105">
+    <img 
+      src="https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" 
+      alt="Tile Logo" 
+      className="h-full w-full object-cover"
+      loading="eager"
+    />
+  </div>
+  
+  {/* Styled Brand Typography */}
+  <span className="text-2xl font-black tracking-tight text-foreground bg-gradient-to-r from-[#0F5132] via-[#198754] to-[#0F5132] bg-clip-text text-transparent transition-all duration-300 group-hover:opacity-90">
+    Tile
+  </span>
+</Link>
 
         <form onSubmit={submit} className="flex flex-1 min-w-[260px] items-center gap-2 rounded-md bg-background/95 p-1 text-foreground">
           <div className="flex items-center gap-2 px-2 flex-1">
