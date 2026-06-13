@@ -52,7 +52,7 @@ function Admin() {
     queryKey: ["kyc-pending"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("*").eq("kyc_status", "pending");
+      const { data } = await supabase.rpc("admin_list_pending_kyc");
       return data ?? [];
     },
   });

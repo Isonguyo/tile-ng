@@ -303,9 +303,79 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string | null
+          is_verified: boolean | null
+          location: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          location?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          location?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_list_pending_kyc: {
+        Args: never
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          is_verified: boolean
+          kyc_doc_url: string | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          location: string | null
+          phone: string | null
+          updated_at: string
+          wallet_balance: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_my_profile: {
+        Args: never
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          is_verified: boolean
+          kyc_doc_url: string | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          location: string | null
+          phone: string | null
+          updated_at: string
+          wallet_balance: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

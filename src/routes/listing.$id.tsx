@@ -27,13 +27,23 @@ function ListingDetail() {
   const [favored, setFavored] = useState(false);
 
   const { data: listing, isLoading } = useQuery({
-    queryKey: ["listing", id],
+    queryKey: ["listing", id, !!user],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
+      const cols = "id,user_id,type,title,description,category,location,price,images,status,is_promoted,condition,brand,years_experience,service_mode,created_at,updated_at";
+      const { data, error } = await supabase
+        .from("listings")
+        .select((user ? cols + ",phone" : cols) as "*")
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      const { data: prof } = await supabase.from("profiles").select("full_name, avatar_url, is_verified").eq("id", data.user_id).maybeSingle();
-      return { ...data, profile: prof };
+      const row = data as Record<string, unknown> & { user_id: string };
+      const { data: prof } = await supabase
+        .from("public_profiles")
+        .select("full_name, avatar_url, is_verified")
+        .eq("id", row.user_id)
+        .maybeSingle();
+      return { ...row, profile: prof } as any;
     },
   });
 
