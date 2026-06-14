@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/tier-badge";
 import { ListingCard, type ListingCardData } from "@/components/listing-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatNaira } from "@/lib/categories";
 import { QRCodeSVG } from "qrcode.react";
 import { Share2, Phone, MessageCircle, MapPin, BadgeCheck } from "lucide-react";
@@ -24,6 +25,7 @@ function ShopPage() {
     id: string; full_name: string | null; avatar_url: string | null; is_verified: boolean | null;
     business_name?: string | null; shop_slug?: string | null; subscription_tier?: string | null;
     state?: string | null; bio?: string | null; phone?: string | null; whatsapp?: string | null;
+    portfolio_images?: string[] | null;
   };
   const { data: shop, isLoading } = useQuery<Shop | null>({
     queryKey: ["shop", slug],
@@ -44,6 +46,9 @@ function ShopPage() {
       return (data ?? []) as ListingCardData[];
     },
   });
+
+  const services = listings.filter((l) => l.type === "service");
+  const goods = listings.filter((l) => l.type === "goods");
 
   if (isLoading) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container py-12">Loading…</div></div>;
   if (!shop) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container py-12">Shop not found.</div></div>;
@@ -91,16 +96,33 @@ function ShopPage() {
       </div>
 
       <section className="container mx-auto px-4 pb-12">
-        <h2 className="text-lg font-semibold mb-4">Listings ({listings.length})</h2>
-        {listings.length === 0 ? <p className="text-muted-foreground">No listings yet.</p> : (
-          <div className="columns-2 sm:columns-3 md:columns-4 gap-4 [column-fill:_balance]">
-            {listings.map((l) => (
-              <div key={l.id} className="mb-4 break-inside-avoid"><ListingCard l={l} /></div>
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="listings">
+          <TabsList>
+            <TabsTrigger value="listings">Active Listings ({goods.length})</TabsTrigger>
+            <TabsTrigger value="portfolio">Work Portfolio ({services.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="listings" className="mt-4">
+            {goods.length === 0 ? <p className="text-muted-foreground">No goods listed yet.</p> : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {goods.map((l) => <ListingCard key={l.id} l={l} />)}
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="portfolio" className="mt-4">
+            {services.length === 0 ? <p className="text-muted-foreground">No portfolio entries yet.</p> : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {services.map((l) => (
+                  <div key={l.id} className="rounded-lg overflow-hidden border border-border bg-card">
+                    <div className="aspect-square bg-muted" />
+                    <div className="p-3"><p className="text-sm font-medium line-clamp-2">{l.title}</p><p className="text-xs text-muted-foreground">{l.location}</p></div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
         <p className="text-xs text-muted-foreground mt-6">Total inventory value: {formatNaira(listings.reduce((s, l) => s + (l.price ?? 0), 0))}</p>
-        <Link to="/" className="text-accent text-sm">← Back to marketplace</Link>
+        <Link to="/" className="text-accent text-sm block mt-2">← Back to marketplace</Link>
       </section>
     </div>
   );
