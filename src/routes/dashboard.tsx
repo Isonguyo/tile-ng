@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira, LOCATIONS } from "@/lib/categories";
-import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown } from "lucide-react";
+import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
@@ -116,13 +116,7 @@ function Dashboard() {
                 {myListings.length === 0 ? <p className="text-muted-foreground text-sm">You haven't posted anything yet.</p> : (
                   <ul className="divide-y">
                     {myListings.map((l) => (
-                      <li key={l.id} className="py-2 flex justify-between items-center">
-                        <Link to="/listing/$id" params={{ id: l.id }} className="font-medium hover:text-accent">{l.title}</Link>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={l.status === "approved" ? "default" : l.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{l.status}</Badge>
-                          <Badge className="bg-primary text-primary-foreground capitalize">{l.type}</Badge>
-                        </div>
-                      </li>
+                      <ListingRow key={l.id} l={l} onChange={() => qc.invalidateQueries({ queryKey: ["my-listings", user?.id] })} />
                     ))}
                   </ul>
                 )}
