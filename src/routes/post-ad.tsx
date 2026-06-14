@@ -66,6 +66,17 @@ function PostAd() {
     if (!user) return;
     setSubmitting(true);
     try {
+      const { data: ok, error: qErr } = await supabase.rpc("check_post_quota", { _type: vals.type });
+      if (qErr) throw qErr;
+      if (!ok) {
+        toast.error(
+          vals.type === "goods"
+            ? "Free plan limit reached: 5 active goods listings. Upgrade to post more."
+            : "Free plan limit reached: 1 active service listing. Upgrade to post more."
+        );
+        setSubmitting(false);
+        return;
+      }
       let imagePaths: string[] = [];
       if (files.length) imagePaths = await uploadListingImages(user.id, files);
       const { data, error } = await supabase.from("listings").insert({
