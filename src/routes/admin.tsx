@@ -43,8 +43,8 @@ function Admin() {
     queryKey: ["pending"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data } = await supabase.from("listings").select("*").eq("status", "pending").order("created_at", { ascending: false });
-      return data ?? [];
+      const { data } = await supabase.rpc("admin_pending_listings");
+      return (data ?? []) as Array<{ id: string; title: string; price: number | null; category: string; type: string; images: string[]; created_at: string; seller_id: string; seller_name: string | null; seller_phone: string | null }>;
     },
   });
 
@@ -57,22 +57,31 @@ function Admin() {
     },
   });
 
+  const { data: txns = [] } = useQuery({
+    queryKey: ["txns"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase.from("wallet_transactions").select("*").order("created_at", { ascending: false }).limit(50);
+      return data ?? [];
+    },
+  });
+
   if (!loading && !isAdmin) { nav({ to: "/" }); return null; }
 
   const approve = async (id: string) => {
-    const { error } = await supabase.from("listings").update({ status: "approved" }).eq("id", id);
+    const { error } = await supabase.rpc("admin_approve_listing", { _id: id });
     if (error) return toast.error(error.message);
     toast.success("Approved"); qc.invalidateQueries({ queryKey: ["pending"] });
   };
   const reject = async (id: string, reason: string) => {
-    const { error } = await supabase.from("listings").update({ status: "rejected", rejection_reason: reason }).eq("id", id);
+    const { error } = await supabase.rpc("admin_reject_listing", { _id: id, _reason: reason });
     if (error) return toast.error(error.message);
     toast.success("Rejected"); qc.invalidateQueries({ queryKey: ["pending"] });
   };
-  const flag = async (id: string, userId: string) => {
-    await supabase.from("listings").update({ status: "flagged" }).eq("id", id);
-    await supabase.from("profiles").update({ is_verified: false }).eq("id", userId);
-    toast.success("User flagged & listing removed");
+  const flag = async (id: string) => {
+    const { error } = await supabase.rpc("admin_flag_seller", { _listing_id: id });
+    if (error) return toast.error(error.message);
+    toast.success("Seller flagged & listing removed");
     qc.invalidateQueries({ queryKey: ["pending"] });
   };
   const grantVerified = async (id: string) => {
@@ -98,26 +107,33 @@ function Admin() {
           <TabsList>
             <TabsTrigger value="moderation">Ad Moderation</TabsTrigger>
             <TabsTrigger value="kyc">KYC Audit</TabsTrigger>
+            <TabsTrigger value="money">Monetization</TabsTrigger>
           </TabsList>
 
           <TabsContent value="moderation" className="mt-4">
             <Card className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow><TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Price</TableHead><TableHead>Location</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                  <TableRow><TableHead>Title</TableHead><TableHead>Seller</TableHead><TableHead>Type</TableHead><TableHead>Price</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
                 </TableHeader>
                 <TableBody>
                   {pending.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No pending ads</TableCell></TableRow>}
                   {pending.map((l) => (
                     <TableRow key={l.id}>
-                      <TableCell className="font-medium">{l.title}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {l.images?.[0] && <span className="h-8 w-8 rounded bg-muted inline-block" />}
+                          {l.title}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{l.seller_name ?? "—"}<br/><span className="text-xs text-muted-foreground">{l.seller_phone ?? ""}</span></TableCell>
                       <TableCell><Badge className="capitalize">{l.type}</Badge></TableCell>
                       <TableCell>{formatNaira(l.price)}</TableCell>
-                      <TableCell>{l.location}</TableCell>
+                      <TableCell className="text-xs">{l.category}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button size="sm" onClick={() => approve(l.id)} className="bg-accent text-accent-foreground"><Check className="h-3 w-3 mr-1" />Approve</Button>
                         <RejectModal onConfirm={(r) => reject(l.id, r)} />
-                        <Button size="sm" variant="destructive" onClick={() => flag(l.id, l.user_id)}><Flag className="h-3 w-3 mr-1" />Flag</Button>
+                        <Button size="sm" variant="destructive" onClick={() => flag(l.id)}><Flag className="h-3 w-3 mr-1" />Flag</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -145,6 +161,26 @@ function Admin() {
                   ))}
                 </TableBody>
               </Table>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="money" className="mt-4">
+            <Card className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>When</TableHead><TableHead>Type</TableHead><TableHead>Amount</TableHead><TableHead>Reference</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {txns.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No transactions yet</TableCell></TableRow>}
+                  {txns.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="text-xs">{new Date(t.created_at).toLocaleString()}</TableCell>
+                      <TableCell><Badge className="capitalize">{t.tx_type}</Badge></TableCell>
+                      <TableCell className={Number(t.amount) < 0 ? "text-destructive" : "text-accent"}>{formatNaira(Number(t.amount))}</TableCell>
+                      <TableCell className="font-mono text-xs">{t.reference ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="p-4 text-xs text-muted-foreground border-t">Plan prices: Lite ₦5,000 · Pro ₦15,000 · VIP ₦40,000 (edit in <code>activate_subscription</code> SQL function).</div>
             </Card>
           </TabsContent>
         </Tabs>
