@@ -346,3 +346,39 @@ function AdminCodeCard({ onRedeemed }: { onRedeemed: () => void }) {
     </Card>
   );
 }
+function ListingRow({ l, onChange }: { l: { id: string; title: string; type: string; status: string; expires_at?: string | null }; onChange: () => void }) {
+  const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
+  const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
+  const renew = async () => {
+    const { error } = await supabase.rpc("renew_listing", { _listing_id: l.id });
+    if (error) return toast.error(error.message);
+    toast.success("Renewed for 30 days");
+    onChange();
+  };
+  return (
+    <li className="py-2">
+      <div className="flex justify-between items-center">
+        <Link to="/listing/$id" params={{ id: l.id }} className="font-medium hover:text-accent">{l.title}</Link>
+        <div className="flex items-center gap-2">
+          <Badge variant={l.status === "approved" ? "default" : l.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{l.status}</Badge>
+          <Badge className="bg-primary text-primary-foreground capitalize">{l.type}</Badge>
+        </div>
+      </div>
+      {daysLeft !== null && l.status === "approved" && daysLeft <= 3 && daysLeft > 0 && (
+        <div className="mt-2 flex items-center gap-2 text-xs bg-destructive/10 text-destructive p-2 rounded">
+          <AlertTriangle className="h-3 w-3" /> Expires in {daysLeft} day{daysLeft === 1 ? "" : "s"}.
+          <Button size="sm" variant="outline" className="ml-auto h-7" onClick={renew}><RefreshCw className="h-3 w-3 mr-1" />Renew 30 days</Button>
+        </div>
+      )}
+      {l.status === "expired" && (
+        <div className="mt-2 flex items-center gap-2 text-xs bg-muted p-2 rounded">
+          <AlertTriangle className="h-3 w-3" /> Expired.
+          <Button size="sm" variant="outline" className="ml-auto h-7" onClick={renew}><RefreshCw className="h-3 w-3 mr-1" />Reactivate</Button>
+        </div>
+      )}
+      {daysLeft !== null && daysLeft > 3 && l.status === "approved" && (
+        <p className="text-xs text-muted-foreground mt-1">{daysLeft} days left</p>
+      )}
+    </li>
+  );
+}
