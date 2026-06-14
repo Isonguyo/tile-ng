@@ -100,6 +100,7 @@ export type Database = {
           condition: Database["public"]["Enums"]["item_condition"] | null
           created_at: string
           description: string
+          expires_at: string
           id: string
           images: string[]
           is_promoted: boolean
@@ -107,6 +108,7 @@ export type Database = {
           phone: string | null
           price: number | null
           rejection_reason: string | null
+          renewed_count: number
           service_mode: Database["public"]["Enums"]["service_mode"] | null
           status: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -121,6 +123,7 @@ export type Database = {
           condition?: Database["public"]["Enums"]["item_condition"] | null
           created_at?: string
           description: string
+          expires_at?: string
           id?: string
           images?: string[]
           is_promoted?: boolean
@@ -128,6 +131,7 @@ export type Database = {
           phone?: string | null
           price?: number | null
           rejection_reason?: string | null
+          renewed_count?: number
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -142,6 +146,7 @@ export type Database = {
           condition?: Database["public"]["Enums"]["item_condition"] | null
           created_at?: string
           description?: string
+          expires_at?: string
           id?: string
           images?: string[]
           is_promoted?: boolean
@@ -149,6 +154,7 @@ export type Database = {
           phone?: string | null
           price?: number | null
           rejection_reason?: string | null
+          renewed_count?: number
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
@@ -240,6 +246,7 @@ export type Database = {
           lga: string | null
           location: string | null
           phone: string | null
+          portfolio_images: string[]
           portfolio_url: string | null
           response_minutes: number
           shop_slug: string | null
@@ -269,6 +276,7 @@ export type Database = {
           lga?: string | null
           location?: string | null
           phone?: string | null
+          portfolio_images?: string[]
           portfolio_url?: string | null
           response_minutes?: number
           shop_slug?: string | null
@@ -298,6 +306,7 @@ export type Database = {
           lga?: string | null
           location?: string | null
           phone?: string | null
+          portfolio_images?: string[]
           portfolio_url?: string | null
           response_minutes?: number
           shop_slug?: string | null
@@ -529,6 +538,7 @@ export type Database = {
           lga: string | null
           location: string | null
           phone: string | null
+          portfolio_images: string[]
           portfolio_url: string | null
           response_minutes: number
           shop_slug: string | null
@@ -547,6 +557,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_approve_listing: { Args: { _id: string }; Returns: undefined }
+      admin_flag_seller: { Args: { _listing_id: string }; Returns: undefined }
       admin_list_pending_kyc: {
         Args: never
         Returns: {
@@ -567,6 +579,7 @@ export type Database = {
           lga: string | null
           location: string | null
           phone: string | null
+          portfolio_images: string[]
           portfolio_url: string | null
           response_minutes: number
           shop_slug: string | null
@@ -585,6 +598,29 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_pending_listings: {
+        Args: never
+        Returns: {
+          category: string
+          created_at: string
+          id: string
+          images: string[]
+          price: number
+          seller_id: string
+          seller_name: string
+          seller_phone: string
+          title: string
+          type: Database["public"]["Enums"]["listing_type"]
+        }[]
+      }
+      admin_reject_listing: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
+      check_post_quota: {
+        Args: { _type: Database["public"]["Enums"]["listing_type"] }
+        Returns: boolean
+      }
       compute_tier: {
         Args: {
           _age_days: number
@@ -595,6 +631,7 @@ export type Database = {
         }
         Returns: string
       }
+      expire_old_listings: { Args: never; Returns: number }
       gen_shop_slug: { Args: { _name: string }; Returns: string }
       get_my_profile: {
         Args: never
@@ -616,6 +653,7 @@ export type Database = {
           lga: string | null
           location: string | null
           phone: string | null
+          portfolio_images: string[]
           portfolio_url: string | null
           response_minutes: number
           shop_slug: string | null
@@ -643,6 +681,8 @@ export type Database = {
       }
       mark_notifications_read: { Args: never; Returns: undefined }
       redeem_admin_code: { Args: { _code: string }; Returns: boolean }
+      renew_listing: { Args: { _listing_id: string }; Returns: string }
+      set_vanity_slug: { Args: { _slug: string }; Returns: string }
       topup_wallet: {
         Args: { _amount: number; _reference: string }
         Returns: number
@@ -652,7 +692,12 @@ export type Database = {
       app_role: "admin" | "user"
       item_condition: "new" | "used_like_new" | "used_good" | "used_fair"
       kyc_status: "none" | "pending" | "verified" | "rejected"
-      listing_status: "pending" | "approved" | "rejected" | "flagged"
+      listing_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "flagged"
+        | "expired"
       listing_type: "goods" | "service"
       service_mode: "remote" | "in_person" | "both"
       sub_tier: "free" | "lite" | "pro" | "vip"
@@ -786,7 +831,7 @@ export const Constants = {
       app_role: ["admin", "user"],
       item_condition: ["new", "used_like_new", "used_good", "used_fair"],
       kyc_status: ["none", "pending", "verified", "rejected"],
-      listing_status: ["pending", "approved", "rejected", "flagged"],
+      listing_status: ["pending", "approved", "rejected", "flagged", "expired"],
       listing_type: ["goods", "service"],
       service_mode: ["remote", "in_person", "both"],
       sub_tier: ["free", "lite", "pro", "vip"],
