@@ -41,7 +41,7 @@ function ListingDetail() {
       const row = data as Record<string, unknown> & { user_id: string };
       const { data: prof } = await supabase
         .from("public_profiles")
-        .select("full_name, avatar_url, is_verified")
+        .select("full_name, avatar_url, is_verified, shop_slug, subscription_tier")
         .eq("id", row.user_id)
         .maybeSingle();
       return { ...row, profile: prof } as any;
