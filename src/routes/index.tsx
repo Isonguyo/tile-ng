@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { q, loc, cat } = Route.useSearch();
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings", { q, loc, cat }],
@@ -74,23 +76,65 @@ function Index() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="container mx-auto px-4 py-8">
-        <h2 className="text-lg font-semibold mb-4">Browse categories</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-          {CATEGORIES.map((c) => {
-            const Icon = (Icons as never as Record<string, React.ComponentType<{ className?: string }>>)[c.icon] ?? Icons.Tag;
-            const active = cat === c.slug;
-            return (
-              <Link key={c.slug} to="/" search={(p: { q?: string; loc?: string; cat?: string }) => ({ ...p, cat: active ? undefined : c.slug })}
-                className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition ${active ? "border-accent bg-accent/10" : "border-border bg-card hover:border-accent/50"}`}>
-                <Icon className="h-6 w-6 text-primary" />
-                <span className="text-xs text-center font-medium">{c.label}</span>
-              </Link>
-            );
+ {/* Categories */}
+<section className="container mx-auto px-4 py-8">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-lg font-semibold">Browse Categories</h2>
+
+    <button
+      onClick={() => setShowAllCategories(!showAllCategories)}
+      className="text-sm font-medium text-primary hover:underline"
+    >
+      {showAllCategories ? "Show Less" : "View All"}
+    </button>
+  </div>
+
+  <div
+    className={`grid gap-3 ${
+      showAllCategories
+        ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+        : "grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8"
+    }`}
+  >
+    {(showAllCategories ? CATEGORIES : CATEGORIES.slice(0, 8)).map((c) => {
+      const Icon =
+        (
+          Icons as unknown as Record<
+            string,
+            React.ComponentType<{ className?: string }>
+          >
+        )[c.icon] ?? Icons.Tag;
+
+      const active = cat === c.slug;
+
+      return (
+        <Link
+          key={c.slug}
+          to="/"
+          search={(p: {
+            q?: string;
+            loc?: string;
+            cat?: string;
+          }) => ({
+            ...p,
+            cat: active ? undefined : c.slug,
           })}
-        </div>
-      </section>
+          className={`group flex flex-col items-center justify-center gap-2 rounded-xl border p-4 transition-all duration-200 ${
+            active
+              ? "border-accent bg-accent/10"
+              : "border-border bg-card hover:border-primary hover:shadow-md"
+          }`}
+        >
+          <Icon className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
+
+          <span className="text-xs text-center font-medium leading-tight">
+            {c.label}
+          </span>
+        </Link>
+      );
+    })}
+  </div>
+</section>
 
       {/* Listings masonry */}
       <section className="container mx-auto px-4 pb-12">
