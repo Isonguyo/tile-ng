@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,11 @@ import { formatNaira } from "@/lib/categories";
 import { QRCodeSVG } from "qrcode.react";
 import { Share2, Phone, MessageCircle, MapPin, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
+import { Star, Send } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { LoadingSpinner } from "@/components/loading-spinner";
 
 export const Route = createFileRoute("/shop/$slug")({
   head: () => ({ meta: [{ title: "Shop — Tile" }] }),
@@ -50,7 +55,7 @@ function ShopPage() {
   const services = listings.filter((l) => l.type === "service");
   const goods = listings.filter((l) => l.type === "goods");
 
-  if (isLoading) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container py-12">Loading…</div></div>;
+  if (isLoading) return <div className="min-h-screen bg-background"><SiteHeader /><LoadingSpinner label="Loading shop…" /></div>;
   if (!shop) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container py-12">Shop not found.</div></div>;
 
   const url = typeof window !== "undefined" ? window.location.href : "";
@@ -124,6 +129,90 @@ function ShopPage() {
         <p className="text-xs text-muted-foreground mt-6">Total inventory value: {formatNaira(listings.reduce((s, l) => s + (l.price ?? 0), 0))}</p>
         <Link to="/" className="text-accent text-sm block mt-2">← Back to marketplace</Link>
       </section>
+      {shop.id && <ShopReviews shopId={shop.id} />}
     </div>
+  );
+}
+
+function ShopReviews({ shopId }: { shopId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["shop-reviews", shopId],
+    queryFn: async () => {
+      const { data } = await supabase.from("shop_reviews").select("*").eq("shop_user_id", shopId).order("created_at", { ascending: false });
+      return (data ?? []) as Array<{ id: string; reviewer_id: string; rating: number; comment: string | null; created_at: string }>;
+    },
+  });
+  const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+  const mine = user ? reviews.find((r) => r.reviewer_id === user.id) : null;
+  const isOwn = user?.id === shopId;
+
+  const submit = async () => {
+    if (!user) return toast.error("Sign in to leave a review");
+    if (isOwn) return toast.error("You can't review your own shop");
+    if (rating < 1) return toast.error("Please pick a star rating between 1 and 5");
+    if (comment.length > 1000) return toast.error("Comment too long (max 1000 chars)");
+    setBusy(true);
+    const { error } = await supabase.from("shop_reviews").upsert({
+      shop_user_id: shopId, reviewer_id: user.id, rating, comment: comment || null,
+    }, { onConflict: "shop_user_id,reviewer_id" });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(mine ? "Review updated" : "Review posted");
+    setRating(0); setComment("");
+    qc.invalidateQueries({ queryKey: ["shop-reviews", shopId] });
+  };
+
+  return (
+    <section className="container mx-auto px-4 pb-12">
+      <Card className="p-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-xl font-bold">Shop reviews</h2>
+          <div className="flex items-center gap-2">
+            <div className="flex">{[1,2,3,4,5].map((n) => (
+              <Star key={n} className={`h-5 w-5 ${n <= Math.round(avg) ? "fill-accent text-accent" : "text-muted-foreground"}`} />
+            ))}</div>
+            <span className="font-bold">{avg.toFixed(1)}</span>
+            <span className="text-xs text-muted-foreground">({reviews.length} review{reviews.length === 1 ? "" : "s"})</span>
+          </div>
+        </div>
+
+        {user && !isOwn && (
+          <div className="mt-4 p-4 rounded border space-y-2 bg-muted/30">
+            <p className="text-sm font-medium">{mine ? "Update your review" : "Leave a review"}</p>
+            <div className="flex gap-1">{[1,2,3,4,5].map((n) => (
+              <button key={n} type="button" onClick={() => setRating(n)} aria-label={`${n} star`}>
+                <Star className={`h-7 w-7 ${n <= rating ? "fill-accent text-accent" : "text-muted-foreground"}`} />
+              </button>
+            ))}</div>
+            <Textarea rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Share your experience (optional)" />
+            <Button onClick={submit} disabled={busy} className="bg-accent text-accent-foreground">
+              <Send className="h-4 w-4 mr-1" />{busy ? "Sending…" : "Submit review"}
+            </Button>
+          </div>
+        )}
+        {!user && <p className="text-sm text-muted-foreground mt-3">Sign in to leave a review.</p>}
+        {isOwn && <p className="text-sm text-muted-foreground mt-3">You can't review your own shop.</p>}
+
+        <div className="mt-6 space-y-3">
+          {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet — be the first.</p>}
+          {reviews.map((r) => (
+            <div key={r.id} className="border-b last:border-0 pb-3">
+              <div className="flex items-center gap-1">
+                {[1,2,3,4,5].map((n) => (
+                  <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-accent text-accent" : "text-muted-foreground"}`} />
+                ))}
+                <span className="text-xs text-muted-foreground ml-2">{new Date(r.created_at).toLocaleDateString()}</span>
+              </div>
+              {r.comment && <p className="text-sm mt-1">{r.comment}</p>}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </section>
   );
 }

@@ -102,6 +102,18 @@ function PostAd() {
     } finally { setSubmitting(false); }
   };
 
+  const onInvalid = (errors: Record<string, { message?: string }>) => {
+    const first = Object.entries(errors)[0];
+    if (first) {
+      const [field, err] = first;
+      toast.error(`${field}: ${err?.message ?? "invalid"}`);
+      // Jump back to step containing the field
+      if (["category", "type"].includes(field)) setStep(1);
+      else if (["title", "description", "price", "brand", "condition", "years_experience", "service_mode"].includes(field)) setStep(2);
+      else setStep(3);
+    }
+  };
+
   const filtered = CATEGORIES.filter((c) => c.type === watch.type);
 
   return (
@@ -116,7 +128,7 @@ function PostAd() {
         </div>
 
         <Card className="p-6">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5">
             {step === 1 && (
               <>
                 <h2 className="text-xl font-semibold">Step 1 — Choose category</h2>

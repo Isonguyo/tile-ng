@@ -13,8 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira, LOCATIONS } from "@/lib/categories";
-import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw, Pencil, Trash2, Eye, MousePointerClick, Copy as CopyIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
 import { TierBadge } from "@/components/tier-badge";
@@ -137,13 +137,23 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("5000");
   const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState<"transfer" | "opay" | "card">("transfer");
+  const [confirming, setConfirming] = useState(false);
+  const [expiry, setExpiry] = useState(30 * 60);
+  useEffect(() => {
+    if (!open) { setExpiry(30 * 60); return; }
+    const t = setInterval(() => setExpiry((e) => Math.max(0, e - 1)), 1000);
+    return () => clearInterval(t);
+  }, [open]);
+  const account = { bank: "Sterling Bank", number: "6982792154", name: "Tile Marketplace Ltd" };
+  const mins = Math.floor(expiry / 60), secs = expiry % 60;
 
   const submit = async () => {
-    setLoading(true);
+    setLoading(true); setConfirming(true);
     const { error } = await supabase.rpc("topup_wallet", { _amount: Number(amount), _reference: `paystack-mock-${Date.now()}` });
-    setLoading(false);
+    setLoading(false); setConfirming(false);
     if (error) return toast.error(error.message);
-    toast.success("Wallet topped up");
+    toast.success("Payment confirmed — wallet credited");
     setOpen(false); onTopup();
   };
 
@@ -155,21 +165,79 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
         <DialogTrigger asChild>
           <Button className="w-full mt-4 bg-accent text-accent-foreground hover:bg-accent/90">Top up</Button>
         </DialogTrigger>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Top up wallet (Paystack — mock)</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Choose an amount in ₦. This demo simulates a Paystack charge.</p>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
-            <div className="flex gap-2">{[1000, 5000, 10000, 25000].map((v) => (
-              <Button key={v} variant="outline" onClick={() => setAmount(String(v))}>{formatNaira(v)}</Button>
-            ))}</div>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <div className="grid sm:grid-cols-[180px_1fr]">
+            <div className="bg-muted/40 border-r p-4 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Payment Method</p>
+              {([
+                { id: "transfer", label: "Bank Transfer" },
+                { id: "opay", label: "Opay" },
+                { id: "card", label: "Card" },
+              ] as const).map((m) => (
+                <button key={m.id} onClick={() => setMethod(m.id)} className={`w-full text-left text-sm px-3 py-2 rounded ${method === m.id ? "bg-card text-foreground border" : "text-muted-foreground hover:bg-card/50"}`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <div className="p-5 bg-card text-foreground space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Pay</p>
+                <p className="text-2xl font-bold text-primary">{formatNaira(Number(amount))}</p>
+                <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-2" />
+                <div className="flex gap-2 mt-2">{[1000, 5000, 10000, 25000].map((v) => (
+                  <Button key={v} size="sm" variant="outline" onClick={() => setAmount(String(v))}>{formatNaira(v)}</Button>
+                ))}</div>
+              </div>
+              {method === "transfer" && (
+                <>
+                  <p className="text-sm text-center text-muted-foreground">Transfer <b className="text-foreground">{formatNaira(Number(amount))}</b> from your bank to <b className="text-foreground">{account.name}</b></p>
+                  <div className="bg-muted/40 rounded-lg p-4 space-y-3">
+                    <Row label="Bank Name" value={account.bank} />
+                    <Row label="Account Number" value={account.number} copyable />
+                    <Row label="Amount" value={`${formatNaira(Number(amount))}`} copyable />
+                  </div>
+                  <div className="bg-amber-50 border border-amber-300 text-amber-900 rounded p-3 text-xs">
+                    Ensure you send the amount indicated only once.<br/>
+                    This account will expire in <b>{mins} minutes {secs.toString().padStart(2,"0")} seconds</b>. Do not save for future use.
+                  </div>
+                  <Button onClick={submit} disabled={loading || expiry === 0} className="w-full bg-primary text-primary-foreground">
+                    {confirming ? "Verifying transfer…" : "I've sent the transfer — confirm"}
+                  </Button>
+                </>
+              )}
+              {method === "opay" && (
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-sm text-muted-foreground">Pay with Opay — scan QR in your Opay app</p>
+                  <Button onClick={submit} disabled={loading} className="bg-primary text-primary-foreground">Simulate Opay payment</Button>
+                </div>
+              )}
+              {method === "card" && (
+                <div className="space-y-3">
+                  <Input placeholder="Card number" /><Input placeholder="MM / YY" /><Input placeholder="CVV" />
+                  <Button onClick={submit} disabled={loading} className="w-full bg-primary text-primary-foreground">Pay {formatNaira(Number(amount))}</Button>
+                </div>
+              )}
+            </div>
           </div>
-          <DialogFooter>
-            <Button onClick={submit} disabled={loading} className="bg-accent text-accent-foreground">Pay {formatNaira(Number(amount))}</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+function Row({ label, value, copyable }: { label: string; value: string; copyable?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="font-semibold">{value}</p>
+      </div>
+      {copyable && (
+        <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(value.replace(/[^\d.]/g, "")); toast.success("Copied"); }}>
+          <CopyIcon className="h-3 w-3 mr-1" />Copy
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -349,11 +417,45 @@ function AdminCodeCard({ onRedeemed }: { onRedeemed: () => void }) {
 function ListingRow({ l, onChange }: { l: { id: string; title: string; type: string; status: string; expires_at?: string | null }; onChange: () => void }) {
   const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
+  const [stats, setStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
+  useEffect(() => {
+    let cancel = false;
+    supabase.rpc("owner_listing_stats", { _id: l.id }).then(({ data }) => {
+      const r = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
+      if (!cancel && r) setStats({ views_count: r.views_count, clicks_count: r.clicks_count, favorites_count: Number(r.favorites_count) });
+    });
+    return () => { cancel = true; };
+  }, [l.id]);
   const renew = async () => {
     const { error } = await supabase.rpc("renew_listing", { _listing_id: l.id });
     if (error) return toast.error(error.message);
     toast.success("Renewed for 30 days");
     onChange();
+  };
+  const remove = async () => {
+    if (!confirm("Delete this ad permanently?")) return;
+    const { error } = await supabase.from("listings").delete().eq("id", l.id);
+    if (error) return toast.error(error.message);
+    toast.success("Ad deleted");
+    onChange();
+  };
+  const openEdit = async () => {
+    const { data } = await supabase.from("listings").select("title,description,price").eq("id", l.id).maybeSingle();
+    if (data) setEditForm({ title: data.title, description: data.description, price: data.price?.toString() ?? "" });
+    setEditOpen(true);
+  };
+  const saveEdit = async () => {
+    const { error } = await supabase.from("listings").update({
+      title: editForm.title,
+      description: editForm.description,
+      price: editForm.price ? Number(editForm.price) : null,
+      status: "pending",
+    }).eq("id", l.id);
+    if (error) return toast.error(error.message);
+    toast.success("Ad updated — pending re-review");
+    setEditOpen(false); onChange();
   };
   return (
     <li className="py-2">
@@ -362,8 +464,17 @@ function ListingRow({ l, onChange }: { l: { id: string; title: string; type: str
         <div className="flex items-center gap-2">
           <Badge variant={l.status === "approved" ? "default" : l.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{l.status}</Badge>
           <Badge className="bg-primary text-primary-foreground capitalize">{l.type}</Badge>
+          <Button size="sm" variant="outline" className="h-7 px-2" onClick={openEdit}><Pencil className="h-3 w-3" /></Button>
+          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={remove}><Trash2 className="h-3 w-3" /></Button>
         </div>
       </div>
+      {stats && (
+        <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{stats.views_count} views</span>
+          <span className="flex items-center gap-1"><MousePointerClick className="h-3 w-3" />{stats.clicks_count} clicks</span>
+          <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{stats.favorites_count} saves</span>
+        </div>
+      )}
       {daysLeft !== null && l.status === "approved" && daysLeft <= 3 && daysLeft > 0 && (
         <div className="mt-2 flex items-center gap-2 text-xs bg-destructive/10 text-destructive p-2 rounded">
           <AlertTriangle className="h-3 w-3" /> Expires in {daysLeft} day{daysLeft === 1 ? "" : "s"}.
@@ -379,6 +490,18 @@ function ListingRow({ l, onChange }: { l: { id: string; title: string; type: str
       {daysLeft !== null && daysLeft > 3 && l.status === "approved" && (
         <p className="text-xs text-muted-foreground mt-1">{daysLeft} days left</p>
       )}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit ad</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Title</Label><Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} /></div>
+            <div><Label>Description</Label><Textarea rows={5} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} /></div>
+            <div><Label>Price (₦)</Label><Input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} /></div>
+            <p className="text-xs text-muted-foreground">Edits send the ad back to admin review.</p>
+          </div>
+          <DialogFooter><Button onClick={saveEdit} className="bg-accent text-accent-foreground">Save changes</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }
