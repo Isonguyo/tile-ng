@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira, LOCATIONS } from "@/lib/categories";
-import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw } from "lucide-react";
+import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw, Pencil, Trash2, Eye, MousePointerClick, Copy as CopyIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
@@ -349,11 +349,47 @@ function AdminCodeCard({ onRedeemed }: { onRedeemed: () => void }) {
 function ListingRow({ l, onChange }: { l: { id: string; title: string; type: string; status: string; expires_at?: string | null }; onChange: () => void }) {
   const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
+  const [stats, setStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
+  const loadStats = async () => {
+    const { data } = await supabase.rpc("owner_listing_stats", { _id: l.id });
+    const r = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
+    if (r) setStats({ views_count: r.views_count, clicks_count: r.clicks_count, favorites_count: Number(r.favorites_count) });
+  };
+  // load stats once
+  if (stats === null && typeof window !== "undefined") {
+    // fire and forget
+    void loadStats();
+  }
   const renew = async () => {
     const { error } = await supabase.rpc("renew_listing", { _listing_id: l.id });
     if (error) return toast.error(error.message);
     toast.success("Renewed for 30 days");
     onChange();
+  };
+  const remove = async () => {
+    if (!confirm("Delete this ad permanently?")) return;
+    const { error } = await supabase.from("listings").delete().eq("id", l.id);
+    if (error) return toast.error(error.message);
+    toast.success("Ad deleted");
+    onChange();
+  };
+  const openEdit = async () => {
+    const { data } = await supabase.from("listings").select("title,description,price").eq("id", l.id).maybeSingle();
+    if (data) setEditForm({ title: data.title, description: data.description, price: data.price?.toString() ?? "" });
+    setEditOpen(true);
+  };
+  const saveEdit = async () => {
+    const { error } = await supabase.from("listings").update({
+      title: editForm.title,
+      description: editForm.description,
+      price: editForm.price ? Number(editForm.price) : null,
+      status: "pending",
+    }).eq("id", l.id);
+    if (error) return toast.error(error.message);
+    toast.success("Ad updated — pending re-review");
+    setEditOpen(false); onChange();
   };
   return (
     <li className="py-2">
@@ -362,8 +398,17 @@ function ListingRow({ l, onChange }: { l: { id: string; title: string; type: str
         <div className="flex items-center gap-2">
           <Badge variant={l.status === "approved" ? "default" : l.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{l.status}</Badge>
           <Badge className="bg-primary text-primary-foreground capitalize">{l.type}</Badge>
+          <Button size="sm" variant="outline" className="h-7 px-2" onClick={openEdit}><Pencil className="h-3 w-3" /></Button>
+          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={remove}><Trash2 className="h-3 w-3" /></Button>
         </div>
       </div>
+      {stats && (
+        <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{stats.views_count} views</span>
+          <span className="flex items-center gap-1"><MousePointerClick className="h-3 w-3" />{stats.clicks_count} clicks</span>
+          <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{stats.favorites_count} saves</span>
+        </div>
+      )}
       {daysLeft !== null && l.status === "approved" && daysLeft <= 3 && daysLeft > 0 && (
         <div className="mt-2 flex items-center gap-2 text-xs bg-destructive/10 text-destructive p-2 rounded">
           <AlertTriangle className="h-3 w-3" /> Expires in {daysLeft} day{daysLeft === 1 ? "" : "s"}.
@@ -379,6 +424,18 @@ function ListingRow({ l, onChange }: { l: { id: string; title: string; type: str
       {daysLeft !== null && daysLeft > 3 && l.status === "approved" && (
         <p className="text-xs text-muted-foreground mt-1">{daysLeft} days left</p>
       )}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit ad</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Title</Label><Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} /></div>
+            <div><Label>Description</Label><Textarea rows={5} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} /></div>
+            <div><Label>Price (₦)</Label><Input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} /></div>
+            <p className="text-xs text-muted-foreground">Edits send the ad back to admin review.</p>
+          </div>
+          <DialogFooter><Button onClick={saveEdit} className="bg-accent text-accent-foreground">Save changes</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }
