@@ -299,3 +299,35 @@ function RejectModal({ onConfirm }: { onConfirm: (reason: string) => void }) {
     </Dialog>
   );
 }
+
+function PendingTitle({ l }: { l: { id: string; title: string; type: string; images: string[] } }) {
+  const [urls, setUrls] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (l.images?.length) getSignedUrls(l.images).then(setUrls); }, [l.images]);
+  return (
+    <div className="flex items-center gap-2">
+      {urls[0] ? (
+        <button onClick={() => setOpen(true)} className="h-12 w-12 rounded overflow-hidden border hover:border-accent">
+          <img src={urls[0]} alt="" className="w-full h-full object-cover" />
+        </button>
+      ) : <span className="h-12 w-12 rounded bg-muted inline-block" />}
+      <div className="flex-1">
+        <a href={`/listing/${l.id}`} target="_blank" rel="noreferrer" className="hover:text-accent underline-offset-2 hover:underline">{l.title}</a>
+        {l.type === "goods" && (l.images?.length ?? 0) < 2 && (
+          <Badge variant="destructive" className="ml-2 gap-1"><AlertTriangle className="h-3 w-3" />Low image count</Badge>
+        )}
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>{l.title} — images ({urls.length})</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[70vh] overflow-y-auto">
+            {urls.map((u, i) => <img key={i} src={u} alt="" className="w-full rounded border" />)}
+          </div>
+          <DialogFooter>
+            <Button asChild variant="outline"><a href={`/listing/${l.id}`} target="_blank" rel="noreferrer">Open full listing</a></Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
