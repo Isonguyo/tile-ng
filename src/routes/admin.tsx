@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira } from "@/lib/categories";
 import { Users, Tag, Banknote, ShieldAlert, Check, X, Flag, BadgeCheck, KeyRound, AlertTriangle, Copy } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getSignedUrls } from "@/lib/storage";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin Cabin — Tile" }] }),
@@ -149,13 +150,7 @@ function Admin() {
                   {pending.map((l) => (
                     <TableRow key={l.id}>
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {l.images?.[0] && <span className="h-8 w-8 rounded bg-muted inline-block" />}
-                          {l.title}
-                          {l.type === "goods" && (l.images?.length ?? 0) < 2 && (
-                            <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Low image count</Badge>
-                          )}
-                        </div>
+                        <PendingTitle l={l} />
                       </TableCell>
                       <TableCell className="text-sm">{l.seller_name ?? "—"}<br/><span className="text-xs text-muted-foreground">{l.seller_phone ?? ""}</span></TableCell>
                       <TableCell><Badge className="capitalize">{l.type}</Badge></TableCell>
