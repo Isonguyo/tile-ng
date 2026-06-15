@@ -121,25 +121,58 @@ function Admin() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <div className="container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2"><ShieldAlert className="text-accent" /> Admin Cabin</h1>
+       <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><ShieldAlert className="text-accent" /> Admin Cabin</h1>
         <p className="text-muted-foreground">Global platform command console</p>
 
-        <div className="grid sm:grid-cols-3 gap-4 my-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-6">
           <StatCard label="Users" value={stats?.users ?? 0} icon={Users} />
           <StatCard label="Active Ads" value={stats?.ads ?? 0} icon={Tag} />
           <StatCard label="System Revenue" value={formatNaira(stats?.revenue ?? 0)} icon={Banknote} />
         </div>
 
-        <Tabs defaultValue="moderation">
-          <TabsList>
-            <TabsTrigger value="moderation">Ad Moderation</TabsTrigger>
-            <TabsTrigger value="kyc">KYC Audit</TabsTrigger>
-            <TabsTrigger value="money">Monetization</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="codes">Admin Codes</TabsTrigger>
-          </TabsList>
+    <Tabs defaultValue="moderation" className="w-full">
 
-          <TabsContent value="moderation" className="mt-4">
+  {/* Mobile-friendly tab navigation */}
+  <div className="overflow-x-auto scrollbar-hide pb-2">
+    <TabsList className="inline-flex w-max min-w-full md:min-w-0 gap-2">
+      <TabsTrigger
+        value="moderation"
+        className="whitespace-nowrap"
+      >
+        Ad Moderation
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="kyc"
+        className="whitespace-nowrap"
+      >
+        KYC Audit
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="money"
+        className="whitespace-nowrap"
+      >
+        Monetization
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="users"
+        className="whitespace-nowrap"
+      >
+        Users
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="codes"
+        className="whitespace-nowrap"
+      >
+        Admin Codes
+      </TabsTrigger>
+    </TabsList>
+  </div>
+
+  <TabsContent value="moderation" className="mt-4">
             <Card className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
