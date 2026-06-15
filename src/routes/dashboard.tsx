@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira, LOCATIONS } from "@/lib/categories";
 import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw, Pencil, Trash2, Eye, MousePointerClick, Copy as CopyIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
 import { TierBadge } from "@/components/tier-badge";
@@ -352,16 +352,14 @@ function ListingRow({ l, onChange }: { l: { id: string; title: string; type: str
   const [stats, setStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
-  const loadStats = async () => {
-    const { data } = await supabase.rpc("owner_listing_stats", { _id: l.id });
-    const r = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
-    if (r) setStats({ views_count: r.views_count, clicks_count: r.clicks_count, favorites_count: Number(r.favorites_count) });
-  };
-  // load stats once
-  if (stats === null && typeof window !== "undefined") {
-    // fire and forget
-    void loadStats();
-  }
+  useEffect(() => {
+    let cancel = false;
+    supabase.rpc("owner_listing_stats", { _id: l.id }).then(({ data }) => {
+      const r = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
+      if (!cancel && r) setStats({ views_count: r.views_count, clicks_count: r.clicks_count, favorites_count: Number(r.favorites_count) });
+    });
+    return () => { cancel = true; };
+  }, [l.id]);
   const renew = async () => {
     const { error } = await supabase.rpc("renew_listing", { _listing_id: l.id });
     if (error) return toast.error(error.message);
