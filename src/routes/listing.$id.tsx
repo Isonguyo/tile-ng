@@ -212,66 +212,235 @@ function Metric({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ChatDrawer({ listingId, sellerId }: { listingId: string; sellerId: string }) {
+function ChatDrawer({
+  listingId,
+  sellerId,
+}: {
+  listingId: string;
+  sellerId: string;
+}) {
   const { user } = useAuth();
+
   const [open, setOpen] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<{ id: string; sender_id: string; content: string }[]>([]);
+
+  const [messages, setMessages] = useState<
+    {
+      id: string;
+      sender_id: string;
+      content: string;
+      created_at: string;
+    }[]
+  >([]);
+
   const [text, setText] = useState("");
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const ensureChat = async () => {
-    if (!user || user.id === sellerId) return null;
-    const { data: existing } = await supabase.from("chats").select("id").eq("listing_id", listingId).eq("buyer_id", user.id).maybeSingle();
+    if (!user) return null;
+
+    if (user.id === sellerId) {
+      toast.error("You cannot chat with yourself");
+      return null;
+    }
+
+    const { data: existing } = await supabase
+      .from("chats")
+      .select("id")
+      .eq("listing_id", listingId)
+      .eq("buyer_id", user.id)
+      .maybeSingle();
+
     if (existing) return existing.id;
-    const { data: created, error } = await supabase.from("chats").insert({ listing_id: listingId, buyer_id: user.id, seller_id: sellerId }).select("id").single();
-    if (error) { toast.error(error.message); return null; }
+
+    const { data: created, error } = await supabase
+      .from("chats")
+      .insert({
+        listing_id: listingId,
+        buyer_id: user.id,
+        seller_id: sellerId,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      toast.error(error.message);
+      return null;
+    }
+
     return created.id;
   };
 
   useEffect(() => {
     if (!open || !user) return;
-    ensureChat().then(async (cid) => {
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const loadChat = async () => {
+      const cid = await ensureChat();
+
       if (!cid) return;
+
       setChatId(cid);
-      const { data } = await supabase.from("messages").select("id,sender_id,content").eq("chat_id", cid).order("created_at");
+
+      const { data } = await supabase
+        .from("messages")
+        .select("id,sender_id,content,created_at")
+        .eq("chat_id", cid)
+        .order("created_at", {
+          ascending: true,
+        });
+
       setMessages(data ?? []);
-      const ch = supabase.channel(`chat-${cid}`).on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${cid}` },
-        (p) => setMessages((m) => [...m, p.new as { id: string; sender_id: string; content: string }])
-      ).subscribe();
-      return () => { supabase.removeChannel(ch); };
-    });
+
+      channel = supabase
+        .channel(`chat-${cid}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `chat_id=eq.${cid}`,
+          },
+          (payload) => {
+            setMessages((prev) => [
+              ...prev,
+              payload.new as {
+                id: string;
+                sender_id: string;
+                content: string;
+                created_at: string;
+              },
+            ]);
+          }
+        )
+        .subscribe();
+    };
+
+    loadChat();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [open, user]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
 
   const send = async () => {
-    if (!chatId || !text.trim() || !user) return;
-    await supabase.from("messages").insert({ chat_id: chatId, sender_id: user.id, content: text.trim() });
+    if (!user) return;
+
+    if (!chatId) return;
+
+    const msg = text.trim();
+
+    if (!msg) return;
+
+    const { error } = await supabase.from("messages").insert({
+      chat_id: chatId,
+      sender_id: user.id,
+      content: msg,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
     setText("");
   };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" className="w-full" disabled={!user}>
-          <MessageCircle className="h-4 w-4 mr-2" />{user ? "Chat with vendor" : "Sign in to chat"}
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={!user}
+        >
+          <MessageCircle className="h-4 w-4 mr-2" />
+
+          {user
+            ? "Chat with vendor"
+            : "Sign in to chat"}
         </Button>
       </SheetTrigger>
-      <SheetContent className="flex flex-col">
-        <SheetHeader><SheetTitle>Chat</SheetTitle></SheetHeader>
-        <div className="flex-1 overflow-y-auto space-y-2 py-3">
+
+      <SheetContent className="flex flex-col sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Chat with Vendor</SheetTitle>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto py-4 space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center text-sm text-muted-foreground py-8">
+              Start a conversation
+            </div>
+          )}
+
           {messages.map((m) => (
-            <div key={m.id} className={`max-w-[80%] rounded-lg p-2 text-sm ${m.sender_id === user?.id ? "ml-auto bg-accent text-accent-foreground" : "bg-muted"}`}>
-              {m.content}
+            <div
+              key={m.id}
+              className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
+                m.sender_id === user?.id
+                  ? "ml-auto bg-accent text-accent-foreground"
+                  : "bg-muted"
+              }`}
+            >
+              <div>{m.content}</div>
+
+              <div className="text-[10px] opacity-70 mt-1 text-right">
+                {new Date(
+                  m.created_at
+                ).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
             </div>
           ))}
+
           <div ref={bottomRef} />
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2">
-          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message…" />
-          <Button type="submit">Send</Button>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            send();
+          }}
+          className="flex gap-2 border-t pt-3"
+        >
+          <Input
+            value={text}
+            onChange={(e) =>
+              setText(e.target.value)
+            }
+            placeholder="Type a message..."
+            autoComplete="off"
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey
+              ) {
+                e.preventDefault();
+                send();
+              }
+            }}
+          />
+
+          <Button
+            type="submit"
+            disabled={!text.trim()}
+          >
+            Send
+          </Button>
         </form>
       </SheetContent>
     </Sheet>
