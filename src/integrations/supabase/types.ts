@@ -18,18 +18,21 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          expires_at: string
           used_at: string | null
           used_by: string | null
         }
         Insert: {
           code: string
           created_at?: string
+          expires_at?: string
           used_at?: string | null
           used_by?: string | null
         }
         Update: {
           code?: string
           created_at?: string
+          expires_at?: string
           used_at?: string | null
           used_by?: string | null
         }
@@ -97,6 +100,7 @@ export type Database = {
         Row: {
           brand: string | null
           category: string
+          clicks_count: number
           condition: Database["public"]["Enums"]["item_condition"] | null
           created_at: string
           description: string
@@ -115,11 +119,13 @@ export type Database = {
           type: Database["public"]["Enums"]["listing_type"]
           updated_at: string
           user_id: string
+          views_count: number
           years_experience: number | null
         }
         Insert: {
           brand?: string | null
           category: string
+          clicks_count?: number
           condition?: Database["public"]["Enums"]["item_condition"] | null
           created_at?: string
           description: string
@@ -138,11 +144,13 @@ export type Database = {
           type: Database["public"]["Enums"]["listing_type"]
           updated_at?: string
           user_id: string
+          views_count?: number
           years_experience?: number | null
         }
         Update: {
           brand?: string | null
           category?: string
+          clicks_count?: number
           condition?: Database["public"]["Enums"]["item_condition"] | null
           created_at?: string
           description?: string
@@ -161,6 +169,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["listing_type"]
           updated_at?: string
           user_id?: string
+          views_count?: number
           years_experience?: number | null
         }
         Relationships: []
@@ -559,6 +568,18 @@ export type Database = {
       }
       admin_approve_listing: { Args: { _id: string }; Returns: undefined }
       admin_flag_seller: { Args: { _listing_id: string }; Returns: undefined }
+      admin_generate_invite_code: { Args: never; Returns: string }
+      admin_list_invite_codes: {
+        Args: never
+        Returns: {
+          code: string
+          created_at: string
+          expires_at: string
+          status: string
+          used_at: string
+          used_by: string
+        }[]
+      }
       admin_list_pending_kyc: {
         Args: never
         Returns: {
@@ -597,6 +618,19 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          active_ads: number
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_verified: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
+        }[]
       }
       admin_pending_listings: {
         Args: never
@@ -687,6 +721,8 @@ export type Database = {
         Args: { _amount: number; _reference: string }
         Returns: number
       }
+      track_listing_click: { Args: { _id: string }; Returns: undefined }
+      track_listing_view: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

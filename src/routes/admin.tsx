@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira } from "@/lib/categories";
-import { Users, Tag, Banknote, ShieldAlert, Check, X, Flag, BadgeCheck } from "lucide-react";
+import { Users, Tag, Banknote, ShieldAlert, Check, X, Flag, BadgeCheck, KeyRound, AlertTriangle, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -32,9 +32,10 @@ function Admin() {
       const [u, a, rev] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "approved"),
-        supabase.from("wallet_transactions").select("amount"),
+        supabase.from("wallet_transactions").select("amount").eq("tx_type", "subscription"),
       ]);
-      const total = (rev.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
+      // Subscription tx are stored as negatives (debits from user wallet); platform revenue = sum of absolute values
+      const total = (rev.data ?? []).reduce((s, r) => s + Math.abs(Number(r.amount)), 0);
       return { users: u.count ?? 0, ads: a.count ?? 0, revenue: total };
     },
   });
@@ -65,6 +66,31 @@ function Admin() {
       return data ?? [];
     },
   });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["admin-users"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("admin_list_users");
+      return (data ?? []) as Array<{ id: string; full_name: string | null; email: string | null; subscription_tier: string; is_verified: boolean; active_ads: number; created_at: string }>;
+    },
+  });
+
+  const { data: codes = [] } = useQuery({
+    queryKey: ["admin-codes"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("admin_list_invite_codes");
+      return (data ?? []) as Array<{ code: string; created_at: string; expires_at: string; used_by: string | null; used_at: string | null; status: string }>;
+    },
+  });
+
+  const generateCode = async () => {
+    const { data, error } = await supabase.rpc("admin_generate_invite_code");
+    if (error) return toast.error(error.message);
+    toast.success(`New admin code: ${data}`);
+    qc.invalidateQueries({ queryKey: ["admin-codes"] });
+  };
 
   if (!loading && !isAdmin) { nav({ to: "/" }); return null; }
 
@@ -108,6 +134,8 @@ function Admin() {
             <TabsTrigger value="moderation">Ad Moderation</TabsTrigger>
             <TabsTrigger value="kyc">KYC Audit</TabsTrigger>
             <TabsTrigger value="money">Monetization</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="codes">Admin Codes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="moderation" className="mt-4">
@@ -124,6 +152,9 @@ function Admin() {
                         <div className="flex items-center gap-2">
                           {l.images?.[0] && <span className="h-8 w-8 rounded bg-muted inline-block" />}
                           {l.title}
+                          {l.type === "goods" && (l.images?.length ?? 0) < 2 && (
+                            <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Low image count</Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">{l.seller_name ?? "—"}<br/><span className="text-xs text-muted-foreground">{l.seller_phone ?? ""}</span></TableCell>
@@ -181,6 +212,62 @@ function Admin() {
                 </TableBody>
               </Table>
               <div className="p-4 text-xs text-muted-foreground border-t">Plan prices: Lite ₦5,000 · Pro ₦15,000 · VIP ₦40,000 (edit in <code>activate_subscription</code> SQL function).</div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-4">
+            <Card className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Tier</TableHead><TableHead>KYC</TableHead><TableHead className="text-right">Active Ads</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {users.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users</TableCell></TableRow>}
+                  {users.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.full_name ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{u.email ?? "—"}</TableCell>
+                      <TableCell><Badge className="capitalize">{u.subscription_tier}</Badge>{u.is_verified && <BadgeCheck className="inline h-4 w-4 text-accent ml-1" />}</TableCell>
+                      <TableCell className="text-xs capitalize">{(u as { kyc_status?: string }).kyc_status ?? "—"}</TableCell>
+                      <TableCell className="text-right font-mono">{u.active_ads}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="codes" className="mt-4 space-y-4">
+            <Card className="p-4 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="font-semibold flex items-center gap-2"><KeyRound className="h-4 w-4" />One-Time Admin Authorization</p>
+                <p className="text-sm text-muted-foreground">Generates an 8-char code (e.g. TILE-ADMIN-XXXXXXXX). Single-use, expires 30 minutes after creation.</p>
+              </div>
+              <Button onClick={generateCode} className="bg-accent text-accent-foreground"><KeyRound className="h-4 w-4 mr-1" />Generate code</Button>
+            </Card>
+            <Card className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Created</TableHead><TableHead>Expires</TableHead><TableHead>Used At</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {codes.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No codes yet</TableCell></TableRow>}
+                  {codes.map((c) => (
+                    <TableRow key={c.code}>
+                      <TableCell className="font-mono text-xs">{c.code}</TableCell>
+                      <TableCell className="text-xs">{new Date(c.created_at).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs">{new Date(c.expires_at).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs">{c.used_at ? new Date(c.used_at).toLocaleString() : "—"}</TableCell>
+                      <TableCell>
+                        <Badge className={c.status === "active" ? "bg-emerald-600 text-white" : c.status === "used" ? "bg-muted text-muted-foreground" : "bg-destructive text-destructive-foreground"}>{c.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {c.status === "active" && (
+                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Code copied"); }}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Card>
           </TabsContent>
         </Tabs>

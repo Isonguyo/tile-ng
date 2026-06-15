@@ -38,7 +38,7 @@ function Index() {
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings", { q, loc, cat }],
     queryFn: async () => {
-      let qb = supabase.from("listings").select("id,title,price,type,location,images,is_promoted,category")
+      let qb = supabase.from("listings").select("id,title,price,type,location,images,is_promoted,category,description,views_count,clicks_count,user_id")
         .eq("status", "approved")
         .order("is_promoted", { ascending: false })
         .order("created_at", { ascending: false })
@@ -48,7 +48,15 @@ function Index() {
       if (cat) qb = qb.eq("category", cat);
       const { data, error } = await qb;
       if (error) throw error;
-      return (data ?? []) as ListingCardData[];
+      const rows = (data ?? []) as Array<ListingCardData & { user_id: string }>;
+      const ids = Array.from(new Set(rows.map((r) => r.user_id))).filter(Boolean);
+      if (ids.length) {
+        const { data: profs } = await (supabase.from("public_profiles") as unknown as { select: (c: string) => { in: (k: string, v: string[]) => Promise<{ data: { id: string; subscription_tier?: string | null; is_verified?: boolean | null }[] | null }> } })
+          .select("id,subscription_tier,is_verified").in("id", ids);
+        const map = new Map((profs ?? []).map((p) => [p.id, p]));
+        return rows.map((r) => ({ ...r, seller_tier: map.get(r.user_id)?.subscription_tier ?? null, seller_verified: map.get(r.user_id)?.is_verified ?? null }));
+      }
+      return rows;
     },
   });
 
