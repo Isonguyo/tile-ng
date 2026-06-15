@@ -13,6 +13,7 @@ import { getSignedUrls } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { Store } from "lucide-react";
 
 export const Route = createFileRoute("/listing/$id")({
   component: ListingDetail,
@@ -58,6 +59,13 @@ function ListingDetail() {
   useEffect(() => {
     if (listing?.images?.length) getSignedUrls(listing.images).then(setImgUrls);
   }, [listing]);
+
+  // Track view once per mount
+  useEffect(() => {
+    if (listing?.id) {
+      supabase.rpc("track_listing_view", { _id: listing.id });
+    }
+  }, [listing?.id]);
 
   useEffect(() => {
     if (!user || !listing) return;
@@ -170,9 +178,16 @@ function ListingDetail() {
                 </p>
               </div>
             </div>
-            <Button onClick={() => setShowPhone(true)} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button onClick={() => { setShowPhone(true); if (listing.id) supabase.rpc("track_listing_click", { _id: listing.id }); }} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
               <Phone className="h-4 w-4 mr-2" />{showPhone ? listing.phone : "Reveal phone number"}
             </Button>
+            {listing.profile?.shop_slug && (
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/shop/$slug" params={{ slug: listing.profile.shop_slug }}>
+                  <Store className="h-4 w-4 mr-2" />Visit seller's shop
+                </Link>
+              </Button>
+            )}
             <ChatDrawer listingId={listing.id} sellerId={listing.user_id} />
             <Button variant="outline" onClick={toggleFav} className="w-full">
               <Heart className={`h-4 w-4 mr-2 ${favored ? "fill-accent text-accent" : ""}`} />
