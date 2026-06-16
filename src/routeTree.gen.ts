@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PostAdRouteImport } from './routes/post-ad'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -20,6 +21,11 @@ import { Route as ListingIdRouteImport } from './routes/listing.$id'
 const PostAdRoute = PostAdRouteImport.update({
   id: '/post-ad',
   path: '/post-ad',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/messages': typeof MessagesRoute
   '/post-ad': typeof PostAdRoute
   '/listing/$id': typeof ListingIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/messages': typeof MessagesRoute
   '/post-ad': typeof PostAdRoute
   '/listing/$id': typeof ListingIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/messages': typeof MessagesRoute
   '/post-ad': typeof PostAdRoute
   '/listing/$id': typeof ListingIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/dashboard'
+    | '/messages'
     | '/post-ad'
     | '/listing/$id'
     | '/shop/$slug'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/dashboard'
+    | '/messages'
     | '/post-ad'
     | '/listing/$id'
     | '/shop/$slug'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/dashboard'
+    | '/messages'
     | '/post-ad'
     | '/listing/$id'
     | '/shop/$slug'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  MessagesRoute: typeof MessagesRoute
   PostAdRoute: typeof PostAdRoute
   ListingIdRoute: typeof ListingIdRoute
   ShopSlugRoute: typeof ShopSlugRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/post-ad'
       fullPath: '/post-ad'
       preLoaderRoute: typeof PostAdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  MessagesRoute: MessagesRoute,
   PostAdRoute: PostAdRoute,
   ListingIdRoute: ListingIdRoute,
   ShopSlugRoute: ShopSlugRoute,
