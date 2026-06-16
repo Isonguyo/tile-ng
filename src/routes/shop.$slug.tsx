@@ -29,7 +29,7 @@ function ShopPage() {
   type Shop = {
     id: string; full_name: string | null; avatar_url: string | null; is_verified: boolean | null;
     business_name?: string | null; shop_slug?: string | null; subscription_tier?: string | null;
-    state?: string | null; bio?: string | null; phone?: string | null; whatsapp?: string | null;
+    state?: string | null; bio?: string | null;
     portfolio_images?: string[] | null;
   };
   const { data: shop, isLoading } = useQuery<Shop | null>({
@@ -38,6 +38,17 @@ function ShopPage() {
       const { data } = await (supabase.from("public_profiles") as unknown as { select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: Shop | null }> } } })
         .select("*").eq("shop_slug", slug).maybeSingle();
       return data ?? null;
+    },
+  });
+
+  const { user } = useAuth();
+  const { data: contact } = useQuery<{ phone: string | null; whatsapp: string | null } | null>({
+    queryKey: ["shop-contact", slug, !!user],
+    enabled: !!user && !!shop?.id,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("shop_contact" as never, { _slug: slug } as never);
+      const row = (Array.isArray(data) ? data[0] : data) as { phone: string | null; whatsapp: string | null } | null;
+      return row ?? null;
     },
   });
 
@@ -85,8 +96,14 @@ function ShopPage() {
               {shop.bio && <p className="mt-3 text-foreground/90">{shop.bio}</p>}
               <div className="flex gap-2 mt-4 flex-wrap">
                 <Button onClick={share} variant="outline"><Share2 className="h-4 w-4 mr-1" />Share</Button>
-                {shop.phone && <Button className="bg-accent text-accent-foreground"><Phone className="h-4 w-4 mr-1" />{shop.phone}</Button>}
-                {shop.whatsapp && <Button asChild variant="outline"><a href={`https://wa.me/${shop.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</a></Button>}
+                {user ? (
+                  <>
+                    {contact?.phone && <Button className="bg-accent text-accent-foreground"><Phone className="h-4 w-4 mr-1" />{contact.phone}</Button>}
+                    {contact?.whatsapp && <Button asChild variant="outline"><a href={`https://wa.me/${contact.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</a></Button>}
+                  </>
+                ) : (
+                  <Button asChild variant="outline"><Link to="/auth"><Phone className="h-4 w-4 mr-1" />Sign in to contact</Link></Button>
+                )}
               </div>
             </div>
           </div>

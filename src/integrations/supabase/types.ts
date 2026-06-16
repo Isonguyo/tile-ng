@@ -460,11 +460,9 @@ export type Database = {
           id: string | null
           is_verified: boolean | null
           location: string | null
-          phone: string | null
           shop_slug: string | null
           state: string | null
           subscription_tier: Database["public"]["Enums"]["sub_tier"] | null
-          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -475,11 +473,9 @@ export type Database = {
           id?: string | null
           is_verified?: boolean | null
           location?: string | null
-          phone?: string | null
           shop_slug?: string | null
           state?: string | null
           subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
-          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -490,11 +486,9 @@ export type Database = {
           id?: string | null
           is_verified?: boolean | null
           location?: string | null
-          phone?: string | null
           shop_slug?: string | null
           state?: string | null
           subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
-          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -755,6 +749,13 @@ export type Database = {
       redeem_admin_code: { Args: { _code: string }; Returns: boolean }
       renew_listing: { Args: { _listing_id: string }; Returns: string }
       set_vanity_slug: { Args: { _slug: string }; Returns: string }
+      shop_contact: {
+        Args: { _slug: string }
+        Returns: {
+          phone: string
+          whatsapp: string
+        }[]
+      }
       topup_wallet: {
         Args: { _amount: number; _reference: string }
         Returns: number
