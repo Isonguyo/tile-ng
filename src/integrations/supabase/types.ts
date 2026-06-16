@@ -180,6 +180,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          read_at: string | null
           sender_id: string
         }
         Insert: {
@@ -187,6 +188,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          read_at?: string | null
           sender_id: string
         }
         Update: {
@@ -194,6 +196,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          read_at?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -689,6 +692,7 @@ export type Database = {
         }
         Returns: string
       }
+      ensure_chat: { Args: { _listing_id: string }; Returns: string }
       expire_old_listings: { Args: never; Returns: number }
       gen_shop_slug: { Args: { _name: string }; Returns: string }
       get_my_profile: {
@@ -737,7 +741,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_chat_read: { Args: { _chat_id: string }; Returns: undefined }
       mark_notifications_read: { Args: never; Returns: undefined }
+      my_chats: {
+        Args: never
+        Returns: {
+          id: string
+          last_message: string
+          last_message_at: string
+          listing_id: string
+          listing_image: string
+          listing_title: string
+          other_id: string
+          other_name: string
+          unread_count: number
+        }[]
+      }
       owner_listing_stats: {
         Args: { _id: string }
         Returns: {
