@@ -17,6 +17,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
+import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
 import { Route as ListingIdRouteImport } from './routes/listing.$id'
 
 const PostAdRoute = PostAdRouteImport.update({
@@ -59,6 +60,11 @@ const ShopSlugRoute = ShopSlugRouteImport.update({
   path: '/shop/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MessagesChatIdRoute = MessagesChatIdRouteImport.update({
+  id: '/$chatId',
+  path: '/$chatId',
+  getParentRoute: () => MessagesRoute,
+} as any)
 const ListingIdRoute = ListingIdRouteImport.update({
   id: '/listing/$id',
   path: '/listing/$id',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRouteWithChildren
   '/post-ad': typeof PostAdRoute
   '/listing/$id': typeof ListingIdRoute
+  '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/messages/': typeof MessagesIndexRoute
 }
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/post-ad': typeof PostAdRoute
   '/listing/$id': typeof ListingIdRoute
+  '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/messages': typeof MessagesIndexRoute
 }
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/messages': typeof MessagesRouteWithChildren
   '/post-ad': typeof PostAdRoute
   '/listing/$id': typeof ListingIdRoute
+  '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/messages/': typeof MessagesIndexRoute
 }
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/post-ad'
     | '/listing/$id'
+    | '/messages/$chatId'
     | '/shop/$slug'
     | '/messages/'
   fileRoutesByTo: FileRoutesByTo
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/post-ad'
     | '/listing/$id'
+    | '/messages/$chatId'
     | '/shop/$slug'
     | '/messages'
   id:
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/post-ad'
     | '/listing/$id'
+    | '/messages/$chatId'
     | '/shop/$slug'
     | '/messages/'
   fileRoutesById: FileRoutesById
@@ -202,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/messages/$chatId': {
+      id: '/messages/$chatId'
+      path: '/$chatId'
+      fullPath: '/messages/$chatId'
+      preLoaderRoute: typeof MessagesChatIdRouteImport
+      parentRoute: typeof MessagesRoute
+    }
     '/listing/$id': {
       id: '/listing/$id'
       path: '/listing/$id'
@@ -213,10 +232,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface MessagesRouteChildren {
+  MessagesChatIdRoute: typeof MessagesChatIdRoute
   MessagesIndexRoute: typeof MessagesIndexRoute
 }
 
 const MessagesRouteChildren: MessagesRouteChildren = {
+  MessagesChatIdRoute: MessagesChatIdRoute,
   MessagesIndexRoute: MessagesIndexRoute,
 }
 
