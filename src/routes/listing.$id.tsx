@@ -1,14 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
 import { MapPin, Phone, MessageCircle, Heart, ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { getSignedUrls } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
@@ -188,7 +186,7 @@ function ListingDetail() {
                 </Link>
               </Button>
             )}
-            <ChatDrawer listingId={listing.id} sellerId={listing.user_id} />
+            <ChatWithVendorButton listingId={listing.id} sellerId={listing.user_id} />
             <Button variant="outline" onClick={toggleFav} className="w-full">
               <Heart className={`h-4 w-4 mr-2 ${favored ? "fill-accent text-accent" : ""}`} />
               {favored ? "Saved" : "Save"}
