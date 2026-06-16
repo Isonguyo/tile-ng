@@ -223,17 +223,10 @@ function ChatDrawer({
 
   const [open, setOpen] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
-
-  const [messages, setMessages] = useState<
-    {
-      id: string;
-      sender_id: string;
-      content: string;
-      created_at: string;
-    }[]
-  >([]);
-
+  const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -252,9 +245,11 @@ function ChatDrawer({
       .eq("buyer_id", user.id)
       .maybeSingle();
 
-    if (existing) return existing.id;
+    if (existing) {
+      return existing.id;
+    }
 
-    const { data: created, error } = await supabase
+    const { data, error } = await supabase
       .from("chats")
       .insert({
         listing_id: listingId,
@@ -269,30 +264,41 @@ function ChatDrawer({
       return null;
     }
 
-    return created.id;
+    return data.id;
   };
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
 
   useEffect(() => {
     if (!open || !user) return;
 
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let channel: any;
 
-    const loadChat = async () => {
+    const initializeChat = async () => {
+      setLoading(true);
+
       const cid = await ensureChat();
 
-      if (!cid) return;
+      if (!cid) {
+        setLoading(false);
+        return;
+      }
 
       setChatId(cid);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("messages")
-        .select("id,sender_id,content,created_at")
+        .select("*")
         .eq("chat_id", cid)
-        .order("created_at", {
-          ascending: true,
-        });
+        .order("created_at", { ascending: true });
 
-      setMessages(data ?? []);
+      if (!error) {
+        setMessages(data || []);
+      }
 
       channel = supabase
         .channel(`chat-${cid}`)
@@ -305,21 +311,25 @@ function ChatDrawer({
             filter: `chat_id=eq.${cid}`,
           },
           (payload) => {
-            setMessages((prev) => [
-              ...prev,
-              payload.new as {
-                id: string;
-                sender_id: string;
-                content: string;
-                created_at: string;
-              },
-            ]);
+            const incoming = payload.new as any;
+
+            setMessages((prev) => {
+              const exists = prev.some(
+                (msg) => msg.id === incoming.id
+              );
+
+              if (exists) return prev;
+
+              return [...prev, incoming];
+            });
           }
         )
         .subscribe();
+
+      setLoading(false);
     };
 
-    loadChat();
+    initializeChat();
 
     return () => {
       if (channel) {
@@ -328,26 +338,26 @@ function ChatDrawer({
     };
   }, [open, user]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [messages]);
-
   const send = async () => {
     if (!user) return;
 
+    const content = text.trim();
+
+    if (!content) return;
+
     if (!chatId) return;
 
-    const msg = text.trim();
+    setSending(true);
 
-    if (!msg) return;
+    const { error } = await supabase
+      .from("messages")
+      .insert({
+        chat_id: chatId,
+        sender_id: user.id,
+        content,
+      });
 
-    const { error } = await supabase.from("messages").insert({
-      chat_id: chatId,
-      sender_id: user.id,
-      content: msg,
-    });
+    setSending(false);
 
     if (error) {
       toast.error(error.message);
@@ -366,46 +376,61 @@ function ChatDrawer({
           disabled={!user}
         >
           <MessageCircle className="h-4 w-4 mr-2" />
-
-          {user
-            ? "Chat with vendor"
-            : "Sign in to chat"}
+          {user ? "Chat with vendor" : "Sign in to chat"}
         </Button>
       </SheetTrigger>
 
-      <SheetContent className="flex flex-col sm:max-w-md">
+      <SheetContent className="flex flex-col sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Chat with Vendor</SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto py-4 space-y-3">
-          {messages.length === 0 && (
-            <div className="text-center text-sm text-muted-foreground py-8">
-              Start a conversation
+          {loading && (
+            <div className="text-center text-sm text-muted-foreground">
+              Loading conversation...
             </div>
           )}
 
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
-                m.sender_id === user?.id
-                  ? "ml-auto bg-accent text-accent-foreground"
-                  : "bg-muted"
-              }`}
-            >
-              <div>{m.content}</div>
-
-              <div className="text-[10px] opacity-70 mt-1 text-right">
-                {new Date(
-                  m.created_at
-                ).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
+          {!loading && messages.length === 0 && (
+            <div className="text-center text-sm text-muted-foreground">
+              Start the conversation 👋
             </div>
-          ))}
+          )}
+
+          {messages.map((msg) => {
+            const mine = msg.sender_id === user?.id;
+
+            return (
+              <div
+                key={msg.id}
+                className={`flex ${
+                  mine ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
+                    mine
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  <p>{msg.content}</p>
+
+                  <p className="text-[10px] opacity-70 mt-1">
+                    {msg.created_at
+                      ? new Date(
+                          msg.created_at
+                        ).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
 
           <div ref={bottomRef} />
         </div>
@@ -415,31 +440,19 @@ function ChatDrawer({
             e.preventDefault();
             send();
           }}
-          className="flex gap-2 border-t pt-3"
+          className="flex gap-2 pt-2 border-t"
         >
           <Input
             value={text}
-            onChange={(e) =>
-              setText(e.target.value)
-            }
+            onChange={(e) => setText(e.target.value)}
             placeholder="Type a message..."
-            autoComplete="off"
-            onKeyDown={(e) => {
-              if (
-                e.key === "Enter" &&
-                !e.shiftKey
-              ) {
-                e.preventDefault();
-                send();
-              }
-            }}
           />
 
           <Button
             type="submit"
-            disabled={!text.trim()}
+            disabled={sending || !text.trim()}
           >
-            Send
+            {sending ? "..." : "Send"}
           </Button>
         </form>
       </SheetContent>
