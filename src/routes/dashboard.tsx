@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira, LOCATIONS } from "@/lib/categories";
-import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw, Pencil, Trash2, Eye, MousePointerClick, Copy as CopyIcon } from "lucide-react";
+import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Sparkles, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw, Pencil, Trash2, Eye, MousePointerClick, Copy as CopyIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
@@ -414,7 +414,17 @@ function AdminCodeCard({ onRedeemed }: { onRedeemed: () => void }) {
     </Card>
   );
 }
-function ListingRow({ l, onChange }: { l: { id: string; title: string; type: string; status: string; expires_at?: string | null }; onChange: () => void }) {
+function ListingRow({ l, onChange }: {
+  l: {
+    id: string;
+    title: string;
+    type: string;
+    status: string;
+    is_promoted?: boolean;
+    expires_at?: string | null;
+  };
+  onChange: () => void;
+}) {
   const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
   const [stats, setStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
@@ -457,6 +467,23 @@ function ListingRow({ l, onChange }: { l: { id: string; title: string; type: str
     toast.success("Ad updated — pending re-review");
     setEditOpen(false); onChange();
   };
+  const promote = async () => {
+  const { data, error } = await supabase.rpc(
+    "promote_listing",
+    {
+      p_listing_id: l.id,
+      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+    }
+  );
+
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+
+  toast.success("Listing promoted successfully");
+  onChange();
+};
   return (
     <li className="py-2">
       <div className="flex justify-between items-center">
@@ -464,6 +491,18 @@ function ListingRow({ l, onChange }: { l: { id: string; title: string; type: str
         <div className="flex items-center gap-2">
           <Badge variant={l.status === "approved" ? "default" : l.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{l.status}</Badge>
           <Badge className="bg-primary text-primary-foreground capitalize">{l.type}</Badge>
+          {l.status === "approved" && (
+  <Button
+    size="sm"
+    variant={l.is_promoted ? "default" : "outline"}
+    className="h-7"
+    disabled={l.is_promoted}
+    onClick={promote}
+  >
+    <Sparkles className="h-3 w-3 mr-1" />
+    {l.is_promoted ? "Promoted" : "Promote"}
+  </Button>
+)}
           <Button size="sm" variant="outline" className="h-7 px-2" onClick={openEdit}><Pencil className="h-3 w-3" /></Button>
           <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={remove}><Trash2 className="h-3 w-3" /></Button>
         </div>
