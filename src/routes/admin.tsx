@@ -30,14 +30,23 @@ function Admin() {
     queryKey: ["admin-stats"],
     enabled: isAdmin,
     queryFn: async () => {
-      const [u, a, rev] = await Promise.all([
+      const [u, a, r] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "approved"),
-        supabase.from("wallet_transactions").select("amount").eq("tx_type", "subscription"),
+        supabase.rpc("admin_revenue_stats"),
       ]);
-      // Subscription tx are stored as negatives (debits from user wallet); platform revenue = sum of absolute values
-      const total = (rev.data ?? []).reduce((s, r) => s + Math.abs(Number(r.amount)), 0);
-      return { users: u.count ?? 0, ads: a.count ?? 0, revenue: total };
+      const rev = (r.data?.[0] ?? null) as null | { total_revenue: number; monthly_revenue: number; yearly_revenue: number; active_subscribers: number; lite_active: number; pro_active: number; vip_active: number };
+      return {
+        users: u.count ?? 0,
+        ads: a.count ?? 0,
+        revenue: Number(rev?.total_revenue ?? 0),
+        monthly: Number(rev?.monthly_revenue ?? 0),
+        yearly: Number(rev?.yearly_revenue ?? 0),
+        active: Number(rev?.active_subscribers ?? 0),
+        lite: Number(rev?.lite_active ?? 0),
+        pro: Number(rev?.pro_active ?? 0),
+        vip: Number(rev?.vip_active ?? 0),
+      };
     },
   });
 
@@ -124,10 +133,18 @@ function Admin() {
        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><ShieldAlert className="text-accent" /> Admin Cabin</h1>
         <p className="text-muted-foreground">Global platform command console</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
           <StatCard label="Users" value={stats?.users ?? 0} icon={Users} />
           <StatCard label="Active Ads" value={stats?.ads ?? 0} icon={Tag} />
-          <StatCard label="System Revenue" value={formatNaira(stats?.revenue ?? 0)} icon={Banknote} />
+          <StatCard label="Total Revenue" value={formatNaira(stats?.revenue ?? 0)} icon={Banknote} />
+          <StatCard label="Active Subscribers" value={stats?.active ?? 0} icon={BadgeCheck} />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+          <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">Monthly Revenue</p><p className="text-lg font-extrabold">{formatNaira(stats?.monthly ?? 0)}</p></Card>
+          <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">Yearly Revenue</p><p className="text-lg font-extrabold">{formatNaira(stats?.yearly ?? 0)}</p></Card>
+          <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">Lite Active</p><p className="text-lg font-extrabold">{stats?.lite ?? 0}</p></Card>
+          <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">Pro Active</p><p className="text-lg font-extrabold">{stats?.pro ?? 0}</p></Card>
+          <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">VIP Active</p><p className="text-lg font-extrabold">{stats?.vip ?? 0}</p></Card>
         </div>
 
     <Tabs defaultValue="moderation" className="w-full">
