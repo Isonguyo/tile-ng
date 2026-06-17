@@ -476,24 +476,30 @@ function ListingRow({ l, onChange }: {
     setEditOpen(false); onChange();
   };
 
-  const promote = async () => {
-    const { data, error } = await supabase.rpc(
-      "promote_listing",
-      {
-        p_listing_id: l.id,
-        p_user_id: (await supabase.auth.getUser()).data.user?.id,
-      }
-    );
+ const promote = async () => {
+  const { data: authData } = await supabase.auth.getUser();
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+  const userId = authData.user?.id;
 
-    toast.success("Listing promoted successfully");
-    onChange();
-  };
+  if (!userId) {
+    toast.error("User not authenticated");
+    return;
+  }
 
+  const { error } = await supabase.rpc("promote_listing", {
+    p_listing_id: l.id,
+    p_user_id: userId,
+  });
+
+  if (error) {
+    console.error(error);
+    toast.error(error.message);
+    return;
+  }
+
+  toast.success("Listing promoted successfully");
+  onChange();
+};
   return (
     <li className="py-2">
       <div className="flex justify-between items-center">
