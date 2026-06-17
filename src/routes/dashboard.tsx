@@ -251,7 +251,6 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
     setBusy(true);
     try {
       const path = await uploadKyc(user.id, file);
-      // FIXED: Changed "profiles" to "public_profiles"
       await supabase.from("public_profiles").update({ kyc_status: "pending", kyc_doc_url: path }).eq("id", user.id);
       toast.success("KYC submitted — awaiting review");
       onUpload();
@@ -285,7 +284,6 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
     if (!user || !form.business_name) return toast.error("Business name required");
     setBusy(true);
     const { data: slug } = await supabase.rpc("gen_shop_slug", { _name: form.business_name });
-    // FIXED: Changed "profiles" to "public_profiles"
     const { error } = await supabase.from("public_profiles").update({
       ...form, is_merchant: true, shop_slug: slug,
     }).eq("id", user.id);
@@ -352,9 +350,45 @@ function ShopLinkCard({ slug }: { slug: string }) {
 }
 
 const PLANS: { tier: "lite" | "pro" | "vip"; price: number; perks: string[] }[] = [
-  { tier: "lite", price: 5000, perks: ["1 'Top Ad' pin per week", "Verified Vendor green tag", "+20% chat priority"] },
-  { tier: "pro", price: 15000, perks: ["5 Top Ads pinned", "Custom shop link", "PRO banner on profile"] },
-  { tier: "vip", price: 40000, perks: ["Unlimited listings", "15 continuous Top Ads", "Google/Meta cross-posting", "Analytics dashboard"] },
+  {
+    tier: "lite",
+    price: 5000,
+    perks: [
+      "Verified Vendor Badge",
+      "Custom Shop URL",
+      "QR Code For Shop",
+      "1 Promoted Listing Every 7 Days",
+      "Basic Analytics",
+      "Priority Support"
+    ]
+  },
+  {
+    tier: "pro",
+    price: 15000,
+    perks: [
+      "Everything in Lite",
+      "5 Promoted Listings Monthly",
+      "Homepage Priority",
+      "Featured Vendor Placement",
+      "Product Performance Analytics",
+      "Customer Inquiry Dashboard",
+      "Social Sharing Tools"
+    ]
+  },
+  {
+    tier: "vip",
+    price: 40000,
+    perks: [
+      "Everything in Pro",
+      "Unlimited Listings",
+      "Unlimited Promotions",
+      "Homepage Featured Placement",
+      "Multiple Staff Accounts",
+      "Advanced Analytics",
+      "Google Business Integration",
+      "Automated Social Posting"
+    ]
+  }
 ];
 
 function BillingCard({ tier, until, onChange }: { tier: string; until?: string | null; onChange: () => void }) {
@@ -476,30 +510,30 @@ function ListingRow({ l, onChange }: {
     setEditOpen(false); onChange();
   };
 
- const promote = async () => {
-  const { data: authData } = await supabase.auth.getUser();
+  const promote = async () => {
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user?.id;
 
-  const userId = authData.user?.id;
+    if (!userId) {
+      toast.error("User not authenticated");
+      return;
+    }
 
-  if (!userId) {
-    toast.error("User not authenticated");
-    return;
-  }
+    const { error } = await supabase.rpc("promote_listing", {
+      p_listing_id: l.id,
+      p_user_id: userId,
+    });
 
-  const { error } = await supabase.rpc("promote_listing", {
-    p_listing_id: l.id,
-    p_user_id: userId,
-  });
+    if (error) {
+      console.error(error);
+      toast.error(error.message);
+      return;
+    }
 
-  if (error) {
-    console.error(error);
-    toast.error(error.message);
-    return;
-  }
+    toast.success("Listing promoted successfully");
+    onChange();
+  };
 
-  toast.success("Listing promoted successfully");
-  onChange();
-};
   return (
     <li className="py-2">
       <div className="flex justify-between items-center">
