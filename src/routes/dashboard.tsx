@@ -251,7 +251,8 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
     setBusy(true);
     try {
       const path = await uploadKyc(user.id, file);
-      await supabase.from("profiles").update({ kyc_status: "pending", kyc_doc_url: path }).eq("id", user.id);
+      // FIXED: Changed "profiles" to "public_profiles"
+      await supabase.from("public_profiles").update({ kyc_status: "pending", kyc_doc_url: path }).eq("id", user.id);
       toast.success("KYC submitted — awaiting review");
       onUpload();
     } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
@@ -284,7 +285,8 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
     if (!user || !form.business_name) return toast.error("Business name required");
     setBusy(true);
     const { data: slug } = await supabase.rpc("gen_shop_slug", { _name: form.business_name });
-    const { error } = await supabase.from("profiles").update({
+    // FIXED: Changed "profiles" to "public_profiles"
+    const { error } = await supabase.from("public_profiles").update({
       ...form, is_merchant: true, shop_slug: slug,
     }).eq("id", user.id);
     setBusy(false);
@@ -414,6 +416,7 @@ function AdminCodeCard({ onRedeemed }: { onRedeemed: () => void }) {
     </Card>
   );
 }
+
 function ListingRow({ l, onChange }: {
   l: {
     id: string;
@@ -430,6 +433,7 @@ function ListingRow({ l, onChange }: {
   const [stats, setStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
+  
   useEffect(() => {
     let cancel = false;
     supabase.rpc("owner_listing_stats", { _id: l.id }).then(({ data }) => {
@@ -438,12 +442,14 @@ function ListingRow({ l, onChange }: {
     });
     return () => { cancel = true; };
   }, [l.id]);
+
   const renew = async () => {
     const { error } = await supabase.rpc("renew_listing", { _listing_id: l.id });
     if (error) return toast.error(error.message);
     toast.success("Renewed for 30 days");
     onChange();
   };
+
   const remove = async () => {
     if (!confirm("Delete this ad permanently?")) return;
     const { error } = await supabase.from("listings").delete().eq("id", l.id);
@@ -451,11 +457,13 @@ function ListingRow({ l, onChange }: {
     toast.success("Ad deleted");
     onChange();
   };
+
   const openEdit = async () => {
     const { data } = await supabase.from("listings").select("title,description,price").eq("id", l.id).maybeSingle();
     if (data) setEditForm({ title: data.title, description: data.description, price: data.price?.toString() ?? "" });
     setEditOpen(true);
   };
+
   const saveEdit = async () => {
     const { error } = await supabase.from("listings").update({
       title: editForm.title,
@@ -467,23 +475,25 @@ function ListingRow({ l, onChange }: {
     toast.success("Ad updated — pending re-review");
     setEditOpen(false); onChange();
   };
+
   const promote = async () => {
-  const { data, error } = await supabase.rpc(
-    "promote_listing",
-    {
-      p_listing_id: l.id,
-      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+    const { data, error } = await supabase.rpc(
+      "promote_listing",
+      {
+        p_listing_id: l.id,
+        p_user_id: (await supabase.auth.getUser()).data.user?.id,
+      }
+    );
+
+    if (error) {
+      toast.error(error.message);
+      return;
     }
-  );
 
-  if (error) {
-    toast.error(error.message);
-    return;
-  }
+    toast.success("Listing promoted successfully");
+    onChange();
+  };
 
-  toast.success("Listing promoted successfully");
-  onChange();
-};
   return (
     <li className="py-2">
       <div className="flex justify-between items-center">
@@ -492,17 +502,17 @@ function ListingRow({ l, onChange }: {
           <Badge variant={l.status === "approved" ? "default" : l.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{l.status}</Badge>
           <Badge className="bg-primary text-primary-foreground capitalize">{l.type}</Badge>
           {l.status === "approved" && (
-  <Button
-    size="sm"
-    variant={l.is_promoted ? "default" : "outline"}
-    className="h-7"
-    disabled={l.is_promoted}
-    onClick={promote}
-  >
-    <Sparkles className="h-3 w-3 mr-1" />
-    {l.is_promoted ? "Promoted" : "Promote"}
-  </Button>
-)}
+            <Button
+              size="sm"
+              variant={l.is_promoted ? "default" : "outline"}
+              className="h-7"
+              disabled={l.is_promoted}
+              onClick={promote}
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              {l.is_promoted ? "Promoted" : "Promote"}
+            </Button>
+          )}
           <Button size="sm" variant="outline" className="h-7 px-2" onClick={openEdit}><Pencil className="h-3 w-3" /></Button>
           <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={remove}><Trash2 className="h-3 w-3" /></Button>
         </div>
