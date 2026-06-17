@@ -678,6 +678,27 @@ export type Database = {
         Args: { _id: string; _reason: string }
         Returns: undefined
       }
+      admin_revenue_stats: {
+        Args: never
+        Returns: {
+          active_subscribers: number
+          expired_subscribers: number
+          lite_active: number
+          monthly_revenue: number
+          pro_active: number
+          total_revenue: number
+          total_subscribers: number
+          vip_active: number
+          yearly_revenue: number
+        }[]
+      }
+      category_counts: {
+        Args: never
+        Returns: {
+          category: string
+          count: number
+        }[]
+      }
       check_post_quota: {
         Args: { _type: Database["public"]["Enums"]["listing_type"] }
         Returns: boolean
@@ -765,6 +786,15 @@ export type Database = {
           views_count: number
         }[]
       }
+      platform_stats: {
+        Args: never
+        Returns: {
+          active_categories: number
+          active_shops: number
+          total_listings: number
+          verified_vendors: number
+        }[]
+      }
       redeem_admin_code: { Args: { _code: string }; Returns: boolean }
       renew_listing: { Args: { _listing_id: string }; Returns: string }
       set_vanity_slug: { Args: { _slug: string }; Returns: string }
@@ -773,6 +803,19 @@ export type Database = {
         Returns: {
           phone: string
           whatsapp: string
+        }[]
+      }
+      top_vendors: {
+        Args: { _limit?: number }
+        Returns: {
+          active_listings: number
+          avatar_url: string
+          business_name: string
+          full_name: string
+          id: string
+          is_verified: boolean
+          shop_slug: string
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
         }[]
       }
       topup_wallet: {
