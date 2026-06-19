@@ -12,13 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as Icons from "lucide-react";
 import { z } from "zod";
-import { toast } from "sonner";
+
+const NIGERIAN_STATES = [
+  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
+  "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT - Abuja","Gombe",
+  "Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos",
+  "Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto",
+  "Taraba","Yobe","Zamfara",
+];
 
 const searchSchema = z.object({
   q: z.string().optional(),
-  state: z.string().optional(),
-  city: z.string().optional(),
-  lga: z.string().optional(),
+  loc: z.string().optional(),
   cat: z.string().optional(),
 });
 type Search = z.infer<typeof searchSchema>;
@@ -44,94 +49,24 @@ type ProfileRow = { id: string; subscription_tier: string | null; is_verified: b
 
 function Index() {
   const navigate = useNavigate({ from: "/" });
-  const { q, state, city, lga, cat } = Route.useSearch();
+  const { q, loc, cat } = Route.useSearch();
 
   const [searchInput, setSearchInput] = useState(q ?? "");
-  const [selectedState, setSelectedState] = useState(state ?? "all");
-  const [selectedCity, setSelectedCity] = useState(city ?? "all");
-  const [selectedLga, setSelectedLga] = useState(lga ?? "all");
-  
-  const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-
+  const [selectedLocation, setSelectedLocation] = useState(loc ?? "all");
   const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
   const [sortBy, setSortBy] = useState<string>("newest");
-  const [visibleCount, setVisibleCount] = useState(12);
 
-  // Dynamic States Selection
-  const { data: dbStates = [] } = useQuery({
-    queryKey: ["states-list"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("states").select("*").order("name");
-      if (error) throw error;
-      return data ?? [];
-    }
-  });
-
-  // Dynamic Cities Selection based on State
-  const { data: dbCities = [] } = useQuery({
-    queryKey: ["cities-list", selectedState],
-    enabled: selectedState !== "all",
-    queryFn: async () => {
-      const { data, error } = await supabase.from("cities").select("*").eq("state_id", selectedState).order("name");
-      if (error) throw error;
-      return data ?? [];
-    }
-  });
-
-  // Find Nearest Coordinates Function
-  const findNearMe = () => {
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        setUserCoords({ lat, lon });
-        setIsLocating(false);
-        toast.success("Location acquired! Displaying nearby listings.");
-      },
-      () => {
-        setIsLocating(false);
-        toast.error("Unable to access your current location.");
-      }
-    );
-  };
-
-  // Main Listings Query incorporating direct Spatial RPC or typical filters
   const { data: listings = [], isLoading } = useQuery({
-    queryKey: ["listings", { q, state, city, lga, cat, userCoords }],
+    queryKey: ["listings", { q, loc, cat }],
     queryFn: async () => {
-      if (userCoords) {
-        const { data, error } = await supabase.rpc("nearby_listings", {
-          lat: userCoords.lat,
-          lon: userCoords.lon,
-          max_dist_km: 50
-        });
-        if (error) throw error;
-
-        const rows = (data ?? []) as Array<ListingCardData & { user_id: string; created_at: string; distance_km?: number }>;
-        const ids = Array.from(new Set(rows.map((r) => r.user_id))).filter(Boolean);
-        if (!ids.length) return rows;
-
-        const { data: profs } = await supabase.from("public_profiles").select("id,subscription_tier,is_verified").in("id", ids);
-        const map = new Map(((profs ?? []) as ProfileRow[]).map((p) => [p.id, p]));
-        return rows.map((r) => ({
-          ...r,
-          seller_tier: map.get(r.user_id)?.subscription_tier ?? null,
-          seller_verified: map.get(r.user_id)?.is_verified ?? null,
-        }));
-      }
-
       let qb = supabase
         .from("listings")
-        .select("id,title,price,type,location,state,city,lga,images,is_promoted,category,description,views_count,clicks_count,user_id,created_at")
+        .select("id,title,price,type,location,images,is_promoted,category,description,views_count,clicks_count,user_id,created_at")
         .eq("status", "approved")
         .limit(120);
 
       if (q) qb = qb.or(`title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`);
-      if (state && state !== "all") qb = qb.eq("state", state);
-      if (city && city !== "all") qb = qb.eq("city", city);
-      if (lga && lga !== "all") qb = qb.eq("lga", lga);
+      if (loc && loc !== "all") qb = qb.eq("location", loc);
       if (cat) qb = qb.eq("category", cat);
 
       const { data, error } = await qb;
@@ -141,7 +76,10 @@ function Index() {
       const ids = Array.from(new Set(rows.map((r) => r.user_id))).filter(Boolean);
       if (!ids.length) return rows;
 
-      const { data: profs } = await supabase.from("public_profiles").select("id,subscription_tier,is_verified").in("id", ids);
+      const { data: profs } = await supabase
+        .from("public_profiles")
+        .select("id,subscription_tier,is_verified")
+        .in("id", ids);
       const map = new Map(((profs ?? []) as ProfileRow[]).map((p) => [p.id, p]));
       return rows.map((r) => ({
         ...r,
@@ -188,14 +126,11 @@ function Index() {
 
   const executeSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setUserCoords(null); // Clear proximity overrides upon custom searching
     navigate({
       search: (prev: Search) => ({
         ...prev,
         q: searchInput || undefined,
-        state: selectedState !== "all" ? selectedState : undefined,
-        city: selectedCity !== "all" ? selectedCity : undefined,
-        lga: selectedLga !== "all" ? selectedLga : undefined,
+        loc: selectedLocation !== "all" ? selectedLocation : undefined,
       }),
     });
   };
@@ -215,17 +150,13 @@ function Index() {
     });
   }, [listings, activeTab, sortBy]);
 
-  const pagedListings = useMemo(() => {
-    return processedListings.slice(0, visibleCount);
-  }, [processedListings, visibleCount]);
-
   return (
     <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
       <div>
         <SiteHeader />
 
         {/* HERO */}
-        <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground overflow-hidden py-6 md:py-20">
+        <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground overflow-hidden py-14 md:py-20">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
           <div className="container mx-auto px-4 text-center max-w-4xl relative z-10 space-y-6">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">Buy, Sell &amp; Hire Across Nigeria</h1>
@@ -240,23 +171,18 @@ function Index() {
               </div>
               <div className="flex items-center gap-2 px-2 w-full md:w-48 border-b md:border-b-0 md:border-r pb-2 md:pb-0">
                 <Icons.MapPin className="h-5 w-5 text-primary shrink-0" />
-                <select value={selectedState} onChange={(e) => { setSelectedState(e.target.value); setSelectedCity("all"); setSelectedLga("all"); }} className="w-full bg-transparent text-sm font-medium outline-none cursor-pointer py-2">
+                <select value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)} className="w-full bg-transparent text-sm font-medium outline-none cursor-pointer py-2">
                   <option value="all">All States</option>
-                  {dbStates.map((s: any) => <option key={s.id || s.name} value={s.name}>{s.name}</option>)}
+                  {NIGERIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <div className="flex w-full md:w-auto gap-2">
-                <Button type="button" variant="secondary" onClick={findNearMe} disabled={isLocating} className="shrink-0 font-bold">
-                  {isLocating ? <Icons.Loader2 className="h-4 w-4 animate-spin" /> : "📍 Near Me"}
-                </Button>
-                <Button type="submit" className="w-full md:w-auto bg-accent text-accent-foreground font-bold px-6 py-2 rounded-xl shrink-0">Search</Button>
-              </div>
+              <Button type="submit" className="w-full md:w-auto bg-accent text-accent-foreground font-bold px-6 py-2 rounded-xl shrink-0">Search</Button>
             </form>
 
             {quickCategories.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2 overflow-x-auto pb-2 scrollbar-none snap-x md:overflow-visible md:pb-0">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                 {quickCategories.slice(0, 6).map((c) => (
-                  <Link key={c.slug} to="/" search={{ cat: c.slug }} className="snap-start shrink-0 text-xs font-semibold bg-primary-foreground/10 hover:bg-primary-foreground/20 px-3 py-1.5 rounded-full transition whitespace-nowrap">
+                  <Link key={c.slug} to="/" search={{ cat: c.slug }} className="text-xs font-semibold bg-primary-foreground/10 hover:bg-primary-foreground/20 px-3 py-1.5 rounded-full transition">
                     {c.label}
                   </Link>
                 ))}
@@ -288,7 +214,7 @@ function Index() {
           </div>
         </section>
 
-        {/* QUICK CATEGORIES Swipe Layout */}
+        {/* QUICK CATEGORIES (horizontal scroll, real counts) */}
         {quickCategories.length > 0 && (
           <section className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-3">
@@ -320,7 +246,7 @@ function Index() {
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <Icons.Flame className="h-4 w-4 text-orange-500" /> Trending Categories
                 </h3>
-                <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+                <div className="space-y-2">
                   {trendingCategories.map((tc) => {
                     const Ic = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tc.icon] ?? Icons.Tag;
                     return (
@@ -345,9 +271,9 @@ function Index() {
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                   <Icons.Award className="h-4 w-4 text-accent" /> Top Verified Vendors
                 </h3>
-                <div className="flex gap-4 overflow-x-auto pb-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-x-visible snap-x">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {vendors.map((v) => (
-                    <Link key={v.id} to="/shop/$slug" params={{ slug: v.shop_slug ?? "" }} className="snap-start shrink-0 min-w-[240px] sm:min-w-0 p-4 bg-background border rounded-xl shadow-sm hover:shadow-md transition flex items-center gap-4 group">
+                    <Link key={v.id} to="/shop/$slug" params={{ slug: v.shop_slug ?? "" }} className="p-4 bg-background border rounded-xl shadow-sm hover:shadow-md transition flex items-center gap-4 group">
                       <div className="h-12 w-12 bg-primary/10 rounded-xl grid place-items-center overflow-hidden">
                         {v.avatar_url ? <img src={v.avatar_url} alt="" className="w-full h-full object-cover" /> : <Icons.Store className="h-5 w-5 text-primary" />}
                       </div>
@@ -400,38 +326,18 @@ function Index() {
                 <Icons.Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-xs text-muted-foreground font-medium">Loading listings…</p>
               </div>
-            ) : pagedListings.length === 0 ? (
+            ) : processedListings.length === 0 ? (
               <div className="rounded-xl border border-dashed bg-background p-12 text-center max-w-xl mx-auto space-y-4 shadow-inner">
                 <div className="h-12 w-12 bg-muted rounded-full grid place-items-center mx-auto text-muted-foreground"><Icons.PackageX className="h-6 w-6" /></div>
                 <div>
                   <h3 className="text-sm font-bold">No listings match your filters</h3>
                   <p className="text-xs text-muted-foreground mt-1">Try adjusting your search or browse all categories.</p>
                 </div>
-                <Button onClick={() => { setSearchInput(""); setSelectedState("all"); setSelectedCity("all"); setSelectedLga("all"); setUserCoords(null); navigate({ search: {} }); }} size="sm">Browse all listings</Button>
+                <Button onClick={() => { setSearchInput(""); setSelectedLocation("all"); navigate({ search: {} }); }} size="sm">Browse all listings</Button>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {pagedListings.map((l: any) => (
-                    <div key={l.id} className="relative">
-                      <ListingCard l={l} />
-                      {l.distance_km !== undefined && (
-                        <div className="absolute top-2 left-2 z-10">
-                          <Badge variant="secondary" className="text-[10px] font-bold bg-background/90 backdrop-blur-xs shadow-xs text-foreground">
-                            📍 {l.distance_km.toFixed(1)} km away
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {processedListings.length > visibleCount && (
-                  <div className="flex justify-center pt-2">
-                    <Button variant="outline" size="sm" onClick={() => setVisibleCount((prev) => prev + 12)} className="font-bold px-6">
-                      Load More Listings
-                    </Button>
-                  </div>
-                )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {processedListings.map((l) => <ListingCard key={l.id} l={l} />)}
               </div>
             )}
           </div>
