@@ -78,7 +78,8 @@ function Index() {
   const [verifiedOnly, setVerifiedOnly] = useState(filters.verifiedOnly ?? "false");
   const [offersDelivery, setOffersDelivery] = useState(filters.offersDelivery ?? "false");
 
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured")("all");
+  // Fixed the parenthesis syntax typo here:
+  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
   const [sortBy, setSortBy] = useState<string>("recommended");
   const [isLocating, setIsLocating] = useState(false);
 
