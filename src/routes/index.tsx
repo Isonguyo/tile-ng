@@ -67,7 +67,9 @@ function Index() {
   const queryClient = useQueryClient();
   const { ref, inView } = useInView({ threshold: 0.1 });
 
+  // Shared state lifted for SiteHeader & Hero Search synchronization
   const [searchInput, setSearchInput] = useState(filters.q ?? "");
+  
   const [selectedState, setSelectedState] = useState(filters.stateId ?? "all");
   const [selectedCity, setSelectedCity] = useState(filters.cityId ?? "all");
   const [selectedLga, setSelectedLga] = useState(filters.lgaId ?? "all");
@@ -77,9 +79,7 @@ function Index() {
   const [verifiedOnly, setVerifiedOnly] = useState(filters.verifiedOnly ?? "false");
   const [offersDelivery, setOffersDelivery] = useState(filters.offersDelivery ?? "false");
 
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">(
-    (filters.condition || filters.verifiedOnly || filters.offersDelivery) ? "all" : "all"
-  );
+  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
   const [sortBy, setSortBy] = useState<string>("recommended");
   const [isLocating, setIsLocating] = useState(false);
 
@@ -87,7 +87,14 @@ function Index() {
   const debouncedMinPrice = useDebounce(minPrice, 400);
   const debouncedMaxPrice = useDebounce(maxPrice, 400);
 
-  // Real-time Database Subscription Sync
+  // Sync state back if URL search parameters change externally
+  useEffect(() => {
+    if (filters.q !== undefined && filters.q !== searchInput) {
+      setSearchInput(filters.q);
+    }
+  }, [filters.q]);
+
+  // Real-time Feed Live Subscriptions
   useEffect(() => {
     const channel = supabase
       .channel("live-listings-feed")
@@ -99,7 +106,7 @@ function Index() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // Dynamic Geography Queries with Caching
+  // Normalized Location Cascading Lookups
   const { data: states = [] } = useQuery({
     queryKey: ["states"],
     queryFn: async () => {
@@ -146,7 +153,7 @@ function Index() {
   useEffect(() => { setSelectedCity("all"); setSelectedLga("all"); }, [selectedState]);
   useEffect(() => { setSelectedLga("all"); }, [selectedCity]);
 
-  // Live Query Metric Synchronization
+  // Push State Filters to Router Search Query Parameters
   useEffect(() => {
     navigate({
       search: () => ({
@@ -164,7 +171,7 @@ function Index() {
     });
   }, [debouncedSearch, selectedState, selectedCity, selectedLga, debouncedMinPrice, debouncedMaxPrice, condition, verifiedOnly, offersDelivery]);
 
-  // Fetch Platform Metadata and Dynamic Statistics
+  // Analytics, Counts and Top Vendors Queries
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: async () => {
@@ -203,7 +210,7 @@ function Index() {
   );
   const trendingCategories = quickCategories.slice(0, 6);
 
-  // High-Performance Infinite Fetching Engine
+  // Pagination Engine utilizing Database Indexes and Text Searches
   const PAGE_SIZE = 20;
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: ["listings-infinite", filters, activeTab, sortBy],
@@ -240,7 +247,6 @@ function Index() {
         qb = qb.eq("public_profiles.is_verified", true);
       }
 
-      // Marketplace Sorting Matrix Placement
       qb = qb.order("is_promoted", { ascending: false });
       
       if (sortBy === "recommended") qb = qb.order("ranking_score", { ascending: false });
@@ -289,7 +295,8 @@ function Index() {
   return (
     <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
       <div>
-        <SiteHeader />
+        {/* Pass down shared state hooks to dynamically update header values */}
+        <SiteHeader searchInput={searchInput} setSearchInput={setSearchInput} />
 
         {/* HERO */}
         <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground overflow-hidden py-14 md:py-20">
@@ -346,7 +353,7 @@ function Index() {
           </div>
         </section>
 
-        {/* METADATA STATISTICS COUNTS BLOCK */}
+        {/* METADATA STATISTICS */}
         <section className="container mx-auto px-4 -mt-6 relative z-20">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -369,7 +376,7 @@ function Index() {
           </div>
         </section>
 
-        {/* HORIZONTAL QUICK CATEGORIES DISPLAY */}
+        {/* QUICK CATEGORIES CARDS ROW */}
         {quickCategories.length > 0 && (
           <section className="container mx-auto px-4 pt-8 pb-4">
             <div className="flex items-center justify-between mb-3">
@@ -393,10 +400,9 @@ function Index() {
           </section>
         )}
 
-        {/* MATRIX DUAL-PANEL VIEWPORT */}
+        {/* FILTERS & FEED PANEL GRID */}
         <section className="container mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          {/* SIDEBAR COMPONENT BLOCK */}
           <aside className="space-y-6 lg:col-span-1">
             <Card className="p-4 bg-background border shadow-sm space-y-5 h-fit">
               <div>
@@ -441,7 +447,7 @@ function Index() {
               </div>
             </Card>
 
-            {/* TRENDING CATEGORIES MINI CARD ASIDE */}
+            {/* TRENDING SIDEBAR */}
             {trendingCategories.length > 0 && (
               <Card className="p-4 bg-background border shadow-sm space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -465,10 +471,10 @@ function Index() {
             )}
           </aside>
 
-          {/* MAIN LISTINGS RENDER PLATFORM */}
+          {/* MAIN COLUMN */}
           <div className="lg:col-span-3 space-y-6">
             
-            {/* TOP VERIFIED VENDORS INTERFACE */}
+            {/* TOP VENDORS */}
             {vendors.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -498,7 +504,7 @@ function Index() {
               </div>
             )}
 
-            {/* FEED SORTING CONTROL BAR */}
+            {/* CONTROL BAR */}
             <div className="bg-background p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
               <div className="flex flex-col sm:flex-row items-baseline sm:gap-3 w-full sm:w-auto">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full sm:w-auto">
@@ -547,7 +553,7 @@ function Index() {
                   {processedListings.map((l: any) => <ListingCard key={l.id} l={l} />)}
                 </div>
                 
-                {/* INFINITE SCROLL OBSERVABLE ANCHOR ELEMENT */}
+                {/* INFINITE SCROLL OBSERVABLE ELEMENT */}
                 <div ref={ref} className="flex justify-center py-4 min-h-[40px]">
                   {isFetchingNextPage && (
                     <Icons.Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -559,7 +565,7 @@ function Index() {
         </section>
       </div>
 
-      {/* FOOTER MARKETPLACE BRAND INTERFACE */}
+      {/* FOOTER */}
       <footer className="bg-primary text-primary-foreground/80 mt-16 border-t border-primary-foreground/10">
         <div className="container mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
           <div className="space-y-3 col-span-2 md:col-span-1">
