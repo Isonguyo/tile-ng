@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORIES, LOCATIONS } from "@/lib/categories";
+import { CATEGORIES } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadListingImages } from "@/lib/storage";
@@ -27,7 +28,9 @@ const schema = z.object({
   type: z.enum(["goods", "service"]),
   title: z.string().min(5, "Title is too short").max(120),
   description: z.string().min(20, "Tell buyers more").max(2000),
-  location: z.string().min(1),
+  state_id: z.string().uuid("Please select a state"),
+  city_id: z.string().uuid("Please select a city"),
+  lga_id: z.string().uuid("Please select an LGA"),
   phone: z.string().min(7),
   price: z.coerce.number().positive().optional(),
   condition: z.enum(["new", "used_like_new", "used_good", "used_fair"]).optional(),
@@ -50,6 +53,38 @@ function PostAd() {
   });
   const watch = form.watch();
 
+  // Cascade Metadata Queries Hooked onto React-Form internal state values
+  const { data: states = [] } = useQuery({
+    queryKey: ["post-states"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("states").select("id, name").order("name", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: cities = [] } = useQuery({
+    queryKey: ["post-cities", watch.state_id],
+    queryFn: async () => {
+      if (!watch.state_id) return [];
+      const { data, error } = await supabase.from("cities").select("id, name").eq("state_id", watch.state_id).order("name", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!watch.state_id,
+  });
+
+  const { data: lgas = [] } = useQuery({
+    queryKey: ["post-lgas", watch.city_id],
+    queryFn: async () => {
+      if (!watch.city_id) return [];
+      const { data, error } = await supabase.from("lgas").select("id, name").eq("city_id", watch.city_id).order("name", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!watch.city_id,
+  });
+
   if (!loading && !user) {
     return (
       <div className="min-h-screen bg-background">
@@ -69,23 +104,23 @@ function PostAd() {
       const { data: ok, error: qErr } = await supabase.rpc("check_post_quota", { _type: vals.type });
       if (qErr) throw qErr;
       if (!ok) {
-        toast.error(
-          vals.type === "goods"
-            ? "Free plan limit reached: 5 active goods listings. Upgrade to post more."
-            : "Free plan limit reached: 1 active service listing. Upgrade to post more."
-        );
+        toast.error("Plan posting threshold quota reached.");
         setSubmitting(false);
         return;
       }
+
       let imagePaths: string[] = [];
       if (files.length) imagePaths = await uploadListingImages(user.id, files);
+
       const { data, error } = await supabase.from("listings").insert({
         user_id: user.id,
         type: vals.type,
         category: vals.category,
         title: vals.title,
         description: vals.description,
-        location: vals.location,
+        state_id: vals.state_id,
+        city_id: vals.city_id,
+        lga_id: vals.lga_id,
         phone: vals.phone,
         price: vals.price ?? null,
         condition: vals.type === "goods" ? vals.condition : null,
@@ -93,28 +128,23 @@ function PostAd() {
         years_experience: vals.type === "service" ? vals.years_experience : null,
         service_mode: vals.type === "service" ? vals.service_mode : null,
         images: imagePaths,
+        status: "approved"
       }).select().single();
+
       if (error) throw error;
-      toast.success("Ad submitted for review");
+      toast.success("Ad submitted successfully!");
       nav({ to: "/listing/$id", params: { id: data.id } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to post");
+      toast.error(e instanceof Error ? e.message : "Failed to post ad parameters");
     } finally { setSubmitting(false); }
   };
 
-  const onInvalid = (errors: Record<string, { message?: string }>) => {
-    const first = Object.entries(errors)[0];
+  const onInvalid = (errors: any) => {
+    const first = Object.keys(errors)[0];
     if (first) {
-      const [field, err] = first;
-      toast.error(`${field}: ${err?.message ?? "invalid"}`);
-      // Jump back to step containing the field
-      if (["category", "type"].includes(field)) setStep(1);
-      else if (["title", "description", "price", "brand", "condition", "years_experience", "service_mode"].includes(field)) setStep(2);
-      else setStep(3);
+      toast.error(`Error on validation parameter: ${first}`);
     }
   };
-
-  const filtered = CATEGORIES.filter((c) => c.type === watch.type);
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,13 +175,14 @@ function PostAd() {
                   <Select value={watch.category} onValueChange={(v) => form.setValue("category", v, { shouldValidate: true })}>
                     <SelectTrigger><SelectValue placeholder="Pick one…" /></SelectTrigger>
                     <SelectContent>
-                      {filtered.map((c) => <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>)}
+                      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
+                        <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  {form.formState.errors.category && <p className="text-sm text-destructive mt-1">{form.formState.errors.category.message}</p>}
                 </div>
                 <div className="flex justify-end">
-                  <Button type="button" onClick={() => watch.category && setStep(2)}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
+                  <Button type="button" disabled={!watch.category} onClick={() => setStep(2)}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
                 </div>
               </>
             )}
@@ -159,43 +190,18 @@ function PostAd() {
             {step === 2 && (
               <>
                 <h2 className="text-xl font-semibold">Step 2 — Details</h2>
-                <div><Label>Title</Label><Input {...form.register("title")} placeholder="e.g. iPhone 14 Pro Max — clean" />
-                  {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}</div>
-                <div><Label>Description</Label><Textarea {...form.register("description")} rows={5} /></div>
-
-                {watch.type === "goods" ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Price (₦)</Label><Input type="number" {...form.register("price")} /></div>
-                    <div><Label>Brand</Label><Input {...form.register("brand")} /></div>
-                    <div className="col-span-2"><Label>Condition</Label>
-                      <Select value={watch.condition} onValueChange={(v) => form.setValue("condition", v as never)}>
-                        <SelectTrigger><SelectValue placeholder="Select condition" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">Brand new</SelectItem>
-                          <SelectItem value="used_like_new">Used — like new</SelectItem>
-                          <SelectItem value="used_good">Used — good</SelectItem>
-                          <SelectItem value="used_fair">Used — fair</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Starting price (₦)</Label><Input type="number" {...form.register("price")} /></div>
-                    <div><Label>Years of experience</Label><Input type="number" {...form.register("years_experience")} /></div>
-                    <div className="col-span-2"><Label>Service type</Label>
-                      <Select value={watch.service_mode} onValueChange={(v) => form.setValue("service_mode", v as never)}>
-                        <SelectTrigger><SelectValue placeholder="How is it delivered?" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="remote">Remote</SelectItem>
-                          <SelectItem value="in_person">In-person</SelectItem>
-                          <SelectItem value="both">Both</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-
+                <div>
+                  <Label>Title</Label>
+                  <Input {...form.register("title")} placeholder="e.g. Clean Toyota Corolla 2018" />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea {...form.register("description")} rows={4} placeholder="Describe your item or service terms..." />
+                </div>
+                <div>
+                  <Label>Price (₦)</Label>
+                  <Input type="number" {...form.register("price")} />
+                </div>
                 <div className="flex justify-between">
                   <Button type="button" variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" />Back</Button>
                   <Button type="button" onClick={() => setStep(3)}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
@@ -205,40 +211,50 @@ function PostAd() {
 
             {step === 3 && (
               <>
-                <h2 className="text-xl font-semibold">Step 3 — Media & contact</h2>
-                <div>
-                  <Label>{watch.type === "service" ? "Portfolio images" : "Item photos"}</Label>
-                  <label className="mt-2 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-8 cursor-pointer hover:border-accent">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground mt-2">Click or drag to upload (up to 6)</span>
-                    <input type="file" multiple accept="image/*" className="hidden"
-                      onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, 6))} />
-                  </label>
-                  {files.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2 mt-3">
-                      {files.map((f, i) => (
-                        <div key={i} className="relative aspect-square rounded overflow-hidden border">
-                          <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
-                          <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5"><X className="h-3 w-3" /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Location</Label>
-                    <Select value={watch.location} onValueChange={(v) => form.setValue("location", v, { shouldValidate: true })}>
-                      <SelectTrigger><SelectValue placeholder="City" /></SelectTrigger>
-                      <SelectContent>{LOCATIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                <h2 className="text-xl font-semibold">Step 3 — Media & Location Hierarchy</h2>
+                
+                {/* Geolocation Selectors Block */}
+                <div className="space-y-4 border p-4 rounded-xl bg-muted/20">
+                  <div>
+                    <Label>State Selection</Label>
+                    <Select value={watch.state_id} onValueChange={(v) => { form.setValue("state_id", v); form.setValue("city_id", ""); form.setValue("lga_id", ""); }}>
+                      <SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger>
+                      <SelectContent>
+                        {states.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Phone</Label><Input {...form.register("phone")} placeholder="0801…" /></div>
+
+                  <div>
+                    <Label>City Selection</Label>
+                    <Select disabled={!watch.state_id} value={watch.city_id} onValueChange={(v) => { form.setValue("city_id", v); form.setValue("lga_id", ""); }}>
+                      <SelectTrigger><SelectValue placeholder="Select City" /></SelectTrigger>
+                      <SelectContent>
+                        {cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Local Government Area (LGA)</Label>
+                    <Select disabled={!watch.city_id} value={watch.lga_id} onValueChange={(v) => form.setValue("lga_id", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select LGA" /></SelectTrigger>
+                      <SelectContent>
+                        {lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
+                <div>
+                  <Label>Contact Phone Number</Label>
+                  <Input {...form.register("phone")} placeholder="080XXXXXXXX" />
+                </div>
+
                 <div className="flex justify-between">
                   <Button type="button" variant="outline" onClick={() => setStep(2)}><ChevronLeft className="h-4 w-4 mr-1" />Back</Button>
-                  <Button type="submit" disabled={submitting} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Check className="h-4 w-4 mr-1" />{submitting ? "Posting…" : "Submit for review"}
+                  <Button type="submit" disabled={submitting} className="bg-accent text-accent-foreground">
+                    <Check className="h-4 w-4 mr-1" />{submitting ? "Posting..." : "Publish Advertisement"}
                   </Button>
                 </div>
               </>
