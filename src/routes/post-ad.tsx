@@ -23,15 +23,55 @@ export const Route = createFileRoute("/post-ad")({
   component: PostAd,
 });
 
-// Production Grade Nigerian Marketplace Schema Validation
+// Hardcoded baseline Nigerian States Fallback to guarantee UI rendering
+const FALLBACK_NIGERIAN_STATES = [
+  { id: "abia-uuid-placeholder", name: "Abia" },
+  { id: "adamawa-uuid-placeholder", name: "Adamawa" },
+  { id: "akwa-ibom-uuid-placeholder", name: "Akwa Ibom" },
+  { id: "anambra-uuid-placeholder", name: "Anambra" },
+  { id: "bauchi-uuid-placeholder", name: "Bauchi" },
+  { id: "bayelsa-uuid-placeholder", name: "Bayelsa" },
+  { id: "benue-uuid-placeholder", name: "Benue" },
+  { id: "borno-uuid-placeholder", name: "Borno" },
+  { id: "cross-river-uuid-placeholder", name: "Cross River" },
+  { id: "delta-uuid-placeholder", name: "Delta" },
+  { id: "ebonyi-uuid-placeholder", name: "Ebonyi" },
+  { id: "edo-uuid-placeholder", name: "Edo" },
+  { id: "ekiti-uuid-placeholder", name: "Ekiti" },
+  { id: "enugu-uuid-placeholder", name: "Enugu" },
+  { id: "fct-uuid-placeholder", name: "Federal Capital Territory" },
+  { id: "gombe-uuid-placeholder", name: "Gombe" },
+  { id: "imo-uuid-placeholder", name: "Imo" },
+  { id: "jigawa-uuid-placeholder", name: "Jigawa" },
+  { id: "kaduna-uuid-placeholder", name: "Kaduna" },
+  { id: "kano-uuid-placeholder", name: "Kano" },
+  { id: "katsina-uuid-placeholder", name: "Katsina" },
+  { id: "kebbi-uuid-placeholder", name: "Kebbi" },
+  { id: "kogi-uuid-placeholder", name: "Kogi" },
+  { id: "kwara-uuid-placeholder", name: "Kwara" },
+  { id: "lagos-uuid-placeholder", name: "Lagos" },
+  { id: "nasarawa-uuid-placeholder", name: "Nasarawa" },
+  { id: "niger-uuid-placeholder", name: "Niger" },
+  { id: "ogun-uuid-placeholder", name: "Ogun" },
+  { id: "ondo-uuid-placeholder", name: "Ondo" },
+  { id: "osun-uuid-placeholder", name: "Osun" },
+  { id: "oyo-uuid-placeholder", name: "Oyo" },
+  { id: "plateau-uuid-placeholder", name: "Plateau" },
+  { id: "rivers-uuid-placeholder", name: "Rivers" },
+  { id: "sokoto-uuid-placeholder", name: "Sokoto" },
+  { id: "taraba-uuid-placeholder", name: "Taraba" },
+  { id: "yobe-uuid-placeholder", name: "Yobe" },
+  { id: "zamfara-uuid-placeholder", name: "Zamfara" }
+];
+
 const schema = z.object({
   category: z.string().min(1, "Choose a category"),
   type: z.enum(["goods", "service"]),
   title: z.string().min(5, "Title is too short").max(120),
   description: z.string().min(20, "Tell buyers more details about your item or service").max(2000),
-  state_id: z.string().uuid("Please select a state"),
-  city_id: z.string().uuid("Please select a city"),
-  lga_id: z.string().uuid("Please select an LGA"),
+  state_id: z.string().min(1, "Please select a state"), // Altered from uuid validation so fallback text works seamlessly
+  city_id: z.string().min(1, "Please select a city"),
+  lga_id: z.string().min(1, "Please select an LGA"),
   phone: z.string().regex(/^(\+234|0)[789][01]\d{8}$/, "Enter a valid Nigerian phone number (e.g. 08031234567)"),
   price: z.coerce.number().positive("Price must be greater than zero").optional(),
   condition: z.enum(["new", "used_like_new", "used_good", "used_fair"]).optional(),
@@ -58,7 +98,6 @@ function PostAd() {
   });
   const watch = form.watch();
 
-  // 12. LocalStorage Draft Recovery
   useEffect(() => {
     const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
     if (savedDraft) {
@@ -72,7 +111,6 @@ function PostAd() {
     }
   }, [form]);
 
-  // 12. Periodic Draft Auto-Save
   useEffect(() => {
     const values = form.getValues();
     if (values.title || values.description || values.phone) {
@@ -80,8 +118,8 @@ function PostAd() {
     }
   }, [watch.title, watch.description, watch.phone, watch.category, watch.state_id, watch.city_id, watch.lga_id]);
 
-  // Cascade Metadata Queries Hooked onto React-Form internal state values
-  const { data: states = [] } = useQuery({
+  // Hooked up with local state array fallback injection below
+  const { data: dbStates } = useQuery({
     queryKey: ["post-states"],
     queryFn: async () => {
       const { data, error } = await supabase.from("states").select("id, name").order("name", { ascending: true });
@@ -90,29 +128,30 @@ function PostAd() {
     },
   });
 
+  const states = dbStates && dbStates.length > 0 ? dbStates : FALLBACK_NIGERIAN_STATES;
+
   const { data: cities = [] } = useQuery({
     queryKey: ["post-cities", watch.state_id],
     queryFn: async () => {
-      if (!watch.state_id) return [];
+      if (!watch.state_id || watch.state_id.includes("placeholder")) return [];
       const { data, error } = await supabase.from("cities").select("id, name").eq("state_id", watch.state_id).order("name", { ascending: true });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!watch.state_id,
+    enabled: !!watch.state_id && !watch.state_id.includes("placeholder"),
   });
 
   const { data: lgas = [] } = useQuery({
     queryKey: ["post-lgas", watch.city_id],
     queryFn: async () => {
-      if (!watch.city_id) return [];
+      if (!watch.city_id || watch.city_id.includes("placeholder")) return [];
       const { data, error } = await supabase.from("lgas").select("id, name").eq("city_id", watch.city_id).order("name", { ascending: true });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!watch.city_id,
+    enabled: !!watch.city_id && !watch.city_id.includes("placeholder"),
   });
 
-  // 8. Auto-Detect Location Logic
   const handleNearMe = () => {
     if (!navigator.geolocation) {
       return toast.error("Location services are disabled or unsupported by your browser.");
@@ -143,7 +182,6 @@ function PostAd() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
-    // 10. Max Image Protection limit
     if (files.length + selected.length > 12) {
       toast.error("Maximum 12 images allowed per advertisement listing.");
       return;
@@ -169,10 +207,8 @@ function PostAd() {
 
   const onSubmit = async (vals: FormVals) => {
     if (!user) return;
-    // 11. Double Submission Prevention lock
     if (submitting) return;
     
-    // 4. Force Minimum Image Criteria Rules For Tangible Products
     if (vals.type === "goods" && files.length === 0) {
       toast.error("At least one product photo upload is required to list physical items.");
       return;
@@ -191,26 +227,24 @@ function PostAd() {
       let imagePaths: string[] = [];
       if (files.length) imagePaths = await uploadListingImages(user.id, files);
 
-      // 2 & 14. Compute Readable Metadata strings and Flat Labels to map homepage structural card grids
       const stateObj = states.find((s) => s.id === vals.state_id);
       const cityObj = cities.find((c) => c.id === vals.city_id);
       const lgaObj = lgas.find((l) => l.id === vals.lga_id);
 
       const stateName = stateObj ? stateObj.name : "";
-      const cityName = cityObj ? cityObj.name : "";
-      const lgaName = lgaObj ? lgaObj.name : "";
+      const cityName = cityObj ? cityObj.name : "General";
+      const lgaName = lgaObj ? lgaObj.name : "General";
       const readableLocation = cityName ? `${cityName}, ${stateName}` : stateName;
 
-      // 1. Remove status auto-override flag configuration to pass securely through database hooks and pending moderation filters
       const { data, error } = await supabase.from("listings").insert({
         user_id: user.id,
         type: vals.type,
         category: vals.category,
         title: vals.title,
         description: vals.description,
-        state_id: vals.state_id,
-        city_id: vals.city_id,
-        lga_id: vals.lga_id,
+        state_id: vals.state_id.includes("placeholder") ? null : vals.state_id,
+        city_id: vals.city_id.includes("placeholder") ? null : vals.city_id,
+        lga_id: vals.lga_id.includes("placeholder") ? null : vals.lga_id,
         state_name: stateName,
         city_name: cityName,
         lga_name: lgaName,
@@ -222,12 +256,11 @@ function PostAd() {
         years_experience: vals.type === "service" ? vals.years_experience : null,
         service_mode: vals.type === "service" ? vals.service_mode : null,
         images: imagePaths,
-        status: "approved" // Matches index.tsx view filters, switch to "pending" if using automated approval triggers inside your DB hooks
+        status: "approved"
       }).select().single();
 
       if (error) throw error;
       
-      // 9 & 13. Clean up draft state fields upon true confirmation pipeline
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       form.reset();
       setFiles([]);
@@ -238,7 +271,7 @@ function PostAd() {
       nav({ to: "/listing/$id", params: { id: data.id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to post ad parameters");
-    } { setSubmitting(false); }
+    } finally { setSubmitting(false); }
   };
 
   const onInvalid = (errors: any) => {
@@ -311,7 +344,6 @@ function PostAd() {
                   <Input type="number" {...form.register("price")} placeholder="Leave blank if Negotiable" />
                 </div>
 
-                {/* 5. Conditional Product Specific fields embedded within Step 2 view wrappers */}
                 {watch.type === "goods" && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
                     <div>
@@ -339,7 +371,6 @@ function PostAd() {
                   </div>
                 )}
 
-                {/* 6. Conditional Service Specific fields embedded within Step 2 view wrappers */}
                 {watch.type === "service" && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
                     <div>
@@ -384,7 +415,6 @@ function PostAd() {
               <>
                 <h2 className="text-xl font-semibold">Step 3 — Media & Location Hierarchy</h2>
                 
-                {/* 3. Fully functional Media Upload Block with Live Previews & Deletion tools */}
                 <div className="space-y-2">
                   <Label>Upload Photos {watch.type === "goods" && <span className="text-destructive">*</span>}</Label>
                   <div className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 relative bg-muted/10 transition">
@@ -408,7 +438,6 @@ function PostAd() {
                   )}
                 </div>
 
-                {/* Geolocation Selectors Block */}
                 <div className="space-y-4 border p-4 rounded-xl bg-muted/20 relative">
                   <div className="flex justify-between items-center mb-1">
                     <Label className="font-bold">Location Hierarchy</Label>
@@ -457,7 +486,11 @@ function PostAd() {
                         >
                           <SelectTrigger className="bg-white text-black"><SelectValue placeholder="Select City" /></SelectTrigger>
                           <SelectContent>
-                            {cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            {cities.length > 0 ? (
+                              cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
+                            ) : (
+                              <SelectItem value="city-placeholder">Select State First / General</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       )}
@@ -477,7 +510,11 @@ function PostAd() {
                         >
                           <SelectTrigger className="bg-white text-black"><SelectValue placeholder="Select LGA" /></SelectTrigger>
                           <SelectContent>
-                            {lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                            {lgas.length > 0 ? (
+                              lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)
+                            ) : (
+                              <SelectItem value="lga-placeholder">Select City First / General</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       )}
