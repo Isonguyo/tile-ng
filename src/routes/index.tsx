@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import * as Icons from "lucide-react";
 import { z } from "zod";
 
@@ -35,7 +36,6 @@ const searchSchema = z.object({
   verifiedOnly: z.string().optional(),
   offersDelivery: z.string().optional(),
 });
-type Search = z.infer<typeof searchSchema>;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -46,6 +46,7 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Buy, sell and hire across Nigeria with trusted local vendors." },
     ],
     links: [
+      { rel: "canonical", href: "https://tile.ng" },
       { rel: "icon", type: "image/png", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
       { rel: "apple-touch-icon", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
     ],
@@ -67,7 +68,7 @@ function Index() {
   const queryClient = useQueryClient();
   const { ref, inView } = useInView({ threshold: 0.1 });
 
-  // Shared state lifted for SiteHeader & Hero Search synchronization
+  // Dedicated single search state for the Hero area
   const [searchInput, setSearchInput] = useState(filters.q ?? "");
   
   const [selectedState, setSelectedState] = useState(filters.stateId ?? "all");
@@ -87,14 +88,13 @@ function Index() {
   const debouncedMinPrice = useDebounce(minPrice, 400);
   const debouncedMaxPrice = useDebounce(maxPrice, 400);
 
-  // Sync state back if URL search parameters change externally
   useEffect(() => {
     if (filters.q !== undefined && filters.q !== searchInput) {
       setSearchInput(filters.q);
     }
   }, [filters.q]);
 
-  // Real-time Feed Live Subscriptions
+  // Real-time Live Feed Subscriptions
   useEffect(() => {
     const channel = supabase
       .channel("live-listings-feed")
@@ -106,7 +106,7 @@ function Index() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // Normalized Location Cascading Lookups
+  // Cascading Location Lookups
   const { data: states = [] } = useQuery({
     queryKey: ["states"],
     queryFn: async () => {
@@ -153,7 +153,7 @@ function Index() {
   useEffect(() => { setSelectedCity("all"); setSelectedLga("all"); }, [selectedState]);
   useEffect(() => { setSelectedLga("all"); }, [selectedCity]);
 
-  // Push State Filters to Router Search Query Parameters
+  // Push Active Filters to URL Params
   useEffect(() => {
     navigate({
       search: () => ({
@@ -171,7 +171,7 @@ function Index() {
     });
   }, [debouncedSearch, selectedState, selectedCity, selectedLga, debouncedMinPrice, debouncedMaxPrice, condition, verifiedOnly, offersDelivery]);
 
-  // Analytics, Counts and Top Vendors Queries
+  // Performance Optimization: Platform Metrics & Categories Counts
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: async () => {
@@ -210,14 +210,14 @@ function Index() {
   );
   const trendingCategories = quickCategories.slice(0, 6);
 
-  // Pagination Engine utilizing Database Indexes and Text Searches
+  // Corrected Query Engine Structuring Compound Objects for Total Count Preservation
   const PAGE_SIZE = 20;
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: ["listings-infinite", filters, activeTab, sortBy],
     initialPageParam: 0,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
-    getNextPageParam: (lastPage, allPages) => (lastPage.length === PAGE_SIZE ? allPages.length : undefined),
+    getNextPageParam: (lastPage, allPages) => (lastPage.listings.length === PAGE_SIZE ? allPages.length : undefined),
     queryFn: async ({ pageParam = 0 }) => {
       const profileSelect = filters.verifiedOnly === "true" ? "public_profiles!inner" : "public_profiles";
       
@@ -257,14 +257,17 @@ function Index() {
       const from = pageParam * PAGE_SIZE;
       qb = qb.range(from, from + PAGE_SIZE - 1);
 
-      const { data: rows, error } = await qb;
+      const { data: rows, error, count } = await qb;
       if (error) throw error;
 
-      return (rows ?? []).map((r: any) => ({
-        ...r,
-        seller_tier: r.public_profiles?.subscription_tier ?? null,
-        seller_verified: r.public_profiles?.is_verified ?? null,
-      }));
+      return {
+        listings: (rows ?? []).map((r: any) => ({
+          ...r,
+          seller_tier: r.public_profiles?.subscription_tier ?? null,
+          seller_verified: r.public_profiles?.is_verified ?? null,
+        })),
+        totalDatabaseCount: count ?? 0
+      };
     },
   });
 
@@ -274,29 +277,41 @@ function Index() {
     }
   }, [inView, hasNextPage, isFetchingNextPage]);
 
-  const processedListings = useMemo(() => data?.pages.flat() ?? [], [data]);
-  const totalCount = useMemo(() => (data?.pages[0] as any)?.count ?? processedListings.length, [data, processedListings]);
+  // Clean data breakdown extraction arrays
+  const processedListings = useMemo(() => data?.pages.flatMap((page) => page.listings) ?? [], [data]);
+  const totalCount = useMemo(() => data?.pages[0]?.totalDatabaseCount ?? 0, [data]);
 
   const handleNearMe = () => {
-    if (!navigator.geolocation) return alert("Geolocation not supported");
+    if (!navigator.geolocation) {
+      return toast.error("Location services are not supported by your browser.");
+    }
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const { data: geoData, error } = await supabase.rpc("find_nearest_city", {
-        user_lat: pos.coords.latitude,
-        user_lng: pos.coords.longitude,
-      });
-      setIsLocating(false);
-      if (error || !geoData?.[0]) return alert("Nearest service vector unmappable.");
-      setSelectedState(geoData[0].state_id);
-      setTimeout(() => setSelectedCity(geoData[0].city_id), 150);
-    }, () => setIsLocating(false));
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { data: geoData, error } = await supabase.rpc("find_nearest_city", {
+          user_lat: pos.coords.latitude,
+          user_lng: pos.coords.longitude,
+        });
+        setIsLocating(false);
+        if (error || !geoData?.[0]) {
+          return toast.error("Nearest service vector unmappable.");
+        }
+        setSelectedState(geoData[0].state_id);
+        setTimeout(() => setSelectedCity(geoData[0].city_id), 150);
+        toast.success("Marketplace customized to your nearest location!");
+      },
+      () => {
+        setIsLocating(false);
+        toast.error("Unable to access location. Please select your State manually.");
+      }
+    );
   };
 
   return (
     <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
       <div>
-        {/* Pass down shared state hooks to dynamically update header values */}
-        <SiteHeader searchInput={searchInput} setSearchInput={setSearchInput} />
+        {/* Corrected Architecture: Search interface explicitly omitted on homepage layout */}
+        <SiteHeader showSearch={false} />
 
         {/* HERO */}
         <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground overflow-hidden py-14 md:py-20">
@@ -341,8 +356,15 @@ function Index() {
               </div>
             </div>
 
+            {/* Added High-Conversion Marketplace Trust Signals */}
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-primary-foreground/80 pt-1 font-medium tracking-wide">
+              <span className="flex items-center gap-1"><Icons.ShieldCheck className="h-4 w-4 text-accent" /> Verified Vendors</span>
+              <span className="flex items-center gap-1"><Icons.MessageSquareVerified className="h-4 w-4 text-accent" /> Secure Messaging</span>
+              <span className="flex items-center gap-1"><Icons.Globe className="h-4 w-4 text-accent" /> Nationwide Listings</span>
+            </div>
+
             {quickCategories.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                 {quickCategories.slice(0, 6).map((c) => (
                   <Link key={c.slug} to="/" search={{ cat: c.slug }} className="text-xs font-semibold bg-primary-foreground/10 hover:bg-primary-foreground/20 px-3 py-1.5 rounded-full transition">
                     {c.label}
@@ -515,6 +537,7 @@ function Index() {
                     <TabsTrigger value="featured" className="text-xs font-bold">Featured</TabsTrigger>
                   </TabsList>
                 </Tabs>
+                {/* Dynamically reads exact global matches cleanly from DB via useMemo */}
                 <p className="text-xs text-muted-foreground font-semibold mt-1 sm:mt-0">
                   {totalCount.toLocaleString()} listings identified
                 </p>
@@ -539,8 +562,9 @@ function Index() {
                 <Icons.Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : processedListings.length === 0 ? (
+              /* Upgraded Professional Typography and Empty State Icon Signals */
               <div className="text-center py-16 border border-dashed rounded-xl bg-background max-w-xl mx-auto space-y-4">
-                <div className="h-12 w-12 bg-muted rounded-full grid place-items-center mx-auto text-muted-foreground"><Icons.PackageX className="h-6 w-6" /></div>
+                <div className="h-12 w-12 bg-muted rounded-full grid place-items-center mx-auto text-muted-foreground"><Icons.SearchX className="h-6 w-6" /></div>
                 <div>
                   <h3 className="text-sm font-bold">No listings match your filters</h3>
                   <p className="text-xs text-muted-foreground mt-1">Try adjusting your search filters or browse general items.</p>
@@ -582,11 +606,12 @@ function Index() {
           </div>
           <div className="space-y-2">
             <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Company</h4>
+            {/* Added Explicit Active Production Anchor Router Mappings */}
             <div className="flex flex-col gap-1.5 text-xs">
-              <span className="hover:text-white cursor-pointer">About</span>
-              <span className="hover:text-white cursor-pointer">Contact</span>
-              <span className="hover:text-white cursor-pointer">Privacy Policy</span>
-              <span className="hover:text-white cursor-pointer">Terms of Service</span>
+              <Link to="/about" className="hover:text-white">About Us</Link>
+              <Link to="/contact" className="hover:text-white">Contact</Link>
+              <Link to="/privacy" className="hover:text-white">Privacy Policy</Link>
+              <Link to="/terms" className="hover:text-white">Terms of Service</Link>
             </div>
           </div>
           <div className="space-y-3">
