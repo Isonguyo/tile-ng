@@ -1,18 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { ListingCard } from "@/components/listing-card";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as Icons from "lucide-react";
 import { z } from "zod";
 
-// Simple Debounce Hook
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -37,15 +36,35 @@ const searchSchema = z.object({
 type Search = z.infer<typeof searchSchema>;
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Tile — Buy, Sell & Hire Across Nigeria" },
+      { name: "description", content: "The premium classifieds marketplace for verified goods and professional services across Nigeria." },
+      { property: "og:title", content: "Tile Marketplace" },
+      { property: "og:description", content: "Buy, sell and hire across Nigeria with trusted local vendors." },
+    ],
+    links: [
+      { rel: "icon", type: "image/png", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
+      { rel: "apple-touch-icon", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
+    ],
+  }),
   validateSearch: searchSchema,
   component: Index,
 });
 
+const PRICE_BUCKETS = [
+  { label: "Under ₦10k", min: "0", max: "10000" },
+  { label: "₦10k - ₦50k", min: "10000", max: "50000" },
+  { label: "₦50k - ₦100k", min: "100000", max: "100000" },
+  { label: "₦100k+", min: "100000", max: "" },
+];
+
 function Index() {
   const navigate = useNavigate({ from: "/" });
   const filters = Route.useSearch();
+  const queryClient = useQueryClient();
+  const { ref, inView } = useInView({ threshold: 0.1 });
 
-  // Controlled UI Inputs State
   const [searchInput, setSearchInput] = useState(filters.q ?? "");
   const [selectedState, setSelectedState] = useState(filters.stateId ?? "all");
   const [selectedCity, setSelectedCity] = useState(filters.cityId ?? "all");
@@ -57,22 +76,33 @@ function Index() {
   const [offersDelivery, setOffersDelivery] = useState(filters.offersDelivery ?? "false");
 
   const [activeTab, setActiveTab] = useState<"all" | "goods" | "service">("all");
-  const [sortBy, setSortBy] = useState<string>("newest");
+  const [sortBy, setSortBy] = useState<string>("recommended");
   const [isLocating, setIsLocating] = useState(false);
 
-  // Debouncing inputs to prevent server overload
   const debouncedSearch = useDebounce(searchInput, 400);
   const debouncedMinPrice = useDebounce(minPrice, 400);
   const debouncedMaxPrice = useDebounce(maxPrice, 400);
 
-  // 1. Cascading Geographic Queries
+  // 1. Real-time Subscription Sync
+  useEffect(() => {
+    const channel = supabase
+      .channel("live-listings-feed")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "listings" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["listings-infinite"] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
+  // 2. Pre-fetching Cascading Data Handlers
   const { data: states = [] } = useQuery({
     queryKey: ["states"],
     queryFn: async () => {
       const { data } = await supabase.from("states").select("id, name").order("name");
       return data ?? [];
     },
-    staleTime: 1000 * 60 * 60, // 1 hour cache
+    staleTime: 1000 * 60 * 60,
   });
 
   const { data: cities = [] } = useQuery({
@@ -83,6 +113,7 @@ function Index() {
       return data ?? [];
     },
     enabled: selectedState !== "all",
+    staleTime: 1000 * 60 * 15,
   });
 
   const { data: lgas = [] } = useQuery({
@@ -93,13 +124,25 @@ function Index() {
       return data ?? [];
     },
     enabled: selectedCity !== "all",
+    staleTime: 1000 * 60 * 15,
   });
 
-  // Reset dependents on cascading changes
+  const prefetchCities = (stateId: string) => {
+    if (stateId === "all") return;
+    queryClient.prefetchQuery({
+      queryKey: ["cities", stateId],
+      queryFn: async () => {
+        const { data } = await supabase.from("cities").select("id, name").eq("state_id", stateId).order("name");
+        return data ?? [];
+      },
+      staleTime: 1000 * 60 * 15,
+    });
+  };
+
   useEffect(() => { setSelectedCity("all"); setSelectedLga("all"); }, [selectedState]);
   useEffect(() => { setSelectedLga("all"); }, [selectedCity]);
 
-  // 2. Real-time Synchronization Loop with URL State
+  // URL Query Sync Hook
   useEffect(() => {
     navigate({
       search: () => ({
@@ -117,47 +160,46 @@ function Index() {
     });
   }, [debouncedSearch, selectedState, selectedCity, selectedLga, debouncedMinPrice, debouncedMaxPrice, condition, verifiedOnly, offersDelivery]);
 
-  // 3. Infinite Paginated Optimized Single-Query Retrieval
+  // 3. Infinite Feed Single Database Request Execution
   const PAGE_SIZE = 20;
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
-    queryKey: ["listings-search", filters, activeTab, sortBy],
+    queryKey: ["listings-infinite", filters, activeTab, sortBy],
     initialPageParam: 0,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
     getNextPageParam: (lastPage, allPages) => (lastPage.length === PAGE_SIZE ? allPages.length : undefined),
     queryFn: async ({ pageParam = 0 }) => {
+      const profileSelect = filters.verifiedOnly === "true" ? "public_profiles!inner" : "public_profiles";
+      
       let qb = supabase
         .from("listings")
         .select(`
-          id, title, price, type, location, images, is_promoted, category, description, views_count, condition, offers_delivery, created_at,
-          public_profiles (id, subscription_tier, is_verified, business_name)
-        `)
+          id, title, price, type, location, images, is_promoted, category, description, views_count, condition, offers_delivery, created_at, ranking_score,
+          ${profileSelect} (id, subscription_tier, is_verified, business_name)
+        `, { count: "exact" })
         .eq("status", "approved");
 
-      // Server-Side Vector Search
       if (filters.q) qb = qb.textSearch("search_vector", filters.q);
-      
-      // Normalized Geo Filtering
       if (filters.stateId) qb = qb.eq("state_id", filters.stateId);
       if (filters.cityId) qb = qb.eq("city_id", filters.cityId);
       if (filters.lgaId) qb = qb.eq("lga_id", filters.lgaId);
       if (filters.cat) qb = qb.eq("category", filters.cat);
-      
-      // Marketplace Parameters
       if (filters.minPrice) qb = qb.gte("price", Number(filters.minPrice));
       if (filters.maxPrice) qb = qb.lte("price", Number(filters.maxPrice));
       if (filters.condition) qb = qb.eq("condition", filters.condition);
       if (filters.offersDelivery === "true") qb = qb.eq("offers_delivery", true);
       if (activeTab !== "all") qb = qb.eq("type", activeTab);
 
-      // Business layer matching logic executed on vendor profiles inside join filter logic
       if (filters.verifiedOnly === "true") {
         qb = qb.eq("public_profiles.is_verified", true);
       }
 
-      // Priority ordering logic structure
+      // Marketplace Monetization Ranking Order Logic
       qb = qb.order("is_promoted", { ascending: false });
-      if (sortBy === "price-low") qb = qb.order("price", { ascending: true });
+      
+      if (sortBy === "recommended") qb = qb.order("ranking_score", { ascending: false });
+      else if (sortBy === "price-low") qb = qb.order("price", { ascending: true });
       else if (sortBy === "price-high") qb = qb.order("price", { ascending: false });
-      else if (sortBy === "popular") qb = qb.order("views_count", { ascending: false });
       else qb = qb.order("created_at", { ascending: false });
 
       const from = pageParam * PAGE_SIZE;
@@ -165,7 +207,7 @@ function Index() {
 
       const { data: rows, error } = await qb;
       if (error) throw error;
-      
+
       return (rows ?? []).map((r: any) => ({
         ...r,
         seller_tier: r.public_profiles?.subscription_tier ?? null,
@@ -174,35 +216,29 @@ function Index() {
     },
   });
 
+  // Intersection Observer Infinite Scroll Trigger
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage]);
+
   const processedListings = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const totalCount = useMemo(() => (data?.pages[0] as any)?.count ?? processedListings.length, [data, processedListings]);
 
-  // Cached Platform Meta-queries
-  const { data: stats } = useQuery({
-    queryKey: ["platform-stats"],
-    queryFn: async () => {
-      const { data } = await supabase.rpc("platform_stats");
-      return data?.[0] ?? null;
-    },
-    staleTime: 1000 * 60 * 10,
-  });
-
-  // Accurate Geolocation Native RPC Lookup
   const handleNearMe = () => {
     if (!navigator.geolocation) return alert("Geolocation not supported");
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { data, error } = await supabase.rpc("find_nearest_city", {
-          user_lat: pos.coords.latitude,
-          user_lng: pos.coords.longitude,
-        });
-        setIsLocating(false);
-        if (error || !data?.[0]) return alert("Could not match coordinates to a served city.");
-        setSelectedState(data[0].state_id);
-        setTimeout(() => setSelectedCity(data[0].city_id), 100);
-      },
-      () => setIsLocating(false)
-    );
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { data: geoData, error } = await supabase.rpc("find_nearest_city", {
+        user_lat: pos.coords.latitude,
+        user_lng: pos.coords.longitude,
+      });
+      setIsLocating(false);
+      if (error || !geoData?.[0]) return alert("Nearest service vector unmappable.");
+      setSelectedState(geoData[0].state_id);
+      setTimeout(() => setSelectedCity(geoData[0].city_id), 150);
+    }, () => setIsLocating(false));
   };
 
   return (
@@ -219,11 +255,11 @@ function Index() {
               <div className="flex flex-col md:flex-row items-center gap-2">
                 <div className="flex items-center gap-2 px-3 flex-1 w-full border-b md:border-b-0 md:border-r pb-2 md:pb-0">
                   <Icons.Search className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search verified goods or professional services..." className="w-full text-sm bg-transparent outline-none focus:ring-0 py-2 text-black" />
+                  <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search verified listings across Nigeria..." className="w-full text-sm bg-transparent outline-none py-2 text-black" />
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                  <select value={selectedState} onChange={(e) => setSelectedState(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black">
+                  <select value={selectedState} onMouseEnter={() => prefetchCities(selectedState)} onChange={(e) => setSelectedState(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black">
                     <option value="all">All States</option>
                     {states.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
@@ -243,7 +279,7 @@ function Index() {
                   )}
                 </div>
 
-                <Button type="button" onClick={handleNearMe} variant="outline" className="w-full md:w-auto text-primary border-primary/30 flex gap-1.5 items-center">
+                <Button type="button" onClick={handleNearMe} variant="outline" className="w-full md:w-auto text-primary border-primary/30 flex gap-1.5 items-center shrink-0">
                   <Icons.Locate className={`h-4 w-4 ${isLocating ? "animate-spin" : ""}`} /> Near Me
                 </Button>
               </div>
@@ -251,23 +287,33 @@ function Index() {
           </div>
         </section>
 
-        {/* INTERACTIVE FILTERS GRID */}
+        {/* FEED AND FILTERS MATRIX */}
         <section className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <aside className="space-y-4 bg-background p-4 rounded-xl border shadow-sm h-fit">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Marketplace Filters</h3>
-            <hr />
+          <aside className="space-y-5 bg-background p-4 rounded-xl border shadow-sm h-fit">
+            <div>
+              <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Marketplace Filters</h3>
+              <hr className="mt-2" />
+            </div>
             
-            <div className="space-y-1">
+            {/* Price Range & Quick Buckets */}
+            <div className="space-y-2">
               <label className="text-xs font-bold text-muted-foreground">Price Range (₦)</label>
               <div className="flex gap-2">
                 <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full p-2 border rounded-md text-xs" />
                 <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full p-2 border rounded-md text-xs" />
               </div>
+              <div className="flex flex-wrap gap-1 pt-1">
+                {PRICE_BUCKETS.map((b, idx) => (
+                  <button key={idx} type="button" onClick={() => { setMinPrice(b.min); setMaxPrice(b.max); }} className="text-[10px] bg-muted hover:bg-primary/10 hover:text-primary px-2 py-1 rounded-md font-medium transition">
+                    {b.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">Item Condition</label>
-              <select value={condition} onChange={(e) => setCondition(e.target.value)} className="w-full p-2 border rounded-md text-xs text-black">
+              <select value={condition} onChange={(e) => setCondition(e.target.value)} className="w-full p-2 border rounded-md text-xs text-black bg-white">
                 <option value="all">Any Condition</option>
                 <option value="new">Brand New</option>
                 <option value="used">Used</option>
@@ -275,7 +321,7 @@ function Index() {
               </select>
             </div>
 
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2 pt-1">
               <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground cursor-pointer">
                 <input type="checkbox" checked={verifiedOnly === "true"} onChange={(e) => setVerifiedOnly(e.target.checked ? "true" : "false")} className="rounded text-primary" />
                 Verified Sellers Only
@@ -288,23 +334,28 @@ function Index() {
           </aside>
 
           {/* MAIN VIEWPORT */}
-          <div className="lg:col-span-3 space-y-6">
-            <div className="bg-background p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-                <TabsList className="bg-muted/60 p-1 rounded-lg">
-                  <TabsTrigger value="all" className="text-xs font-bold">All Feeds</TabsTrigger>
-                  <TabsTrigger value="goods" className="text-xs font-bold">Products</TabsTrigger>
-                  <TabsTrigger value="service" className="text-xs font-bold">Services</TabsTrigger>
-                </TabsList>
-              </Tabs>
+          <div className="lg:col-span-3 space-y-4">
+            <div className="bg-background p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row items-baseline sm:gap-3 w-full sm:w-auto">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full sm:w-auto">
+                  <TabsList className="bg-muted/60 p-1 rounded-lg">
+                    <TabsTrigger value="all" className="text-xs font-bold">All Feeds</TabsTrigger>
+                    <TabsTrigger value="goods" className="text-xs font-bold">Products</TabsTrigger>
+                    <TabsTrigger value="service" className="text-xs font-bold">Services</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <p className="text-xs text-muted-foreground font-semibold mt-1 sm:mt-0">
+                  {totalCount.toLocaleString()} listings identified
+                </p>
+              </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-muted-foreground">Sort By:</span>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">Sort By:</span>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[160px] h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-[160px] h-9 text-xs bg-white text-black"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="newest" className="text-xs">Newest</SelectItem>
-                    <SelectItem value="popular" className="text-xs">Most Popular</SelectItem>
+                    <SelectItem value="recommended" className="text-xs">Recommended</SelectItem>
+                    <SelectItem value="newest" className="text-xs">Newest Ads</SelectItem>
                     <SelectItem value="price-low" className="text-xs">Price: Low to High</SelectItem>
                     <SelectItem value="price-high" className="text-xs">Price: High to Low</SelectItem>
                   </SelectContent>
@@ -318,7 +369,7 @@ function Index() {
               </div>
             ) : processedListings.length === 0 ? (
               <div className="text-center py-16 border border-dashed rounded-xl bg-background">
-                <p className="text-sm font-medium text-muted-foreground">No matches found for active query configurations.</p>
+                <p className="text-sm font-medium text-muted-foreground">No matches found for current search metrics.</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -326,13 +377,12 @@ function Index() {
                   {processedListings.map((l: any) => <ListingCard key={l.id} l={l} />)}
                 </div>
                 
-                {hasNextPage && (
-                  <div className="flex justify-center pt-4">
-                    <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} size="sm">
-                      {isFetchingNextPage ? "Loading More..." : "Load More Listings"}
-                    </Button>
-                  </div>
-                )}
+                {/* Intersection Scroll Anchor Row Element */}
+                <div ref={ref} className="flex justify-center py-4 min-h-[40px]">
+                  {isFetchingNextPage && (
+                    <Icons.Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  )}
+                </div>
               </div>
             )}
           </div>
