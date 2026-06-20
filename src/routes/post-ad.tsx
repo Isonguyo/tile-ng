@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -49,7 +49,7 @@ function PostAd() {
 
   const form = useForm<FormVals>({
     resolver: zodResolver(schema),
-    defaultValues: { type: "goods" },
+    defaultValues: { type: "goods", category: "" },
   });
   const watch = form.watch();
 
@@ -142,7 +142,7 @@ function PostAd() {
   const onInvalid = (errors: any) => {
     const first = Object.keys(errors)[0];
     if (first) {
-      toast.error(`Error on validation parameter: ${first}`);
+      toast.error(`Error on validation parameter: ${errors[first]?.message || first}`);
     }
   };
 
@@ -172,14 +172,20 @@ function PostAd() {
                 </div>
                 <div>
                   <Label>Category</Label>
-                  <Select value={watch.category} onValueChange={(v) => form.setValue("category", v, { shouldValidate: true })}>
-                    <SelectTrigger><SelectValue placeholder="Pick one…" /></SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
-                        <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger><SelectValue placeholder="Pick one…" /></SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
+                            <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
                 <div className="flex justify-end">
                   <Button type="button" disabled={!watch.category} onClick={() => setStep(2)}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
@@ -204,7 +210,10 @@ function PostAd() {
                 </div>
                 <div className="flex justify-between">
                   <Button type="button" variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" />Back</Button>
-                  <Button type="button" onClick={() => setStep(3)}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
+                  <Button type="button" onClick={async () => {
+                    const valid = await form.trigger(["title", "description", "price"]);
+                    if (valid) setStep(3);
+                  }}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
                 </div>
               </>
             )}
@@ -217,32 +226,68 @@ function PostAd() {
                 <div className="space-y-4 border p-4 rounded-xl bg-muted/20">
                   <div>
                     <Label>State Selection</Label>
-                    <Select value={watch.state_id} onValueChange={(v) => { form.setValue("state_id", v); form.setValue("city_id", ""); form.setValue("lga_id", ""); }}>
-                      <SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger>
-                      <SelectContent>
-                        {states.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      control={form.control}
+                      name="state_id"
+                      render={({ field }) => (
+                        <Select 
+                          value={field.value || ""} 
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            form.setValue("city_id", "", { shouldValidate: true });
+                            form.setValue("lga_id", "", { shouldValidate: true });
+                          }}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger>
+                          <SelectContent>
+                            {states.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
 
                   <div>
                     <Label>City Selection</Label>
-                    <Select disabled={!watch.state_id} value={watch.city_id} onValueChange={(v) => { form.setValue("city_id", v); form.setValue("lga_id", ""); }}>
-                      <SelectTrigger><SelectValue placeholder="Select City" /></SelectTrigger>
-                      <SelectContent>
-                        {cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      control={form.control}
+                      name="city_id"
+                      render={({ field }) => (
+                        <Select 
+                          disabled={!watch.state_id} 
+                          value={field.value || ""} 
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            form.setValue("lga_id", "", { shouldValidate: true });
+                          }}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Select City" /></SelectTrigger>
+                          <SelectContent>
+                            {cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
 
                   <div>
                     <Label>Local Government Area (LGA)</Label>
-                    <Select disabled={!watch.city_id} value={watch.lga_id} onValueChange={(v) => form.setValue("lga_id", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select LGA" /></SelectTrigger>
-                      <SelectContent>
-                        {lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      control={form.control}
+                      name="lga_id"
+                      render={({ field }) => (
+                        <Select 
+                          disabled={!watch.city_id} 
+                          value={field.value || ""} 
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Select LGA" /></SelectTrigger>
+                          <SelectContent>
+                            {lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                 </div>
 
