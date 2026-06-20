@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner"; // Swapped out native browser alerts for professional notifications
+import { toast } from "sonner";
 import * as Icons from "lucide-react";
 import { z } from "zod";
 
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Buy, sell and hire across Nigeria with trusted local vendors." },
     ],
     links: [
-      { rel: "canonical", href: "https://tile.ng" }, // Added programmatic canonical tags to secure SEO indexing
+      { rel: "canonical", href: "https://tile.ng" },
       { rel: "icon", type: "image/png", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
       { rel: "apple-touch-icon", href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
     ],
@@ -68,9 +68,7 @@ function Index() {
   const queryClient = useQueryClient();
   const { ref, inView } = useInView({ threshold: 0.1 });
 
-  // Decoupled single-source search architecture. Homepage Hero owns search completely.
   const [searchInput, setSearchInput] = useState(filters.q ?? "");
-  
   const [selectedState, setSelectedState] = useState(filters.stateId ?? "all");
   const [selectedCity, setSelectedCity] = useState(filters.cityId ?? "all");
   const [selectedLga, setSelectedLga] = useState(filters.lgaId ?? "all");
@@ -80,7 +78,7 @@ function Index() {
   const [verifiedOnly, setVerifiedOnly] = useState(filters.verifiedOnly ?? "false");
   const [offersDelivery, setOffersDelivery] = useState(filters.offersDelivery ?? "false");
 
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured")("all");
   const [sortBy, setSortBy] = useState<string>("recommended");
   const [isLocating, setIsLocating] = useState(false);
 
@@ -94,7 +92,6 @@ function Index() {
     }
   }, [filters.q]);
 
-  // Live real-time updates via Webhook / PostgreSQL CDC streams
   useEffect(() => {
     const channel = supabase
       .channel("live-listings-feed")
@@ -106,7 +103,6 @@ function Index() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // Normalized location pipelines
   const { data: states = [] } = useQuery({
     queryKey: ["states"],
     queryFn: async () => {
@@ -153,7 +149,6 @@ function Index() {
   useEffect(() => { setSelectedCity("all"); setSelectedLga("all"); }, [selectedState]);
   useEffect(() => { setSelectedLga("all"); }, [selectedCity]);
 
-  // Push applied operational states into parameters smoothly
   useEffect(() => {
     navigate({
       search: () => ({
@@ -209,7 +204,6 @@ function Index() {
   );
   const trendingCategories = quickCategories.slice(0, 6);
 
-  // FIXED: Consolidated pagination object ensures exact metadata preservation across deep queries
   const PAGE_SIZE = 20;
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: ["listings-infinite", filters, activeTab, sortBy],
@@ -276,7 +270,6 @@ function Index() {
     }
   }, [inView, hasNextPage, isFetchingNextPage]);
 
-  // Clean, descriptive layout parameter extractions
   const processedListings = useMemo(() => data?.pages.flatMap((page) => page.listings) ?? [], [data]);
   const totalCount = useMemo(() => data?.pages[0]?.totalDatabaseCount ?? 0, [data]);
 
@@ -309,8 +302,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
       <div>
-        {/* FIXED: SiteHeader has showSearch={false} on homepage to decouple state conflict */}
-        <SiteHeader showSearch={false} />
+        <SiteHeader />
 
         {/* HERO */}
         <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground overflow-hidden py-14 md:py-20">
@@ -324,25 +316,25 @@ function Index() {
             <div className="bg-background text-foreground p-3 rounded-2xl shadow-xl border space-y-3 max-w-4xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-2">
                 <div className="flex items-center gap-2 px-3 flex-1 w-full border-b md:border-b-0 md:border-r pb-2 md:pb-0">
-                  <Icons.Search className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search verified listings across Nigeria..." className="w-full text-sm bg-transparent outline-none py-2 text-black" />
+                  <Icons.Map className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-semibold text-muted-foreground">Filter region:</span>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                  <select value={selectedState} onMouseEnter={() => prefetchCities(selectedState)} onChange={(e) => setSelectedState(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black outline-none border-none">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto flex-1 justify-start md:justify-center">
+                  <select value={selectedState} onMouseEnter={() => prefetchCities(selectedState)} onChange={(e) => setSelectedState(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black outline-none border-none cursor-pointer">
                     <option value="all">All States</option>
                     {states.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
 
                   {selectedState !== "all" && cities.length > 0 && (
-                    <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in outline-none border-none">
+                    <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in outline-none border-none cursor-pointer">
                       <option value="all">All Cities</option>
                       {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   )}
 
                   {selectedCity !== "all" && lgas.length > 0 && (
-                    <select value={selectedLga} onChange={(e) => setSelectedLga(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in outline-none border-none">
+                    <select value={selectedLga} onChange={(e) => setSelectedLga(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in outline-none border-none cursor-pointer">
                       <option value="all">All LGAs</option>
                       {lgas.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                     </select>
@@ -355,7 +347,6 @@ function Index() {
               </div>
             </div>
 
-            {/* HIGH CONVERSION TRUST ANCHORS */}
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-primary-foreground/80 pt-1 font-medium tracking-wide">
               <span className="flex items-center gap-1.5"><Icons.ShieldCheck className="h-4 w-4 text-emerald-400" /> Verified Vendors Only</span>
               <span className="flex items-center gap-1.5"><Icons.MessageSquare className="h-4 w-4 text-emerald-400" /> Safe, Secure Communications</span>
@@ -423,7 +414,6 @@ function Index() {
 
         {/* FILTERS & FEED PANEL GRID */}
         <section className="container mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
           <aside className="space-y-6 lg:col-span-1">
             <Card className="p-4 bg-background border shadow-sm space-y-5 h-fit">
               <div>
@@ -494,7 +484,6 @@ function Index() {
 
           {/* MAIN COLUMN */}
           <div className="lg:col-span-3 space-y-6">
-            
             {/* TOP VENDORS */}
             {vendors.length > 0 && (
               <div className="space-y-3">
@@ -536,7 +525,6 @@ function Index() {
                     <TabsTrigger value="featured" className="text-xs font-bold">Featured</TabsTrigger>
                   </TabsList>
                 </Tabs>
-                {/* Dynamically tracks actual global query count safely from state records */}
                 <p className="text-xs text-muted-foreground font-semibold mt-1 sm:mt-0">
                   {totalCount.toLocaleString()} listings identified
                 </p>
@@ -569,7 +557,6 @@ function Index() {
                 ))}
               </div>
             ) : processedListings.length === 0 ? (
-              /* High Professional Empty State Component Integration */
               <div className="text-center py-16 border border-dashed rounded-xl bg-background max-w-xl mx-auto space-y-4">
                 <div className="h-12 w-12 bg-muted rounded-full grid place-items-center mx-auto text-muted-foreground">
                   <Icons.SearchX className="h-6 w-6" />
@@ -588,7 +575,6 @@ function Index() {
                   {processedListings.map((l: any) => <ListingCard key={l.id} l={l} />)}
                 </div>
                 
-                {/* INFINITE SCROLL OBSERVABLE ANCHOR ELEMENT */}
                 <div ref={ref} className="flex justify-center py-4 min-h-[40px]">
                   {isFetchingNextPage && (
                     <Icons.Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -617,7 +603,6 @@ function Index() {
           </div>
           <div className="space-y-2">
             <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Company</h4>
-            {/* Fully bound active paths mapping router paths to actual locations */}
             <div className="flex flex-col gap-1.5 text-xs">
               <Link to="/" className="hover:text-white">About Us</Link>
               <Link to="/" className="hover:text-white">Contact</Link>
