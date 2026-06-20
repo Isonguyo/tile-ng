@@ -5,7 +5,9 @@ import { useInView } from "react-intersection-observer";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { ListingCard } from "@/components/listing-card";
+import { CATEGORIES } from "@/lib/categories";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,7 +57,7 @@ export const Route = createFileRoute("/")({
 const PRICE_BUCKETS = [
   { label: "Under ₦10k", min: "0", max: "10000" },
   { label: "₦10k - ₦50k", min: "10000", max: "50000" },
-  { label: "₦50k - ₦100k", min: "100000", max: "100000" },
+  { label: "₦50k - ₦100k", min: "50000", max: "100000" },
   { label: "₦100k+", min: "100000", max: "" },
 ];
 
@@ -75,7 +77,9 @@ function Index() {
   const [verifiedOnly, setVerifiedOnly] = useState(filters.verifiedOnly ?? "false");
   const [offersDelivery, setOffersDelivery] = useState(filters.offersDelivery ?? "false");
 
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">(
+    (filters.condition || filters.verifiedOnly || filters.offersDelivery) ? "all" : "all"
+  );
   const [sortBy, setSortBy] = useState<string>("recommended");
   const [isLocating, setIsLocating] = useState(false);
 
@@ -83,7 +87,7 @@ function Index() {
   const debouncedMinPrice = useDebounce(minPrice, 400);
   const debouncedMaxPrice = useDebounce(maxPrice, 400);
 
-  // 1. Real-time Subscription Sync
+  // Real-time Database Subscription Sync
   useEffect(() => {
     const channel = supabase
       .channel("live-listings-feed")
@@ -95,7 +99,7 @@ function Index() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // 2. Pre-fetching Cascading Data Handlers
+  // Dynamic Geography Queries with Caching
   const { data: states = [] } = useQuery({
     queryKey: ["states"],
     queryFn: async () => {
@@ -142,7 +146,7 @@ function Index() {
   useEffect(() => { setSelectedCity("all"); setSelectedLga("all"); }, [selectedState]);
   useEffect(() => { setSelectedLga("all"); }, [selectedCity]);
 
-  // URL Query Sync Hook
+  // Live Query Metric Synchronization
   useEffect(() => {
     navigate({
       search: () => ({
@@ -160,7 +164,46 @@ function Index() {
     });
   }, [debouncedSearch, selectedState, selectedCity, selectedLga, debouncedMinPrice, debouncedMaxPrice, condition, verifiedOnly, offersDelivery]);
 
-  // 3. Infinite Feed Single Database Request Execution
+  // Fetch Platform Metadata and Dynamic Statistics
+  const { data: stats } = useQuery({
+    queryKey: ["platform-stats"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("platform_stats");
+      return (data?.[0] ?? null) as { total_listings: number; verified_vendors: number; active_shops: number; active_categories: number } | null;
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: catCounts = [] } = useQuery({
+    queryKey: ["category-counts"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("category_counts");
+      return (data ?? []) as Array<{ category: string; count: number }>;
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: vendors = [] } = useQuery({
+    queryKey: ["top-vendors"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("top_vendors", { _limit: 6 });
+      return (data ?? []) as Array<{ id: string; full_name: string | null; business_name: string | null; shop_slug: string | null; avatar_url: string | null; subscription_tier: string; is_verified: boolean; active_listings: number }>;
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const countMap = useMemo(() => new Map(catCounts.map((c) => [c.category, Number(c.count)])), [catCounts]);
+  const quickCategories = useMemo(() =>
+    CATEGORIES
+      .map((c) => ({ ...c, count: countMap.get(c.slug) ?? 0 }))
+      .filter((c) => c.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 12),
+    [countMap]
+  );
+  const trendingCategories = quickCategories.slice(0, 6);
+
+  // High-Performance Infinite Fetching Engine
   const PAGE_SIZE = 20;
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: ["listings-infinite", filters, activeTab, sortBy],
@@ -188,13 +231,16 @@ function Index() {
       if (filters.maxPrice) qb = qb.lte("price", Number(filters.maxPrice));
       if (filters.condition) qb = qb.eq("condition", filters.condition);
       if (filters.offersDelivery === "true") qb = qb.eq("offers_delivery", true);
-      if (activeTab !== "all") qb = qb.eq("type", activeTab);
+      
+      if (activeTab === "goods") qb = qb.eq("type", "goods");
+      if (activeTab === "service") qb = qb.eq("type", "service");
+      if (activeTab === "featured") qb = qb.eq("is_promoted", true);
 
       if (filters.verifiedOnly === "true") {
         qb = qb.eq("public_profiles.is_verified", true);
       }
 
-      // Marketplace Monetization Ranking Order Logic
+      // Marketplace Sorting Matrix Placement
       qb = qb.order("is_promoted", { ascending: false });
       
       if (sortBy === "recommended") qb = qb.order("ranking_score", { ascending: false });
@@ -216,7 +262,6 @@ function Index() {
     },
   });
 
-  // Intersection Observer Infinite Scroll Trigger
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -247,9 +292,13 @@ function Index() {
         <SiteHeader />
 
         {/* HERO */}
-        <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground py-14 md:py-20">
-          <div className="container mx-auto px-4 text-center max-w-5xl space-y-6">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">Buy, Sell &amp; Hire Across Nigeria</h1>
+        <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground overflow-hidden py-14 md:py-20">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+          <div className="container mx-auto px-4 text-center max-w-5xl relative z-10 space-y-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">Buy, Sell &amp; Hire Across Nigeria</h1>
+            <p className="text-sm sm:text-base md:text-lg text-primary-foreground/90 font-medium max-w-2xl mx-auto">
+              Discover products, services and trusted vendors near you.
+            </p>
             
             <div className="bg-background text-foreground p-3 rounded-2xl shadow-xl border space-y-3 max-w-4xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-2">
@@ -259,20 +308,20 @@ function Index() {
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                  <select value={selectedState} onMouseEnter={() => prefetchCities(selectedState)} onChange={(e) => setSelectedState(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black">
+                  <select value={selectedState} onMouseEnter={() => prefetchCities(selectedState)} onChange={(e) => setSelectedState(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black outline-none border-none">
                     <option value="all">All States</option>
                     {states.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
 
                   {selectedState !== "all" && cities.length > 0 && (
-                    <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in">
+                    <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in outline-none border-none">
                       <option value="all">All Cities</option>
                       {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   )}
 
                   {selectedCity !== "all" && lgas.length > 0 && (
-                    <select value={selectedLga} onChange={(e) => setSelectedLga(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in">
+                    <select value={selectedLga} onChange={(e) => setSelectedLga(e.target.value)} className="bg-muted/50 text-sm font-medium p-2 rounded-md text-black animate-in fade-in outline-none border-none">
                       <option value="all">All LGAs</option>
                       {lgas.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                     </select>
@@ -284,57 +333,172 @@ function Index() {
                 </Button>
               </div>
             </div>
+
+            {quickCategories.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {quickCategories.slice(0, 6).map((c) => (
+                  <Link key={c.slug} to="/" search={{ cat: c.slug }} className="text-xs font-semibold bg-primary-foreground/10 hover:bg-primary-foreground/20 px-3 py-1.5 rounded-full transition">
+                    {c.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
-        {/* FEED AND FILTERS MATRIX */}
-        <section className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <aside className="space-y-5 bg-background p-4 rounded-xl border shadow-sm h-fit">
-            <div>
-              <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Marketplace Filters</h3>
-              <hr className="mt-2" />
-            </div>
-            
-            {/* Price Range & Quick Buckets */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-muted-foreground">Price Range (₦)</label>
-              <div className="flex gap-2">
-                <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full p-2 border rounded-md text-xs" />
-                <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full p-2 border rounded-md text-xs" />
-              </div>
-              <div className="flex flex-wrap gap-1 pt-1">
-                {PRICE_BUCKETS.map((b, idx) => (
-                  <button key={idx} type="button" onClick={() => { setMinPrice(b.min); setMaxPrice(b.max); }} className="text-[10px] bg-muted hover:bg-primary/10 hover:text-primary px-2 py-1 rounded-md font-medium transition">
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* METADATA STATISTICS COUNTS BLOCK */}
+        <section className="container mx-auto px-4 -mt-6 relative z-20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Approved Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-blue-500 bg-blue-500/10" },
+              { label: "Verified Vendors", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-emerald-500 bg-emerald-500/10" },
+              { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-500 bg-amber-500/10" },
+              { label: "Active Categories", val: stats?.active_categories ?? 0, icon: Icons.LayoutGrid, color: "text-purple-500 bg-purple-500/10" },
+            ].map((s, i) => {
+              const Ic = s.icon;
+              return (
+                <Card key={i} className="p-4 bg-background shadow-md flex items-center gap-4 rounded-xl border">
+                  <div className={`p-3 rounded-lg hidden sm:block ${s.color}`}><Ic className="h-5 w-5" /></div>
+                  <div>
+                    <p className="text-xl md:text-2xl font-extrabold tracking-tight">{Number(s.val).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{s.label}</p>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground">Item Condition</label>
-              <select value={condition} onChange={(e) => setCondition(e.target.value)} className="w-full p-2 border rounded-md text-xs text-black bg-white">
-                <option value="all">Any Condition</option>
-                <option value="new">Brand New</option>
-                <option value="used">Used</option>
-                <option value="refurbished">Refurbished</option>
-              </select>
+        {/* HORIZONTAL QUICK CATEGORIES DISPLAY */}
+        {quickCategories.length > 0 && (
+          <section className="container mx-auto px-4 pt-8 pb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-bold tracking-wider uppercase text-muted-foreground">Quick Categories</h2>
             </div>
+            <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none snap-x">
+              {quickCategories.map((c) => {
+                const Ic = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[c.icon] ?? Icons.Tag;
+                const active = filters.cat === c.slug;
+                return (
+                  <Link key={c.slug} to="/" search={(prev) => ({ ...prev, cat: active ? undefined : c.slug })} className={`snap-start shrink-0 flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all min-w-[170px] ${active ? "border-accent bg-accent/10 shadow-sm" : "border-border bg-background hover:border-primary/50"}`}>
+                    <Ic className="h-5 w-5 text-primary" />
+                    <div className="text-left">
+                      <p className="text-xs font-bold leading-tight truncate max-w-[120px]">{c.label}</p>
+                      <p className="text-[10px] text-muted-foreground font-semibold">{c.count} {c.count === 1 ? "listing" : "listings"}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-            <div className="space-y-2 pt-1">
-              <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground cursor-pointer">
-                <input type="checkbox" checked={verifiedOnly === "true"} onChange={(e) => setVerifiedOnly(e.target.checked ? "true" : "false")} className="rounded text-primary" />
-                Verified Sellers Only
-              </label>
-              <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground cursor-pointer">
-                <input type="checkbox" checked={offersDelivery === "true"} onChange={(e) => setOffersDelivery(e.target.checked ? "true" : "false")} className="rounded text-primary" />
-                Offers Delivery
-              </label>
-            </div>
+        {/* MATRIX DUAL-PANEL VIEWPORT */}
+        <section className="container mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
+          
+          {/* SIDEBAR COMPONENT BLOCK */}
+          <aside className="space-y-6 lg:col-span-1">
+            <Card className="p-4 bg-background border shadow-sm space-y-5 h-fit">
+              <div>
+                <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">Marketplace Filters</h3>
+                <hr className="mt-2" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground">Price Range (₦)</label>
+                <div className="flex gap-2">
+                  <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full p-2 border rounded-md text-xs" />
+                  <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full p-2 border rounded-md text-xs" />
+                </div>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {PRICE_BUCKETS.map((b, idx) => (
+                    <button key={idx} type="button" onClick={() => { setMinPrice(b.min); setMaxPrice(b.max); }} className="text-[10px] bg-muted hover:bg-primary/10 hover:text-primary px-2 py-1 rounded-md font-medium transition">
+                      {b.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Item Condition</label>
+                <select value={condition} onChange={(e) => setCondition(e.target.value)} className="w-full p-2 border rounded-md text-xs text-black bg-white">
+                  <option value="all">Any Condition</option>
+                  <option value="new">Brand New</option>
+                  <option value="used">Used</option>
+                  <option value="refurbished">Refurbished</option>
+                </select>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground cursor-pointer">
+                  <input type="checkbox" checked={verifiedOnly === "true"} onChange={(e) => setVerifiedOnly(e.target.checked ? "true" : "false")} className="rounded text-primary" />
+                  Verified Sellers Only
+                </label>
+                <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground cursor-pointer">
+                  <input type="checkbox" checked={offersDelivery === "true"} onChange={(e) => setOffersDelivery(e.target.checked ? "true" : "false")} className="rounded text-primary" />
+                  Offers Delivery
+                </label>
+              </div>
+            </Card>
+
+            {/* TRENDING CATEGORIES MINI CARD ASIDE */}
+            {trendingCategories.length > 0 && (
+              <Card className="p-4 bg-background border shadow-sm space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Icons.Flame className="h-4 w-4 text-orange-500" /> Trending Categories
+                </h3>
+                <div className="space-y-2">
+                  {trendingCategories.map((tc) => {
+                    const Ic = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tc.icon] ?? Icons.Tag;
+                    return (
+                      <Link key={tc.slug} to="/" search={(prev) => ({ ...prev, cat: tc.slug })} className="flex items-center gap-3 p-2 rounded-lg bg-muted/40 border border-transparent hover:border-border transition">
+                        <Ic className="h-4 w-4 text-primary" />
+                        <div className="flex-1">
+                          <p className="text-xs font-bold">{tc.label}</p>
+                          <p className="text-[10px] text-muted-foreground font-semibold">{tc.count} active</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
           </aside>
 
-          {/* MAIN VIEWPORT */}
-          <div className="lg:col-span-3 space-y-4">
+          {/* MAIN LISTINGS RENDER PLATFORM */}
+          <div className="lg:col-span-3 space-y-6">
+            
+            {/* TOP VERIFIED VENDORS INTERFACE */}
+            {vendors.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Icons.Award className="h-4 w-4 text-accent" /> Top Verified Vendors
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {vendors.map((v) => (
+                    <Link key={v.id} to={`/shop/${v.shop_slug ?? ""}`} className="p-4 bg-background border rounded-xl shadow-sm hover:shadow-md transition flex items-center gap-4 group">
+                      <div className="h-12 w-12 bg-primary/10 rounded-xl grid place-items-center overflow-hidden shrink-0">
+                        {v.avatar_url ? <img src={v.avatar_url} alt="" className="w-full h-full object-cover" /> : <Icons.Store className="h-5 w-5 text-primary" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="text-xs font-bold truncate">{v.business_name || v.full_name || "Vendor"}</p>
+                          {v.is_verified && <Icons.BadgeCheck className="h-3.5 w-3.5 text-accent shrink-0" />}
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground font-semibold mt-0.5">
+                          {v.subscription_tier && v.subscription_tier !== "free" ? (
+                            <Badge className="bg-amber-500 text-white text-[9px] uppercase px-1.5 py-0">{v.subscription_tier}</Badge>
+                          ) : <span />}
+                          <span>{v.active_listings} {v.active_listings === 1 ? "listing" : "listings"}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* FEED SORTING CONTROL BAR */}
             <div className="bg-background p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
               <div className="flex flex-col sm:flex-row items-baseline sm:gap-3 w-full sm:w-auto">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full sm:w-auto">
@@ -342,6 +506,7 @@ function Index() {
                     <TabsTrigger value="all" className="text-xs font-bold">All Feeds</TabsTrigger>
                     <TabsTrigger value="goods" className="text-xs font-bold">Products</TabsTrigger>
                     <TabsTrigger value="service" className="text-xs font-bold">Services</TabsTrigger>
+                    <TabsTrigger value="featured" className="text-xs font-bold">Featured</TabsTrigger>
                   </TabsList>
                 </Tabs>
                 <p className="text-xs text-muted-foreground font-semibold mt-1 sm:mt-0">
@@ -368,8 +533,13 @@ function Index() {
                 <Icons.Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : processedListings.length === 0 ? (
-              <div className="text-center py-16 border border-dashed rounded-xl bg-background">
-                <p className="text-sm font-medium text-muted-foreground">No matches found for current search metrics.</p>
+              <div className="text-center py-16 border border-dashed rounded-xl bg-background max-w-xl mx-auto space-y-4">
+                <div className="h-12 w-12 bg-muted rounded-full grid place-items-center mx-auto text-muted-foreground"><Icons.PackageX className="h-6 w-6" /></div>
+                <div>
+                  <h3 className="text-sm font-bold">No listings match your filters</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Try adjusting your search filters or browse general items.</p>
+                </div>
+                <Button onClick={() => { setSearchInput(""); setSelectedState("all"); navigate({ search: {} }); }} size="sm">Browse all listings</Button>
               </div>
             ) : (
               <div className="space-y-6">
@@ -377,7 +547,7 @@ function Index() {
                   {processedListings.map((l: any) => <ListingCard key={l.id} l={l} />)}
                 </div>
                 
-                {/* Intersection Scroll Anchor Row Element */}
+                {/* INFINITE SCROLL OBSERVABLE ANCHOR ELEMENT */}
                 <div ref={ref} className="flex justify-center py-4 min-h-[40px]">
                   {isFetchingNextPage && (
                     <Icons.Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -388,6 +558,45 @@ function Index() {
           </div>
         </section>
       </div>
+
+      {/* FOOTER MARKETPLACE BRAND INTERFACE */}
+      <footer className="bg-primary text-primary-foreground/80 mt-16 border-t border-primary-foreground/10">
+        <div className="container mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+          <div className="space-y-3 col-span-2 md:col-span-1">
+            <span className="text-base font-extrabold text-primary-foreground tracking-wider uppercase">Tile Marketplace</span>
+            <p className="text-xs text-primary-foreground/70 max-w-xs leading-relaxed">Nigeria's premium classifieds marketplace for verified goods and trusted local services.</p>
+          </div>
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Marketplace</h4>
+            <div className="flex flex-col gap-1.5 text-xs">
+              <Link to="/" className="hover:text-white">Browse Listings</Link>
+              <Link to="/post-ad" className="hover:text-white">Post an Ad</Link>
+              <Link to="/dashboard" className="hover:text-white">Merchant Hub</Link>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Company</h4>
+            <div className="flex flex-col gap-1.5 text-xs">
+              <span className="hover:text-white cursor-pointer">About</span>
+              <span className="hover:text-white cursor-pointer">Contact</span>
+              <span className="hover:text-white cursor-pointer">Privacy Policy</span>
+              <span className="hover:text-white cursor-pointer">Terms of Service</span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Follow Us</h4>
+            <div className="flex gap-3 text-primary-foreground/70">
+              <Icons.Facebook className="h-5 w-5 hover:text-white cursor-pointer" />
+              <Icons.Instagram className="h-5 w-5 hover:text-white cursor-pointer" />
+              <Icons.Twitter className="h-5 w-5 hover:text-white cursor-pointer" />
+              <Icons.Linkedin className="h-5 w-5 hover:text-white cursor-pointer" />
+            </div>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 py-4 border-t border-primary-foreground/10 text-xs flex justify-between text-primary-foreground/60">
+          <span>© {new Date().getFullYear()} Tile Marketplace.</span>
+        </div>
+      </footer>
     </div>
   );
 }
