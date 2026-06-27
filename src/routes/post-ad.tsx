@@ -16,7 +16,15 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadListingImages } from "@/lib/storage";
 import { toast } from "sonner";
-import { Upload, X, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import {
+  Upload,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  Package,
+  Wrench,
+} from "lucide-react";
 
 export const Route = createFileRoute("/post-ad")({
   head: () => ({ meta: [{ title: "Post an Ad — Tile" }] }),
@@ -43,6 +51,9 @@ type FormVals = z.infer<typeof schema>;
 function PostAd() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
+  
+  const TOTAL_STEPS = 4;
+
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +63,20 @@ function PostAd() {
     defaultValues: { type: "goods" },
   });
   const watch = form.watch();
+
+  const nextStep = () => {
+    if (step < TOTAL_STEPS) setStep((s) => s + 1);
+  };
+
+  const prevStep = () => {
+    if (step > 1) setStep((s) => s - 1);
+  };
+
+  const selectListingType = (type: "goods" | "service") => {
+    form.setValue("type", type);
+    form.setValue("category", "");
+    setStep(2);
+  };
 
   // Cascade Metadata Queries Hooked onto React-Form internal state values
   const { data: states = [] } = useQuery({
@@ -145,7 +170,6 @@ function PostAd() {
       toast.error(`Error on validation parameter: ${first}`);
     }
   };
-
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -161,100 +185,498 @@ function PostAd() {
           <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5">
             {step === 1 && (
               <>
-                <h2 className="text-xl font-semibold">Step 1 — Choose category</h2>
-                <div className="flex gap-2">
-                  {(["goods", "service"] as const).map((t) => (
-                    <button type="button" key={t} onClick={() => { form.setValue("type", t); form.setValue("category", ""); }}
-                      className={`flex-1 p-4 rounded-lg border-2 capitalize font-semibold ${watch.type === t ? "border-accent bg-accent/10" : "border-border"}`}>
-                      {t === "goods" ? "Sell goods" : "Offer a service"}
-                    </button>
-                  ))}
-                </div>
-                <div>
-                  <Label>Category</Label>
-                  <Select value={watch.category} onValueChange={(v) => form.setValue("category", v, { shouldValidate: true })}>
-                    <SelectTrigger><SelectValue placeholder="Pick one…" /></SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
-                        <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end">
-                  <Button type="button" disabled={!watch.category} onClick={() => setStep(2)}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
-                </div>
-              </>
-            )}
+                <h2 className="text-2xl font-bold">
+  What would you like to post?
+</h2>
 
-            {step === 2 && (
-              <>
-                <h2 className="text-xl font-semibold">Step 2 — Details</h2>
-                <div>
-                  <Label>Title</Label>
-                  <Input {...form.register("title")} placeholder="e.g. Clean Toyota Corolla 2018" />
-                </div>
-                <div>
-                  <Label>Description</Label>
-                  <Textarea {...form.register("description")} rows={4} placeholder="Describe your item or service terms..." />
-                </div>
-                <div>
-                  <Label>Price (₦)</Label>
-                  <Input type="number" {...form.register("price")} />
-                </div>
-                <div className="flex justify-between">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" />Back</Button>
-                  <Button type="button" onClick={() => setStep(3)}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
-                </div>
-              </>
-            )}
+<p className="text-sm text-muted-foreground">
+  Choose whether you're selling a physical product or offering a professional service.
+</p>
 
-            {step === 3 && (
-              <>
-                <h2 className="text-xl font-semibold">Step 3 — Media & Location Hierarchy</h2>
+<div className="grid gap-4 mt-6">
+
+  <button
+    type="button"
+    onClick={() => {
+      form.setValue("type", "goods");
+      form.setValue("category", "");
+    }}
+    className={`rounded-xl border-2 p-5 text-left transition-all ${
+      watch.type === "goods"
+        ? "border-accent bg-accent/10"
+        : "border-border hover:border-accent/40"
+    }`}
+  >
+    <div className="flex items-start justify-between">
+      <div>
+        <h3 className="text-lg font-bold">
+          📦 Sell a Product
+        </h3>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Phones, laptops, cars, land, fashion, furniture,
+          food, electronics and other physical items.
+        </p>
+      </div>
+
+      {watch.type === "goods" && (
+        <Check className="h-6 w-6 text-accent" />
+      )}
+    </div>
+  </button>
+
+  <button
+    type="button"
+    onClick={() => {
+      form.setValue("type", "service");
+      form.setValue("category", "");
+    }}
+    className={`rounded-xl border-2 p-5 text-left transition-all ${
+      watch.type === "service"
+        ? "border-accent bg-accent/10"
+        : "border-border hover:border-accent/40"
+    }`}
+  >
+    <div className="flex items-start justify-between">
+      <div>
+        <h3 className="text-lg font-bold">
+          🛠 Offer a Service
+        </h3>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Photography, plumbing, barbering, electrical work,
+          tutoring, software development, catering and other professional services.
+        </p>
+      </div>
+
+      {watch.type === "service" && (
+        <Check className="h-6 w-6 text-accent" />
+      )}
+    </div>
+  </button>
+
+</div>
+               <div className="mt-6">
+  <Label className="mb-2 block">Category</Label>
+
+  <Select
+    value={watch.category}
+    onValueChange={(v) =>
+      form.setValue("category", v, {
+        shouldValidate: true,
+      })
+    }
+  >
+    <SelectTrigger>
+      <SelectValue placeholder={`Select a ${watch.type} category`} />
+    </SelectTrigger>
+
+    <SelectContent>
+      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
+        <SelectItem key={c.slug} value={c.slug}>
+          {c.label}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+<div className="flex justify-end">
+  <Button
+    type="button"
+    disabled={!watch.category}
+    onClick={() => setStep(2)}
+  >
+    Continue
+    <ChevronRight className="ml-2 h-4 w-4" />
+  </Button>
+</div>
+</>
+)}
+
+{step === 2 && (
+<>
+  <h2 className="text-2xl font-bold">
+    Tell buyers about your {watch.type === "goods" ? "product" : "service"}
+  </h2>
+
+  <div>
+    <Label>Title</Label>
+
+    <Input
+      {...form.register("title")}
+      placeholder={
+        watch.type === "goods"
+          ? "Samsung Galaxy S24 Ultra 256GB"
+          : "Professional Wedding Photographer"
+      }
+    />
+  </div>
+
+  <div>
+    <Label>Description</Label>
+
+    <Textarea
+      rows={5}
+      {...form.register("description")}
+      placeholder={
+        watch.type === "goods"
+          ? "Condition, specifications, warranty, reason for selling..."
+          : "Describe your experience, what clients should expect, availability and pricing..."
+      }
+    />
+  </div>
+
+  <div>
+    <Label>
+      {watch.type === "goods"
+        ? "Price (₦)"
+        : "Starting Price (₦)"}
+    </Label>
+
+    <Input
+      type="number"
+      {...form.register("price")}
+      placeholder="50000"
+    />
+  </div>
+
+  {watch.type === "goods" && (
+    <>
+      <div>
+        <Label>Brand</Label>
+
+        <Input
+          {...form.register("brand")}
+          placeholder="Apple, Samsung, Toyota..."
+        />
+      </div>
+
+      <div>
+        <Label>Condition</Label>
+
+        <Select
+          value={watch.condition}
+          onValueChange={(v) =>
+            form.setValue(
+              "condition",
+              v as FormVals["condition"]
+            )
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select condition" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="new">Brand New</SelectItem>
+            <SelectItem value="used_like_new">
+              Used - Like New
+            </SelectItem>
+            <SelectItem value="used_good">
+              Used - Good
+            </SelectItem>
+            <SelectItem value="used_fair">
+              Used - Fair
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </>
+  )}
+
+  {watch.type === "service" && (
+    <>
+      <div>
+        <Label>Years of Experience</Label>
+
+        <Input
+          type="number"
+          {...form.register("years_experience")}
+        />
+      </div>
+
+      <div>
+        <Label>Service Delivery</Label>
+
+        <Select
+          value={watch.service_mode}
+          onValueChange={(v) =>
+            form.setValue(
+              "service_mode",
+              v as FormVals["service_mode"]
+            )
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Choose service mode" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="remote">
+              Remote
+            </SelectItem>
+
+            <SelectItem value="in_person">
+              In Person
+            </SelectItem>
+
+            <SelectItem value="both">
+              Both
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </>
+  )}
+
+  <div className="flex justify-between">
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => setStep(1)}
+    >
+      <ChevronLeft className="mr-2 h-4 w-4" />
+      Back
+    </Button>
+
+    <Button
+      type="button"
+      onClick={() => setStep(3)}
+    >
+      Continue
+      <ChevronRight className="ml-2 h-4 w-4" />
+    </Button>
+  </div>
+</>
+)}
+
+{step === 3 && (
+<>
+  <h2 className="text-2xl font-bold">
+    Location & Contact
+  </h2>
                 
-                {/* Geolocation Selectors Block */}
-                <div className="space-y-4 border p-4 rounded-xl bg-muted/20">
-                  <div>
-                    <Label>State Selection</Label>
-                    <Select value={watch.state_id} onValueChange={(v) => { form.setValue("state_id", v); form.setValue("city_id", ""); form.setValue("lga_id", ""); }}>
-                      <SelectTrigger><SelectValue placeholder="Select State" /></SelectTrigger>
-                      <SelectContent>
-                        {states.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+               {/* Location */}
+<div className="space-y-5 border rounded-xl p-5 bg-muted/20">
 
-                  <div>
-                    <Label>City Selection</Label>
-                    <Select disabled={!watch.state_id} value={watch.city_id} onValueChange={(v) => { form.setValue("city_id", v); form.setValue("lga_id", ""); }}>
-                      <SelectTrigger><SelectValue placeholder="Select City" /></SelectTrigger>
-                      <SelectContent>
-                        {cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="font-semibold">Location</h3>
+      <p className="text-sm text-muted-foreground">
+        Select where this item or service is available.
+      </p>
+    </div>
 
-                  <div>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handleDetectLocation}
+    >
+      Detect My Location
+    </Button>
+  </div>
+
+  {/* State */}
+  <div>
+    <Label>State</Label>
+
+    <Select
+      value={watch.state_id}
+      onValueChange={(v) => {
+        form.setValue("state_id", v);
+        form.setValue("city_id", "");
+        form.setValue("lga_id", "");
+      }}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Choose State" />
+      </SelectTrigger>
+
+      <SelectContent>
+        {states.map((s) => (
+          <SelectItem key={s.id} value={s.id}>
+            {s.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+
+  {/* City */}
+  <div>
+    <Label>City</Label>
+
+    <Select
+      disabled={!watch.state_id}
+      value={watch.city_id}
+      onValueChange={(v) => {
+        form.setValue("city_id", v);
+        form.setValue("lga_id", "");
+      }}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Choose City" />
+      </SelectTrigger>
+
+      <SelectContent>
+        {cities.map((c) => (
+          <SelectItem key={c.id} value={c.id}>
+            {c.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+
+  {/* LGA */}
+  <div>
+    <Label>Local Government Area</Label>
+
+    <Select
+      disabled={!watch.city_id}
+      value={watch.lga_id}
+      onValueChange={(v) => form.setValue("lga_id", v)}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Choose LGA" />
+      </SelectTrigger>
+
+      <SelectContent>
+        {lgas.map((l) => (
+          <SelectItem key={l.id} value={l.id}>
+            {l.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+
+</div>
+
+                                   <div>
                     <Label>Local Government Area (LGA)</Label>
-                    <Select disabled={!watch.city_id} value={watch.lga_id} onValueChange={(v) => form.setValue("lga_id", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select LGA" /></SelectTrigger>
+                    <Select
+                      disabled={!watch.city_id}
+                      value={watch.lga_id}
+                      onValueChange={(v) => form.setValue("lga_id", v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select LGA" />
+                      </SelectTrigger>
+
                       <SelectContent>
-                        {lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                        {lgas.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>
+                            {l.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
+                {/* Images */}
+                <div className="space-y-3">
+                  <Label>Photos</Label>
+
+                  <div className="border-2 border-dashed rounded-xl p-6 text-center">
+                    <input
+                      id="listing-images"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (!e.target.files) return;
+
+                        const selected = Array.from(e.target.files);
+
+                        setFiles((prev) => [...prev, ...selected].slice(0, 8));
+                      }}
+                    />
+
+                    <label
+                      htmlFor="listing-images"
+                      className="cursor-pointer flex flex-col items-center gap-3"
+                    >
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+
+                      <div>
+                        <p className="font-medium">
+                          Click to upload photos
+                        </p>
+
+                        <p className="text-sm text-muted-foreground">
+                          Maximum of 8 images
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {files.length > 0 && (
+                    <div className="grid grid-cols-4 gap-3">
+                      {files.map((file, index) => (
+                        <div
+                          key={index}
+                          className="relative rounded-lg overflow-hidden border aspect-square"
+                        >
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFiles((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              )
+                            }
+                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Contact */}
                 <div>
                   <Label>Contact Phone Number</Label>
-                  <Input {...form.register("phone")} placeholder="080XXXXXXXX" />
+
+                  <Input
+                    {...form.register("phone")}
+                    placeholder="08012345678"
+                  />
                 </div>
 
                 <div className="flex justify-between">
-                  <Button type="button" variant="outline" onClick={() => setStep(2)}><ChevronLeft className="h-4 w-4 mr-1" />Back</Button>
-                  <Button type="submit" disabled={submitting} className="bg-accent text-accent-foreground">
-                    <Check className="h-4 w-4 mr-1" />{submitting ? "Posting..." : "Publish Advertisement"}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(2)}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    className="bg-accent text-accent-foreground"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+
+                    {submitting
+                      ? "Publishing..."
+                      : watch.type === "goods"
+                      ? "Publish Product"
+                      : "Publish Service"}
                   </Button>
                 </div>
               </>
