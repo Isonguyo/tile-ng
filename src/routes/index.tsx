@@ -78,7 +78,7 @@ function Index() {
   const [selectedLocation, setSelectedLocation] = useState(loc ?? "all");
 
   // Marketplace View state
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured bag">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular" | "price-low" | "price-high">("newest");
 
   // ==========================
@@ -292,6 +292,17 @@ function Index() {
     [vendors]
   );
 
+  const executeSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate({
+      search: {
+        q: searchInput || undefined,
+        loc: selectedLocation !== "all" ? selectedLocation : undefined,
+        cat: cat || undefined,
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
       <div>
@@ -409,7 +420,7 @@ function Index() {
           </section>
         )}
 
-        {/* VERIFIED MERCHANTS (SPLIT PREVIEW ASSETS PANEL) */}
+        {/* VERIFIED MERCHANTS */}
         {verifiedMerchants.length > 0 && (
           <section className="container mx-auto px-4 py-6">
             <div className="bg-gradient-to-r from-emerald-500/10 via-background to-background border border-emerald-500/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -581,7 +592,7 @@ function Index() {
               </div>
             </div>
 
-            {/* SPONSORED ADS STREAM ROW PREVIEW */}
+            {/* SPONSORED ADS ROW */}
             {processedListings.some((l) => l.is_promoted) && !cat && !q && (
               <section className="space-y-4">
                 <div className="flex items-center justify-between">
