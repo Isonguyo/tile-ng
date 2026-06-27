@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
@@ -72,14 +72,34 @@ type ProfileRow = {
 function Index() {
   const navigate = useNavigate({ from: "/" });
   const { q, loc, cat } = Route.useSearch();
+  const listingsRef = useRef<HTMLDivElement>(null);
 
-  // Search & Filters state
+  // Derived filter state flag
+  const isFiltering = Boolean(q) || Boolean(cat) || (loc && loc !== "all");
+
+  // Search & Filters local input state
   const [searchInput, setSearchInput] = useState(q ?? "");
   const [selectedLocation, setSelectedLocation] = useState(loc ?? "all");
 
-  // Marketplace View state
+  // Marketplace Feed state
   const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular" | "price-low" | "price-high">("newest");
+
+  // Smooth scroll to listings container when search params update
+  useEffect(() => {
+    if (!isFiltering) return;
+
+    listingsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [q, cat, loc, isFiltering]);
+
+  // Synchronize inputs when query properties reset or change elsewhere
+  useEffect(() => {
+    setSearchInput(q ?? "");
+    setSelectedLocation(loc ?? "all");
+  }, [q, loc]);
 
   // ==========================
   // 1. LISTINGS QUERY
@@ -141,6 +161,7 @@ function Index() {
   // ==========================
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
+    enabled: !isFiltering, // Only fetch if user is on default homepage
     queryFn: async () => {
       const [{ count: listingsCount }, { count: shopsCount }, { count: sellersCount }] = await Promise.all([
         supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "approved"),
@@ -182,6 +203,7 @@ function Index() {
   // ==========================
   const { data: vendors = [] } = useQuery({
     queryKey: ["featured-shops"],
+    enabled: !isFiltering,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("public_profiles")
@@ -201,6 +223,7 @@ function Index() {
   // ==========================
   const { data: trendingListings = [] } = useQuery({
     queryKey: ["trending-listings"],
+    enabled: !isFiltering,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("listings")
@@ -242,7 +265,7 @@ function Index() {
     return CATEGORIES.map((category) => {
       const match = catCounts.find((c) => c.category === category.slug);
       return { ...category, count: match?.count ?? 0 };
-    }).filter((category) => category.count > 0); // 👈 Only keeps categories that have 1+ listings
+    }).filter((category) => category.count > 0);
   }, [catCounts]);
 
   const trendingCategories = useMemo(() => {
@@ -309,77 +332,103 @@ function Index() {
     });
   };
 
+  const handleCategoryFilter = (slug: string) => {
+    const isCurrentCat = cat === slug;
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        cat: isCurrentCat ? undefined : slug,
+      }),
+    });
+  };
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSelectedLocation("all");
+    navigate({ search: {} });
+  };
+
+  // Find explicit display text for the active category filter header
+  const activeCategoryLabel = useMemo(() => {
+    if (!cat) return "";
+    return CATEGORIES.find((c) => c.slug === cat)?.label ?? cat;
+  }, [cat]);
+
   return (
     <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
       <div>
         <SiteHeader />
 
-        {/* HERO */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:26px_26px]" />
-          <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
-            <div className="max-w-4xl mx-auto text-center space-y-6">
-              <span className="inline-flex items-center rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide backdrop-blur">
-                🇳🇬 Nigeria's Marketplace for Goods & Services
-              </span>
-              <h1 className="text-4xl md:text-6xl font-black leading-tight tracking-tight">
-                Find Trusted Stores,<br />Products & Services Near You
-              </h1>
-              <p className="max-w-2xl mx-auto text-primary-foreground/90 text-base md:text-lg leading-relaxed">
-                Shop from verified businesses, discover local services, compare prices and connect directly with trusted sellers across Nigeria.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4 pt-3">
-                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8">
-                  <Link to="/">Browse Listings</Link>
-                </Button>
-                <Button asChild size="lg" variant="secondary" className="font-bold">
-                  <Link to="/dashboard">Open Your Shop</Link>
-                </Button>
-              </div>
+        {/* 1. HERO SECTION (Landing Mode Only) */}
+        {!isFiltering && (
+          <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground">
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:26px_26px]" />
+            <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
+              <div className="max-w-4xl mx-auto text-center space-y-6">
+                <span className="inline-flex items-center rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide backdrop-blur">
+                  🇳🇬 Nigeria's Marketplace for Goods & Services
+                </span>
+                <h1 className="text-4xl md:text-6xl font-black leading-tight tracking-tight">
+                  Find Trusted Stores,<br />Products & Services Near You
+                </h1>
+                <p className="max-w-2xl mx-auto text-primary-foreground/90 text-base md:text-lg leading-relaxed">
+                  Shop from verified businesses, discover local services, compare prices and connect directly with trusted sellers across Nigeria.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4 pt-3">
+                  <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8">
+                    <Link to="/">Browse Listings</Link>
+                  </Button>
+                  <Button asChild size="lg" variant="secondary" className="font-bold">
+                    <Link to="/dashboard">Open Your Shop</Link>
+                  </Button>
+                </div>
 
-              <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
-                <div className="flex items-center gap-2">
-                  <Icons.Package className="h-5 w-5" />
-                  <span>export <strong>{Number(stats?.total_listings ?? 0).toLocaleString()}</strong> Listings</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Icons.Store className="h-5 w-5" />
-                  <span><strong>{Number(stats?.active_shops ?? 0).toLocaleString()}</strong> Shops</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Icons.BadgeCheck className="h-5 w-5" />
-                  <span><strong>{Number(stats?.verified_vendors ?? 0).toLocaleString()}</strong> Verified Sellers</span>
+                <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Icons.Package className="h-5 w-5" />
+                    <span>Explore <strong>{Number(stats?.total_listings ?? 0).toLocaleString()}</strong> Listings</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icons.Store className="h-5 w-5" />
+                    <span><strong>{Number(stats?.active_shops ?? 0).toLocaleString()}</strong> Shops</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icons.BadgeCheck className="h-5 w-5" />
+                    <span><strong>{Number(stats?.verified_vendors ?? 0).toLocaleString()}</strong> Verified Sellers</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* STATS ROW */}
-        <section className="container mx-auto px-4 -mt-8 relative z-20">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-blue-500 bg-blue-500/10" },
-              { label: "Verified Sellers", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-emerald-500 bg-emerald-500/10" },
-              { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-500 bg-amber-500/10" },
-              { label: "Categories", val: quickCategories.length, icon: Icons.LayoutGrid, color: "text-purple-500 bg-purple-500/10" },
-            ].map((s, i) => {
-              const Ic = s.icon;
-              return (
-                <Card key={i} className="p-4 rounded-xl bg-background shadow-md border flex items-center gap-4">
-                  <div className={`hidden sm:flex p-3 rounded-lg ${s.color}`}><Ic className="h-5 w-5" /></div>
-                  <div>
-                    <p className="text-xl md:text-2xl font-extrabold">{Number(s.val).toLocaleString()}</p>
-                    <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</p>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
+        {/* 2. STATS ROW SUMMARY CARD (Landing Mode Only) */}
+        {!isFiltering && (
+          <section className="container mx-auto px-4 -mt-8 relative z-20">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-blue-500 bg-blue-500/10" },
+                { label: "Verified Sellers", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-emerald-500 bg-emerald-500/10" },
+                { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-500 bg-amber-500/10" },
+                { label: "Categories", val: quickCategories.length, icon: Icons.LayoutGrid, color: "text-purple-500 bg-purple-500/10" },
+              ].map((s, i) => {
+                const Ic = s.icon;
+                return (
+                  <Card key={i} className="p-4 rounded-xl bg-background shadow-md border flex items-center gap-4">
+                    <div className={`hidden sm:flex p-3 rounded-lg ${s.color}`}><Ic className="h-5 w-5" /></div>
+                    <div>
+                      <p className="text-xl md:text-2xl font-extrabold">{Number(s.val).toLocaleString()}</p>
+                      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</p>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-        {/* FEATURED STORES */}
-        {verifiedMerchants.length > 0 && (
+        {/* 3. FEATURED STORES (Landing Mode Only) */}
+        {!isFiltering && verifiedMerchants.length > 0 && (
           <section className="container mx-auto px-4 pt-12 pb-6">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -426,8 +475,8 @@ function Index() {
           </section>
         )}
 
-        {/* VERIFIED MERCHANTS */}
-        {verifiedMerchants.length > 0 && (
+        {/* 4. VERIFIED TRUST FLAGBANNER (Landing Mode Only) */}
+        {!isFiltering && verifiedMerchants.length > 0 && (
           <section className="container mx-auto px-4 py-6">
             <div className="bg-gradient-to-r from-emerald-500/10 via-background to-background border border-emerald-500/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="space-y-2 max-w-xl text-center md:text-left">
@@ -446,8 +495,8 @@ function Index() {
           </section>
         )}
 
-        {/* 🔥 TRENDING PRODUCTS */}
-        {trendingListings.length > 0 && (
+        {/* 5. HOT TRENDING PRODUCTS STREAM (Landing Mode Only) */}
+        {!isFiltering && trendingListings.length > 0 && (
           <section className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
@@ -468,8 +517,8 @@ function Index() {
           </section>
         )}
 
-        {/* BROWSE BY CATEGORY GRID */}
-        {quickCategories.length > 0 && (
+        {/* 6. BROWSE BY CATEGORY GRID (Landing Mode Only) */}
+        {!isFiltering && quickCategories.length > 0 && (
           <section className="container mx-auto px-4 py-8 bg-muted/30 border-y border-muted-foreground/10 my-6">
             <div className="max-w-4xl mb-6">
               <h2 className="text-2xl font-bold tracking-tight">Browse by Category</h2>
@@ -482,14 +531,14 @@ function Index() {
                 const Ic = (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[c.icon] ?? Icons.Tag;
                 const active = cat === c.slug;
                 return (
-                  <Link
+                  <Button
                     key={c.slug}
-                    to="/"
-                    search={{ cat: active ? undefined : c.slug }}
-                    className={`flex flex-col items-center justify-center text-center rounded-2xl border p-5 transition-all group ${
+                    variant="ghost"
+                    onClick={() => handleCategoryFilter(c.slug)}
+                    className={`h-auto flex flex-col items-center justify-center text-center rounded-2xl border p-5 transition-all group normal-case whitespace-normal ${
                       active 
-                        ? "border-accent bg-accent/10 ring-2 ring-accent" 
-                        : "bg-background hover:border-primary hover:shadow-md hover:-translate-y-0.5"
+                        ? "border-accent bg-accent/10 ring-2 ring-accent hover:bg-accent/10" 
+                        : "bg-background hover:border-primary hover:shadow-md hover:bg-background"
                     }`}
                   >
                     <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
@@ -499,19 +548,19 @@ function Index() {
                     <p className="text-xs text-muted-foreground mt-1 font-medium bg-muted px-2 py-0.5 rounded-full">
                       {c.count.toLocaleString()}
                     </p>
-                  </Link>
+                  </Button>
                 );
               })}
             </div>
           </section>
         )}
 
-        {/* ALL LISTINGS SECTION */}
-        <section className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* 7. ALL LISTINGS SECTION & SEARCH RESULTS VIEW CONTAINER */}
+        <section ref={listingsRef} className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-8 scroll-mt-16">
           {/* SEARCH FILTERS CONTROLS ASIDE */}
           <aside className="lg:col-span-1 space-y-6">
-            {/* TRENDING CATEGORIES (Sidebar) */}
-            {trendingCategories.length > 0 && (
+            {/* TRENDING TOP CATEGORIES (Sidebar - Landing Mode Only) */}
+            {!isFiltering && trendingCategories.length > 0 && (
               <Card className="border shadow-sm overflow-hidden">
                 <div className="bg-primary text-primary-foreground px-4 py-3">
                   <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -522,22 +571,28 @@ function Index() {
                   {trendingCategories.map((tc) => {
                     const Ic = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tc.icon] ?? Icons.Tag;
                     return (
-                      <Link key={tc.slug} to="/" search={{ cat: tc.slug }} className="flex items-center gap-3 rounded-xl border p-3 transition-all hover:border-primary hover:bg-primary/5">
+                      <Button
+                        key={tc.slug}
+                        variant="ghost"
+                        onClick={() => handleCategoryFilter(tc.slug)}
+                        className="w-full h-auto justify-start flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-primary hover:bg-primary/5"
+                      >
                         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                           <Ic className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate">{tc.label}</p>
+                          <p className="text-sm font-semibold truncate text-foreground">{tc.label}</p>
                           <p className="text-xs text-muted-foreground">{tc.count.toLocaleString()} active listings</p>
                         </div>
-                        <Icons.ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </Link>
+                        <Icons.ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-auto" />
+                      </Button>
                     );
                   })}
                 </div>
               </Card>
             )}
 
+            {/* FILTER FORM ASIDE BLOCK */}
             <Card className="p-4 border shadow-sm space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Filter Listings</h3>
               <form onSubmit={executeSearch} className="space-y-3">
@@ -571,16 +626,13 @@ function Index() {
                 </div>
 
                 <Button type="submit" className="w-full font-bold">Apply Filter</Button>
-                { (q || loc || cat) && (
+                
+                {isFiltering && (
                   <Button 
                     type="button" 
                     variant="ghost" 
-                    className="w-full text-xs"
-                    onClick={() => {
-                      setSearchInput("");
-                      setSelectedLocation("all");
-                      navigate({ search: {} });
-                    }}
+                    className="w-full text-xs border border-dashed"
+                    onClick={clearAllFilters}
                   >
                     Clear Filters
                   </Button>
@@ -591,15 +643,35 @@ function Index() {
 
           {/* GRID STREAM MAIN FEED CONTAINER */}
           <div className="lg:col-span-3 space-y-6">
-            {/* CONTROL BAR */}
+            {/* SEARCH RESULTS MODE BREADCRUMB / CONTROLS */}
             <div className="bg-background border rounded-2xl shadow-sm p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold">All Listings</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {processedListings.length.toLocaleString()} listing{processedListings.length !== 1 ? "s" : ""} available
+                  {isFiltering ? (
+                    <div className="space-y-1">
+                      <Button
+                        variant="link"
+                        onClick={clearAllFilters}
+                        className="h-auto p-0 text-muted-foreground text-xs font-semibold hover:no-underline flex items-center gap-1"
+                      >
+                        <Icons.ArrowLeft className="h-3 w-3" /> Back to Homepage
+                      </Button>
+                      <h2 className="text-xl font-black tracking-tight text-foreground">
+                        Results for:{" "}
+                        <span className="text-primary font-bold">
+                          {q ? `"${q}"` : activeCategoryLabel || loc || "Filtered Listings"}
+                        </span>
+                      </h2>
+                    </div>
+                  ) : (
+                    <h2 className="text-xl font-bold">All Listings</h2>
+                  )}
+                  
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {processedListings.length.toLocaleString()} listing{processedListings.length !== 1 ? "s" : ""} found
                   </p>
                 </div>
+                
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                     <TabsList className="grid grid-cols-4">
@@ -626,8 +698,8 @@ function Index() {
               </div>
             </div>
 
-            {/* SPONSORED ADS ROW */}
-            {processedListings.some((l) => l.is_promoted) && !cat && !q && (
+            {/* SPONSORED ADS ROW (Landing Mode Only) */}
+            {!isFiltering && processedListings.some((l) => l.is_promoted) && (
               <section className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -656,16 +728,21 @@ function Index() {
                   <p className="mt-4 text-muted-foreground">Loading listings...</p>
                 </div>
               ) : processedListings.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Icons.PackageX className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-bold">No listings found</h3>
-                  <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-                    We couldn't find anything matching your filters. Try modifying your configuration parameters.
+                <div className="text-center py-16 border rounded-2xl bg-background border-dashed space-y-3">
+                  <div className="p-3 bg-muted w-12 h-12 rounded-full flex items-center justify-center mx-auto">
+                    <Icons.PackageOpen className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-bold text-lg">No Listings Match Filters</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    We couldn't find any approved products or services answering this selection. Try updating keywords or location configurations.
                   </p>
-                </Card>
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    Clear Active Conditions
+                  </Button>
+                </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                  {processedListings.filter((l) => !l.is_promoted).map((l) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {processedListings.map((l) => (
                     <ListingCard key={l.id} l={l} />
                   ))}
                 </div>
@@ -675,44 +752,9 @@ function Index() {
         </section>
       </div>
 
-      {/* FOOTER */}
-      <footer className="bg-primary text-primary-foreground/80 mt-16 border-t border-primary-foreground/10">
-        <div className="container mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
-          <div className="space-y-3 col-span-2 md:col-span-1">
-            <span className="text-base font-extrabold text-primary-foreground tracking-wider uppercase">Tile Marketplace</span>
-            <p className="text-xs text-primary-foreground/70 max-w-xs leading-relaxed">
-              Nigeria's marketplace for verified goods and trusted local services.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Marketplace</h4>
-            <div className="flex flex-col gap-1.5 text-xs">
-              <Link to="/" className="hover:text-white">Browse Listings</Link>
-              <Link to="/post-ad" className="hover:text-white">Post an Ad</Link>
-              <Link to="/dashboard" className="hover:text-white">Merchant Hub</Link>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Company</h4>
-            <div className="flex flex-col gap-1.5 text-xs">
-              <span className="hover:text-white cursor-pointer">About</span>
-              <span className="hover:text-white cursor-pointer">Contact</span>
-              <span className="hover:text-white cursor-pointer">Privacy Policy</span>
-              <span className="hover:text-white cursor-pointer">Terms of Service</span>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-primary-foreground border-b border-primary-foreground/10 pb-1">Follow Us</h4>
-            <div className="flex gap-3 text-primary-foreground/70">
-              <Icons.Facebook className="h-5 w-5 hover:text-white cursor-pointer" />
-              <Icons.Instagram className="h-5 w-5 hover:text-white cursor-pointer" />
-              <Icons.Twitter className="h-5 w-5 hover:text-white cursor-pointer" />
-              <Icons.Linkedin className="h-5 w-5 hover:text-white cursor-pointer" />
-            </div>
-          </div>
-        </div>
-        <div className="container mx-auto px-4 py-4 border-t border-primary-foreground/10 text-xs flex justify-between text-primary-foreground/60">
-          <span>© {new Date().getFullYear()} Tile. All rights reserved.</span>
+      <footer className="bg-card border-t py-6 mt-12 text-center text-xs text-muted-foreground">
+        <div className="container mx-auto px-4">
+          <p>© {new Date().getFullYear()} Tile Marketplace Nigeria. All rights reserved.</p>
         </div>
       </footer>
     </div>
