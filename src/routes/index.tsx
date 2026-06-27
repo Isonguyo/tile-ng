@@ -182,21 +182,20 @@ function Index() {
   // 4. FEATURED SHOPS QUERY
   // ==========================
   const { data: vendors = [] } = useQuery({
-    queryKey: ["featured-shops"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("public_profiles")
-        .select("*")
-        .not("shop_slug", "is", null)
-        .neq("shop_slug", "")
-        .order("subscription_tier", { ascending: false })
-        .order("is_verified", { ascending: false })
-        .limit(6);
+  queryKey: ["featured-shops"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("public_profiles")
+      .select("*")
+      .not("shop_slug", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(6);
 
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+    if (error) throw error;
+
+    return data ?? [];
+  },
+});
 
   // ==========================
   // 5. DERIVED VALUES & MEMOS
