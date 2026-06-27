@@ -66,6 +66,7 @@ type ProfileRow = {
   avatar_url?: string | null;
   shop_slug?: string | null;
   location?: string | null;
+  active_listings?: number; // Optional fallback counter inclusion helper
 };
 
 function Index() {
@@ -456,47 +457,80 @@ function Index() {
           {/* STREAM DATA MATRIX FEED */}
           <div className="lg:col-span-3 space-y-6">
             
-            {/* VERIFIED MERCHANTS CONTAINER SLOT */}
+            {/* PREMIUM FEATURED STORES CONTAINER SLOT */}
             {verifiedMerchants.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Icons.BadgeCheck className="h-4 w-4 text-green-500" />
-                    Verified Merchants
-                  </h3>
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <Icons.Store className="h-6 w-6 text-primary" />
+                      Featured Stores
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Discover trusted businesses with active listings across Nigeria.
+                    </p>
+                  </div>
+
+                  <Button asChild variant="outline">
+                    <Link to="/shops">
+                      View All
+                    </Link>
+                  </Button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {verifiedMerchants.map((merchant) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {verifiedMerchants.map((v) => (
                     <Link
-                      key={merchant.id}
+                      key={v.id}
                       to="/shop/$slug"
-                      params={{ slug: merchant.shop_slug! }}
-                      className="bg-background border rounded-xl p-4 hover:shadow-lg transition text-center"
+                      params={{ slug: v.shop_slug! }}
+                      className="
+                        group
+                        rounded-2xl
+                        border
+                        bg-background
+                        overflow-hidden
+                        hover:shadow-xl
+                        transition-all
+                        duration-300
+                        hover:-translate-y-1
+                      "
                     >
-                      <div className="mx-auto h-16 w-16 rounded-full overflow-hidden bg-primary/10 mb-3">
-                        {merchant.avatar_url ? (
+                      <div className="h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-background flex items-center justify-center">
+                        {v.avatar_url ? (
                           <img
-                            src={merchant.avatar_url}
-                            className="w-full h-full object-cover"
+                            src={v.avatar_url}
+                            className="h-20 w-20 rounded-full object-cover border-4 border-background"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Icons.Store className="h-6 w-6 text-primary" />
+                          <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Icons.Store className="h-8 w-8 text-primary" />
                           </div>
                         )}
                       </div>
 
-                      <p className="font-bold text-sm truncate">
-                        {merchant.business_name || "Unnamed Merchant"}
-                      </p>
+                      <div className="p-5">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold truncate">
+                            {v.business_name || v.full_name}
+                          </h3>
+                          {v.is_verified && (
+                            <Icons.BadgeCheck className="h-5 w-5 text-green-500" />
+                          )}
+                        </div>
 
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {merchant.location ?? "Nigeria"}
-                      </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {v.location || "Nigeria"}
+                        </p>
 
-                      <div className="flex justify-center mt-2">
-                        <Icons.BadgeCheck className="h-4 w-4 text-green-500" />
+                        <div className="flex justify-between mt-4 text-sm">
+                          <span>
+                            {v.active_listings ?? 0} Listings
+                          </span>
+                          <span className="font-semibold text-primary">
+                            {v.subscription_tier?.toUpperCase() || "FREE"}
+                          </span>
+                        </div>
                       </div>
                     </Link>
                   ))}
