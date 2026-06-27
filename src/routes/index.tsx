@@ -402,54 +402,7 @@ const processedListings = useMemo(() => {
       break;
   }
 
-  return result;
-}, [listings, activeTab, sortBy]);
-
-  // Sorting
-  switch (sortBy) {
-    case "price-low":
-      result.sort(
-        (a, b) => (a.price ?? 0) - (b.price ?? 0)
-      );
-      break;
-
-    case "price-high":
-      result.sort(
-        (a, b) => (b.price ?? 0) - (a.price ?? 0)
-      );
-      break;
-
-    case "popular":
-      result.sort((a, b) => {
-        const scoreA =
-          (a.views_count ?? 0) +
-          (a.clicks_count ?? 0) * 3;
-
-        const scoreB =
-          (b.views_count ?? 0) +
-          (b.clicks_count ?? 0) * 3;
-
-        return scoreB - scoreA;
-      });
-      break;
-
-    case "oldest":
-      result.sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() -
-          new Date(b.created_at).getTime()
-      );
-      break;
-
-    default:
-      result.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() -
-          new Date(a.created_at).getTime()
-      );
-  }
-
-  // Sponsored listings always stay on top
+  // Keep promoted listings at the top
   result.sort((a, b) => {
     if (a.is_promoted === b.is_promoted) return 0;
     return a.is_promoted ? -1 : 1;
@@ -458,17 +411,13 @@ const processedListings = useMemo(() => {
   return result;
 }, [listings, activeTab, sortBy]);
 
-// Search
 const executeSearch = (e: React.FormEvent) => {
   e.preventDefault();
 
   navigate({
     search: {
       q: searchInput || undefined,
-      loc:
-        selectedLocation !== "all"
-          ? selectedLocation
-          : undefined,
+      loc: selectedLocation !== "all" ? selectedLocation : undefined,
       cat: cat || undefined,
     },
   });
