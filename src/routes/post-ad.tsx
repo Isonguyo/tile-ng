@@ -78,6 +78,11 @@ function PostAd() {
     setStep(2);
   };
 
+  // Optional: Placeholder logic for location detection feature
+  const handleDetectLocation = () => {
+    toast.info("Location detection features coming soon.");
+  };
+
   // Cascade Metadata Queries Hooked onto React-Form internal state values
   const { data: states = [] } = useQuery({
     queryKey: ["post-states"],
@@ -170,13 +175,14 @@ function PostAd() {
       toast.error(`Error on validation parameter: ${first}`);
     }
   };
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-3xl font-bold">Post an Ad</h1>
         <div className="flex items-center gap-2 my-4">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div key={s} className={`flex-1 h-2 rounded-full ${step >= s ? "bg-accent" : "bg-muted"}`} />
           ))}
         </div>
@@ -185,402 +191,237 @@ function PostAd() {
           <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5">
             {step === 1 && (
               <>
-                <h2 className="text-2xl font-bold">
-  What would you like to post?
-</h2>
+                <h2 className="text-2xl font-bold">What would you like to post?</h2>
+                <p className="text-sm text-muted-foreground">
+                  Choose whether you're selling a physical product or offering a professional service.
+                </p>
 
-<p className="text-sm text-muted-foreground">
-  Choose whether you're selling a physical product or offering a professional service.
-</p>
+                <div className="grid gap-4 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => selectListingType("goods")}
+                    className={`rounded-xl border-2 p-5 text-left transition-all ${
+                      watch.type === "goods"
+                        ? "border-accent bg-accent/10"
+                        : "border-border hover:border-accent/40"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold">📦 Sell a Product</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Phones, laptops, cars, land, fashion, furniture, food, electronics and other physical items.
+                        </p>
+                      </div>
+                      {watch.type === "goods" && <Check className="h-6 w-6 text-accent" />}
+                    </div>
+                  </button>
 
-<div className="grid gap-4 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => selectListingType("service")}
+                    className={`rounded-xl border-2 p-5 text-left transition-all ${
+                      watch.type === "service"
+                        ? "border-accent bg-accent/10"
+                        : "border-border hover:border-accent/40"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold">🛠 Offer a Service</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Photography, plumbing, barbering, electrical work, tutoring, software development, catering and other professional services.
+                        </p>
+                      </div>
+                      {watch.type === "service" && <Check className="h-6 w-6 text-accent" />}
+                    </div>
+                  </button>
+                </div>
 
-  <button
-    type="button"
-    onClick={() => {
-      form.setValue("type", "goods");
-      form.setValue("category", "");
-    }}
-    className={`rounded-xl border-2 p-5 text-left transition-all ${
-      watch.type === "goods"
-        ? "border-accent bg-accent/10"
-        : "border-border hover:border-accent/40"
-    }`}
-  >
-    <div className="flex items-start justify-between">
-      <div>
-        <h3 className="text-lg font-bold">
-          📦 Sell a Product
-        </h3>
+                <div className="mt-6">
+                  <Label className="mb-2 block">Category</Label>
+                  <Select
+                    value={watch.category}
+                    onValueChange={(v) => form.setValue("category", v, { shouldValidate: true })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Select a ${watch.type} category`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
+                        <SelectItem key={c.slug} value={c.slug}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          Phones, laptops, cars, land, fashion, furniture,
-          food, electronics and other physical items.
-        </p>
-      </div>
+                <div className="flex justify-end">
+                  <Button type="button" disabled={!watch.category} onClick={nextStep}>
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
 
-      {watch.type === "goods" && (
-        <Check className="h-6 w-6 text-accent" />
-      )}
-    </div>
-  </button>
+            {step === 2 && (
+              <>
+                <h2 className="text-2xl font-bold">Tell buyers about your {watch.type === "goods" ? "product" : "service"}</h2>
+                <div>
+                  <Label>Title</Label>
+                  <Input
+                    {...form.register("title")}
+                    placeholder={watch.type === "goods" ? "Samsung Galaxy S24 Ultra 256GB" : "Professional Wedding Photographer"}
+                  />
+                </div>
 
-  <button
-    type="button"
-    onClick={() => {
-      form.setValue("type", "service");
-      form.setValue("category", "");
-    }}
-    className={`rounded-xl border-2 p-5 text-left transition-all ${
-      watch.type === "service"
-        ? "border-accent bg-accent/10"
-        : "border-border hover:border-accent/40"
-    }`}
-  >
-    <div className="flex items-start justify-between">
-      <div>
-        <h3 className="text-lg font-bold">
-          🛠 Offer a Service
-        </h3>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea
+                    rows={5}
+                    {...form.register("description")}
+                    placeholder={watch.type === "goods" ? "Condition, specifications, warranty, reason for selling..." : "Describe your experience, what clients should expect, availability and pricing..."}
+                  />
+                </div>
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          Photography, plumbing, barbering, electrical work,
-          tutoring, software development, catering and other professional services.
-        </p>
-      </div>
+                <div>
+                  <Label>{watch.type === "goods" ? "Price (₦)" : "Starting Price (₦)"}</Label>
+                  <Input type="number" {...form.register("price")} placeholder="50000" />
+                </div>
 
-      {watch.type === "service" && (
-        <Check className="h-6 w-6 text-accent" />
-      )}
-    </div>
-  </button>
+                {watch.type === "goods" && (
+                  <>
+                    <div>
+                      <Label>Brand</Label>
+                      <Input {...form.register("brand")} placeholder="Apple, Samsung, Toyota..." />
+                    </div>
+                    <div>
+                      <Label>Condition</Label>
+                      <Select value={watch.condition} onValueChange={(v) => form.setValue("condition", v as FormVals["condition"])}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select condition" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">Brand New</SelectItem>
+                          <SelectItem value="used_like_new">Used - Like New</SelectItem>
+                          <SelectItem value="used_good">Used - Good</SelectItem>
+                          <SelectItem value="used_fair">Used - Fair</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
 
-</div>
-               <div className="mt-6">
-  <Label className="mb-2 block">Category</Label>
+                {watch.type === "service" && (
+                  <>
+                    <div>
+                      <Label>Years of Experience</Label>
+                      <Input type="number" {...form.register("years_experience")} />
+                    </div>
+                    <div>
+                      <Label>Service Delivery</Label>
+                      <Select value={watch.service_mode} onValueChange={(v) => form.setValue("service_mode", v as FormVals["service_mode"])}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose service mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="remote">Remote</SelectItem>
+                          <SelectItem value="in_person">In Person</SelectItem>
+                          <SelectItem value="both">Both</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
 
-  <Select
-    value={watch.category}
-    onValueChange={(v) =>
-      form.setValue("category", v, {
-        shouldValidate: true,
-      })
-    }
-  >
-    <SelectTrigger>
-      <SelectValue placeholder={`Select a ${watch.type} category`} />
-    </SelectTrigger>
+                <div className="flex justify-between">
+                  <Button type="button" variant="outline" onClick={prevStep}>
+                    <ChevronLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button type="button" onClick={nextStep}>
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
 
-    <SelectContent>
-      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
-        <SelectItem key={c.slug} value={c.slug}>
-          {c.label}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+            {step === 3 && (
+              <>
+                <h2 className="text-2xl font-bold">Location & Contact</h2>
+                <div className="space-y-5 border rounded-xl p-5 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">Location</h3>
+                      <p className="text-sm text-muted-foreground">Select where this item or service is available.</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={handleDetectLocation}>
+                      Detect My Location
+                    </Button>
+                  </div>
 
-<div className="flex justify-end">
-  <Button
-    type="button"
-    disabled={!watch.category}
-    onClick={() => setStep(2)}
-  >
-    Continue
-    <ChevronRight className="ml-2 h-4 w-4" />
-  </Button>
-</div>
-</>
-)}
-
-{step === 2 && (
-<>
-  <h2 className="text-2xl font-bold">
-    Tell buyers about your {watch.type === "goods" ? "product" : "service"}
-  </h2>
-
-  <div>
-    <Label>Title</Label>
-
-    <Input
-      {...form.register("title")}
-      placeholder={
-        watch.type === "goods"
-          ? "Samsung Galaxy S24 Ultra 256GB"
-          : "Professional Wedding Photographer"
-      }
-    />
-  </div>
-
-  <div>
-    <Label>Description</Label>
-
-    <Textarea
-      rows={5}
-      {...form.register("description")}
-      placeholder={
-        watch.type === "goods"
-          ? "Condition, specifications, warranty, reason for selling..."
-          : "Describe your experience, what clients should expect, availability and pricing..."
-      }
-    />
-  </div>
-
-  <div>
-    <Label>
-      {watch.type === "goods"
-        ? "Price (₦)"
-        : "Starting Price (₦)"}
-    </Label>
-
-    <Input
-      type="number"
-      {...form.register("price")}
-      placeholder="50000"
-    />
-  </div>
-
-  {watch.type === "goods" && (
-    <>
-      <div>
-        <Label>Brand</Label>
-
-        <Input
-          {...form.register("brand")}
-          placeholder="Apple, Samsung, Toyota..."
-        />
-      </div>
-
-      <div>
-        <Label>Condition</Label>
-
-        <Select
-          value={watch.condition}
-          onValueChange={(v) =>
-            form.setValue(
-              "condition",
-              v as FormVals["condition"]
-            )
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select condition" />
-          </SelectTrigger>
-
-          <SelectContent>
-            <SelectItem value="new">Brand New</SelectItem>
-            <SelectItem value="used_like_new">
-              Used - Like New
-            </SelectItem>
-            <SelectItem value="used_good">
-              Used - Good
-            </SelectItem>
-            <SelectItem value="used_fair">
-              Used - Fair
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </>
-  )}
-
-  {watch.type === "service" && (
-    <>
-      <div>
-        <Label>Years of Experience</Label>
-
-        <Input
-          type="number"
-          {...form.register("years_experience")}
-        />
-      </div>
-
-      <div>
-        <Label>Service Delivery</Label>
-
-        <Select
-          value={watch.service_mode}
-          onValueChange={(v) =>
-            form.setValue(
-              "service_mode",
-              v as FormVals["service_mode"]
-            )
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Choose service mode" />
-          </SelectTrigger>
-
-          <SelectContent>
-            <SelectItem value="remote">
-              Remote
-            </SelectItem>
-
-            <SelectItem value="in_person">
-              In Person
-            </SelectItem>
-
-            <SelectItem value="both">
-              Both
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </>
-  )}
-
-  <div className="flex justify-between">
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => setStep(1)}
-    >
-      <ChevronLeft className="mr-2 h-4 w-4" />
-      Back
-    </Button>
-
-    <Button
-      type="button"
-      onClick={() => setStep(3)}
-    >
-      Continue
-      <ChevronRight className="ml-2 h-4 w-4" />
-    </Button>
-  </div>
-</>
-)}
-
-{step === 3 && (
-<>
-  <h2 className="text-2xl font-bold">
-    Location & Contact
-  </h2>
-                
-               {/* Location */}
-<div className="space-y-5 border rounded-xl p-5 bg-muted/20">
-
-  <div className="flex items-center justify-between">
-    <div>
-      <h3 className="font-semibold">Location</h3>
-      <p className="text-sm text-muted-foreground">
-        Select where this item or service is available.
-      </p>
-    </div>
-
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={handleDetectLocation}
-    >
-      Detect My Location
-    </Button>
-  </div>
-
-  {/* State */}
-  <div>
-    <Label>State</Label>
-
-    <Select
-      value={watch.state_id}
-      onValueChange={(v) => {
-        form.setValue("state_id", v);
-        form.setValue("city_id", "");
-        form.setValue("lga_id", "");
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Choose State" />
-      </SelectTrigger>
-
-      <SelectContent>
-        {states.map((s) => (
-          <SelectItem key={s.id} value={s.id}>
-            {s.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-
-  {/* City */}
-  <div>
-    <Label>City</Label>
-
-    <Select
-      disabled={!watch.state_id}
-      value={watch.city_id}
-      onValueChange={(v) => {
-        form.setValue("city_id", v);
-        form.setValue("lga_id", "");
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Choose City" />
-      </SelectTrigger>
-
-      <SelectContent>
-        {cities.map((c) => (
-          <SelectItem key={c.id} value={c.id}>
-            {c.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-
-  {/* LGA */}
-  <div>
-    <Label>Local Government Area</Label>
-
-    <Select
-      disabled={!watch.city_id}
-      value={watch.lga_id}
-      onValueChange={(v) => form.setValue("lga_id", v)}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Choose LGA" />
-      </SelectTrigger>
-
-      <SelectContent>
-        {lgas.map((l) => (
-          <SelectItem key={l.id} value={l.id}>
-            {l.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-
-</div>
-
-                                   <div>
-                    <Label>Local Government Area (LGA)</Label>
+                  <div>
+                    <Label>State</Label>
                     <Select
-                      disabled={!watch.city_id}
-                      value={watch.lga_id}
-                      onValueChange={(v) => form.setValue("lga_id", v)}
+                      value={watch.state_id}
+                      onValueChange={(v) => {
+                        form.setValue("state_id", v);
+                        form.setValue("city_id", "");
+                        form.setValue("lga_id", "");
+                      }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select LGA" />
+                        <SelectValue placeholder="Choose State" />
                       </SelectTrigger>
+                      <SelectContent>
+                        {states.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
+                  <div>
+                    <Label>City</Label>
+                    <Select
+                      disabled={!watch.state_id}
+                      value={watch.city_id}
+                      onValueChange={(v) => {
+                        form.setValue("city_id", v);
+                        form.setValue("lga_id", "");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose City" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cities.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Local Government Area</Label>
+                    <Select disabled={!watch.city_id} value={watch.lga_id} onValueChange={(v) => form.setValue("lga_id", v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose LGA" />
+                      </SelectTrigger>
                       <SelectContent>
                         {lgas.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>
-                            {l.name}
-                          </SelectItem>
+                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                {/* Images */}
                 <div className="space-y-3">
                   <Label>Photos</Label>
-
                   <div className="border-2 border-dashed rounded-xl p-6 text-center">
                     <input
                       id="listing-images"
@@ -590,27 +431,15 @@ function PostAd() {
                       className="hidden"
                       onChange={(e) => {
                         if (!e.target.files) return;
-
                         const selected = Array.from(e.target.files);
-
                         setFiles((prev) => [...prev, ...selected].slice(0, 8));
                       }}
                     />
-
-                    <label
-                      htmlFor="listing-images"
-                      className="cursor-pointer flex flex-col items-center gap-3"
-                    >
+                    <label htmlFor="listing-images" className="cursor-pointer flex flex-col items-center gap-3">
                       <Upload className="h-8 w-8 text-muted-foreground" />
-
                       <div>
-                        <p className="font-medium">
-                          Click to upload photos
-                        </p>
-
-                        <p className="text-sm text-muted-foreground">
-                          Maximum of 8 images
-                        </p>
+                        <p className="font-medium">Click to upload photos</p>
+                        <p className="text-sm text-muted-foreground">Maximum of 8 images</p>
                       </div>
                     </label>
                   </div>
@@ -618,23 +447,11 @@ function PostAd() {
                   {files.length > 0 && (
                     <div className="grid grid-cols-4 gap-3">
                       {files.map((file, index) => (
-                        <div
-                          key={index}
-                          className="relative rounded-lg overflow-hidden border aspect-square"
-                        >
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-
+                        <div key={index} className="relative rounded-lg overflow-hidden border aspect-square">
+                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
                           <button
                             type="button"
-                            onClick={() =>
-                              setFiles((prev) =>
-                                prev.filter((_, i) => i !== index)
-                              )
-                            }
+                            onClick={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
                             className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1"
                           >
                             <X className="h-4 w-4" />
@@ -645,33 +462,18 @@ function PostAd() {
                   )}
                 </div>
 
-                {/* Contact */}
                 <div>
                   <Label>Contact Phone Number</Label>
-
-                  <Input
-                    {...form.register("phone")}
-                    placeholder="08012345678"
-                  />
+                  <Input {...form.register("phone")} placeholder="08012345678" />
                 </div>
 
                 <div className="flex justify-between">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setStep(2)}
-                  >
+                  <Button type="button" variant="outline" onClick={prevStep}>
                     <ChevronLeft className="h-4 w-4 mr-2" />
                     Back
                   </Button>
-
-                  <Button
-                    type="submit"
-                    disabled={submitting}
-                    className="bg-accent text-accent-foreground"
-                  >
+                  <Button type="submit" disabled={submitting} className="bg-accent text-accent-foreground">
                     <Check className="h-4 w-4 mr-2" />
-
                     {submitting
                       ? "Publishing..."
                       : watch.type === "goods"
