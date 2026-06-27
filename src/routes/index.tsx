@@ -242,8 +242,14 @@ function Index() {
     return CATEGORIES.map((category) => {
       const match = catCounts.find((c) => c.category === category.slug);
       return { ...category, count: match?.count ?? 0 };
-    });
+    }).filter((category) => category.count > 0); // 👈 Only keeps categories that have 1+ listings
   }, [catCounts]);
+
+  const trendingCategories = useMemo(() => {
+    return [...quickCategories]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  }, [quickCategories]);
 
   const processedListings = useMemo(() => {
     let result = [...listings];
@@ -334,7 +340,7 @@ function Index() {
               <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
                 <div className="flex items-center gap-2">
                   <Icons.Package className="h-5 w-5" />
-                  <span><strong>{Number(stats?.total_listings ?? 0).toLocaleString()}</strong> Listings</span>
+                  <span>export <strong>{Number(stats?.total_listings ?? 0).toLocaleString()}</strong> Listings</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Icons.Store className="h-5 w-5" />
@@ -356,7 +362,7 @@ function Index() {
               { label: "Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-blue-500 bg-blue-500/10" },
               { label: "Verified Sellers", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-emerald-500 bg-emerald-500/10" },
               { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-500 bg-amber-500/10" },
-              { label: "Categories", val: stats?.active_categories ?? 0, icon: Icons.LayoutGrid, color: "text-purple-500 bg-purple-500/10" },
+              { label: "Categories", val: quickCategories.length, icon: Icons.LayoutGrid, color: "text-purple-500 bg-purple-500/10" },
             ].map((s, i) => {
               const Ic = s.icon;
               return (
@@ -448,7 +454,7 @@ function Index() {
                 <Icons.Flame className="h-6 w-6 text-orange-500 animate-pulse" />
                 <h2 className="text-2xl font-bold tracking-tight">Trending Products</h2>
               </div>
-              <Link to="/" search={{ popular: true }} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link to="/" search={{ sortBy: "popular" }} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
                 View All <Icons.ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -504,6 +510,34 @@ function Index() {
         <section className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* SEARCH FILTERS CONTROLS ASIDE */}
           <aside className="lg:col-span-1 space-y-6">
+            {/* TRENDING CATEGORIES (Sidebar) */}
+            {trendingCategories.length > 0 && (
+              <Card className="border shadow-sm overflow-hidden">
+                <div className="bg-primary text-primary-foreground px-4 py-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <Icons.Flame className="h-4 w-4 text-orange-300" /> Top Categories
+                  </h3>
+                </div>
+                <div className="p-3 space-y-2">
+                  {trendingCategories.map((tc) => {
+                    const Ic = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tc.icon] ?? Icons.Tag;
+                    return (
+                      <Link key={tc.slug} to="/" search={{ cat: tc.slug }} className="flex items-center gap-3 rounded-xl border p-3 transition-all hover:border-primary hover:bg-primary/5">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Ic className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{tc.label}</p>
+                          <p className="text-xs text-muted-foreground">{tc.count.toLocaleString()} active listings</p>
+                        </div>
+                        <Icons.ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </Link>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
             <Card className="p-4 border shadow-sm space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Filter Listings</h3>
               <form onSubmit={executeSearch} className="space-y-3">
