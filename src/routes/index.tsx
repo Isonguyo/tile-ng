@@ -233,176 +233,202 @@ function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
-      <div>
-        <SiteHeader />
+  <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
+    <div>
+      <SiteHeader />
 
-        {/* HERO */}
-        <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground overflow-hidden py-14 md:py-20">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+      {/* HERO */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground">
 
-          <div className="container mx-auto px-4 text-center max-w-4xl relative z-10 space-y-6">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              Buy, Sell &amp; Hire Across Nigeria
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:26px_26px]" />
+
+        <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
+
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+
+            <span className="inline-flex items-center rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide backdrop-blur">
+              🇳🇬 Nigeria's Marketplace for Goods & Services
+            </span>
+
+            <h1 className="text-4xl md:text-6xl font-black leading-tight tracking-tight">
+              Find Trusted Stores,
+              <br />
+              Products & Services Near You
             </h1>
 
-            <p className="text-sm sm:text-base md:text-lg text-primary-foreground/90 font-medium max-w-2xl mx-auto">
-              Discover products, services and trusted vendors near you.
+            <p className="max-w-2xl mx-auto text-primary-foreground/90 text-base md:text-lg leading-relaxed">
+              Shop from verified businesses, discover local services,
+              compare prices and connect directly with trusted sellers
+              across Nigeria.
             </p>
 
-            <form
-              onSubmit={executeSearch}
-              className="bg-background text-foreground p-2 rounded-2xl shadow-xl border flex flex-col md:flex-row items-center gap-2 max-w-3xl mx-auto w-full"
-            >
-              <div className="flex items-center gap-2 px-3 flex-1 w-full border-b md:border-b-0 md:border-r pb-2 md:pb-0">
-                <Icons.Search className="h-5 w-5 text-muted-foreground shrink-0" />
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search phones, fashion, properties, services..."
-                  className="w-full text-sm bg-transparent outline-none focus:ring-0 py-2"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 px-2 w-full md:w-48 border-b md:border-b-0 md:border-r pb-2 md:pb-0">
-                <Icons.MapPin className="h-5 w-5 text-primary shrink-0" />
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full bg-transparent text-sm font-medium outline-none cursor-pointer py-2"
-                >
-                  <option value="all">All States</option>
-                  {states.map((s) => (
-                    <option key={s.name} value={s.name}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="flex flex-wrap justify-center gap-4 pt-3">
 
               <Button
-                type="submit"
-                className="w-full md:w-auto bg-accent text-accent-foreground font-bold px-6 py-2 rounded-xl shrink-0"
+                asChild
+                size="lg"
+                className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8"
               >
-                Search
+                <Link to="/">
+                  Browse Listings
+                </Link>
               </Button>
-            </form>
 
-            {quickCategories.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                {quickCategories.slice(0, 6).map((c) => (
-                  <Link
-                    key={c.slug}
-                    to="/"
-                    search={{ cat: c.slug }}
-                    className="text-xs font-semibold bg-primary-foreground/10 hover:bg-primary-foreground/20 px-3 py-1.5 rounded-full transition"
-                  >
-                    {c.label}
-                  </Link>
-                ))}
+              <Button
+                asChild
+                size="lg"
+                variant="secondary"
+                className="font-bold"
+              >
+                <Link to="/dashboard">
+                  Open Your Shop
+                </Link>
+              </Button>
+
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
+
+              <div className="flex items-center gap-2">
+                <Icons.Package className="h-5 w-5" />
+                <span>
+                  <strong>{Number(stats?.total_listings ?? 0).toLocaleString()}</strong> Listings
+                </span>
               </div>
-            )}
-          </div>
-        </section>
 
-        {/* STATS */}
-        <section className="container mx-auto px-4 -mt-6 relative z-20">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              {
-                label: "Listings",
-                val: stats?.total_listings ?? 0,
-                icon: Icons.Package,
-                color: "text-blue-500 bg-blue-500/10",
-              },
-              {
-                label: "Sellers",
-                val: stats?.verified_vendors ?? 0,
-                icon: Icons.Users,
-                color: "text-emerald-500 bg-emerald-500/10",
-              },
-              {
-                label: "Shops",
-                val: stats?.active_shops ?? 0,
-                icon: Icons.Store,
-                color: "text-amber-500 bg-amber-500/10",
-              },
-              {
-                label: "Categories",
-                val: stats?.active_categories ?? 0,
-                icon: Icons.LayoutGrid,
-                color: "text-purple-500 bg-purple-500/10",
-              },
-            ].map((s, i) => {
-              const Ic = s.icon;
+              <div className="flex items-center gap-2">
+                <Icons.Store className="h-5 w-5" />
+                <span>
+                  <strong>{Number(stats?.active_shops ?? 0).toLocaleString()}</strong> Shops
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Icons.BadgeCheck className="h-5 w-5" />
+                <span>
+                  <strong>{Number(stats?.verified_vendors ?? 0).toLocaleString()}</strong> Verified Sellers
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* STATS */}
+      <section className="container mx-auto px-4 -mt-8 relative z-20">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+          {[
+            {
+              label: "Listings",
+              val: stats?.total_listings ?? 0,
+              icon: Icons.Package,
+              color: "text-blue-500 bg-blue-500/10",
+            },
+            {
+              label: "Verified Sellers",
+              val: stats?.verified_vendors ?? 0,
+              icon: Icons.BadgeCheck,
+              color: "text-emerald-500 bg-emerald-500/10",
+            },
+            {
+              label: "Active Shops",
+              val: stats?.active_shops ?? 0,
+              icon: Icons.Store,
+              color: "text-amber-500 bg-amber-500/10",
+            },
+            {
+              label: "Categories",
+              val: stats?.active_categories ?? 0,
+              icon: Icons.LayoutGrid,
+              color: "text-purple-500 bg-purple-500/10",
+            },
+          ].map((s, i) => {
+            const Ic = s.icon;
+
+            return (
+              <Card
+                key={i}
+                className="p-4 rounded-xl bg-background shadow-md border flex items-center gap-4"
+              >
+                <div className={`hidden sm:flex p-3 rounded-lg ${s.color}`}>
+                  <Ic className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <p className="text-xl md:text-2xl font-extrabold">
+                    {Number(s.val).toLocaleString()}
+                  </p>
+
+                  <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                    {s.label}
+                  </p>
+                </div>
+              </Card>
+            );
+          })}
+
+        </div>
+      </section>
+
+      {/* QUICK CATEGORIES */}
+      {quickCategories.length > 0 && (
+        <section className="container mx-auto px-4 py-8">
+
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold uppercase tracking-wide text-muted-foreground">
+              Browse Categories
+            </h2>
+          </div>
+
+          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none snap-x">
+
+            {quickCategories.map((c) => {
+              const Ic =
+                (Icons as unknown as Record<
+                  string,
+                  ComponentType<{ className?: string }>
+                >)[c.icon] ?? Icons.Tag;
+
+              const active = cat === c.slug;
+
               return (
-                <Card
-                  key={i}
-                  className="p-4 bg-background shadow-md flex items-center gap-4 rounded-xl border"
+                <Link
+                  key={c.slug}
+                  to="/"
+                  search={{ cat: active ? undefined : c.slug }}
+                  className={`snap-start shrink-0 flex items-center gap-3 rounded-xl border px-4 py-3 transition-all min-w-[170px]
+                  ${
+                    active
+                      ? "border-accent bg-accent/10"
+                      : "bg-background hover:border-primary/50"
+                  }`}
                 >
-                  <div className={`p-3 rounded-lg hidden sm:block ${s.color}`}>
-                    <Ic className="h-5 w-5" />
-                  </div>
+                  <Ic className="h-5 w-5 text-primary" />
+
                   <div>
-                    <p className="text-xl md:text-2xl font-extrabold tracking-tight">
-                      {Number(s.val).toLocaleString()}
+
+                    <p className="text-xs font-bold truncate max-w-[120px]">
+                      {c.label}
                     </p>
-                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                      {s.label}
+
+                    <p className="text-[10px] text-muted-foreground">
+                      {c.count.toLocaleString()}{" "}
+                      {c.count === 1 ? "listing" : "listings"}
                     </p>
+
                   </div>
-                </Card>
+                </Link>
               );
             })}
+
           </div>
+
         </section>
-
-        {/* QUICK CATEGORIES */}
-        {quickCategories.length > 0 && (
-          <section className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold tracking-tight uppercase text-muted-foreground">
-                Quick Categories
-              </h2>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none snap-x">
-              {quickCategories.map((c) => {
-                const Ic =
-                  (Icons as unknown as Record<
-                    string,
-                    ComponentType<{ className?: string }>
-                  >)[c.icon] ?? Icons.Tag;
-
-                const active = cat === c.slug;
-
-                return (
-                  <Link
-                    key={c.slug}
-                    to="/"
-                    search={{ cat: active ? undefined : c.slug }}
-                    className={`snap-start shrink-0 flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all min-w-[160px] ${
-                      active
-                        ? "border-accent bg-accent/10 shadow-sm"
-                        : "border-border bg-background hover:border-primary/50"
-                    }`}
-                  >
-                    <Ic className="h-5 w-5 text-primary" />
-                    <div className="text-left">
-                      <p className="text-xs font-bold leading-tight truncate max-w-[120px]">
-                        {c.label}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-semibold">
-                        {c.count} {c.count === 1 ? "listing" : "listings"}
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
+      )}
 
         <section className="container mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* SIDEBAR */}
