@@ -65,6 +65,7 @@ type ProfileRow = {
   full_name: string | null;
   avatar_url?: string | null;
   shop_slug?: string | null;
+  location?: string | null;
 };
 
 function Index() {
@@ -182,20 +183,20 @@ function Index() {
   // 4. FEATURED SHOPS QUERY
   // ==========================
   const { data: vendors = [] } = useQuery({
-  queryKey: ["featured-shops"],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("public_profiles")
-      .select("*")
-      .not("shop_slug", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(6);
+    queryKey: ["featured-shops"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("public_profiles")
+        .select("*")
+        .not("shop_slug", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(6);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return data ?? [];
-  },
-});
+      return (data as ProfileRow[]) ?? [];
+    },
+  });
 
   // ==========================
   // 5. DERIVED VALUES & MEMOS
@@ -257,6 +258,12 @@ function Index() {
 
     return result;
   }, [listings, activeTab, sortBy]);
+
+  // Step 1: Memoized filtered verified vendors
+  const verifiedMerchants = useMemo(
+    () => vendors.filter((v) => v.is_verified),
+    [vendors]
+  );
 
   const executeSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -448,6 +455,55 @@ function Index() {
 
           {/* STREAM DATA MATRIX FEED */}
           <div className="lg:col-span-3 space-y-6">
+            
+            {/* VERIFIED MERCHANTS CONTAINER SLOT */}
+            {verifiedMerchants.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Icons.BadgeCheck className="h-4 w-4 text-green-500" />
+                    Verified Merchants
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {verifiedMerchants.map((merchant) => (
+                    <Link
+                      key={merchant.id}
+                      to="/shop/$slug"
+                      params={{ slug: merchant.shop_slug! }}
+                      className="bg-background border rounded-xl p-4 hover:shadow-lg transition text-center"
+                    >
+                      <div className="mx-auto h-16 w-16 rounded-full overflow-hidden bg-primary/10 mb-3">
+                        {merchant.avatar_url ? (
+                          <img
+                            src={merchant.avatar_url}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Icons.Store className="h-6 w-6 text-primary" />
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="font-bold text-sm truncate">
+                        {merchant.business_name || "Unnamed Merchant"}
+                      </p>
+
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {merchant.location ?? "Nigeria"}
+                      </p>
+
+                      <div className="flex justify-center mt-2">
+                        <Icons.BadgeCheck className="h-4 w-4 text-green-500" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* CONTROL BAR */}
             <div className="bg-background border rounded-2xl shadow-sm p-4">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
