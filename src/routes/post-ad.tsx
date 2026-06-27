@@ -37,7 +37,6 @@ const schema = z.object({
   title: z.string().min(5, "Title is too short").max(120),
   description: z.string().min(20, "Tell buyers more").max(2000),
   state_id: z.string().uuid("Please select a state"),
-  city_id: z.string().uuid("Please select a city"),
   lga_id: z.string().uuid("Please select an LGA"),
   phone: z.string().min(7),
   price: z.coerce.number().positive().optional(),
@@ -78,12 +77,11 @@ function PostAd() {
     setStep(2);
   };
 
-  // Optional: Placeholder logic for location detection feature
   const handleDetectLocation = () => {
     toast.info("Location detection features coming soon.");
   };
 
-  // Cascade Metadata Queries Hooked onto React-Form internal state values
+  // Metadata Hooked directly onto State mapping
   const { data: states = [] } = useQuery({
     queryKey: ["post-states"],
     queryFn: async () => {
@@ -93,26 +91,16 @@ function PostAd() {
     },
   });
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ["post-cities", watch.state_id],
+  // LGAs now stream filtered records directly using state_id relationship context
+  const { data: lgas = [] } = useQuery({
+    queryKey: ["post-lgas", watch.state_id],
     queryFn: async () => {
       if (!watch.state_id) return [];
-      const { data, error } = await supabase.from("cities").select("id, name").eq("state_id", watch.state_id).order("name", { ascending: true });
+      const { data, error } = await supabase.from("lgas").select("id, name").eq("state_id", watch.state_id).order("name", { ascending: true });
       if (error) throw error;
       return data || [];
     },
     enabled: !!watch.state_id,
-  });
-
-  const { data: lgas = [] } = useQuery({
-    queryKey: ["post-lgas", watch.city_id],
-    queryFn: async () => {
-      if (!watch.city_id) return [];
-      const { data, error } = await supabase.from("lgas").select("id, name").eq("city_id", watch.city_id).order("name", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!watch.city_id,
   });
 
   if (!loading && !user) {
@@ -149,7 +137,6 @@ function PostAd() {
         title: vals.title,
         description: vals.description,
         state_id: vals.state_id,
-        city_id: vals.city_id,
         lga_id: vals.lga_id,
         phone: vals.phone,
         price: vals.price ?? null,
@@ -369,7 +356,6 @@ function PostAd() {
                       value={watch.state_id}
                       onValueChange={(v) => {
                         form.setValue("state_id", v);
-                        form.setValue("city_id", "");
                         form.setValue("lga_id", "");
                       }}
                     >
@@ -385,29 +371,8 @@ function PostAd() {
                   </div>
 
                   <div>
-                    <Label>City</Label>
-                    <Select
-                      disabled={!watch.state_id}
-                      value={watch.city_id}
-                      onValueChange={(v) => {
-                        form.setValue("city_id", v);
-                        form.setValue("lga_id", "");
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose City" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cities.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
                     <Label>Local Government Area</Label>
-                    <Select disabled={!watch.city_id} value={watch.lga_id} onValueChange={(v) => form.setValue("lga_id", v)}>
+                    <Select disabled={!watch.state_id} value={watch.lga_id} onValueChange={(v) => form.setValue("lga_id", v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose LGA" />
                       </SelectTrigger>
