@@ -2,12 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
 import { SiteHeader } from "@/components/site-header";
 import { ListingCard, type ListingCardData } from "@/components/listing-card";
-import { CATEGORIES } from "@/lib/categories";
+
+import { CATEGORIES, LOCATIONS } from "@/lib/categories";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { ComponentType } from "react";
 import {
   Select,
   SelectContent,
@@ -16,8 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import * as Icons from "lucide-react";
+
 import { z } from "zod";
+import type { ComponentType } from "react";
 
 const searchSchema = z.object({
   q: z.string().optional(),
@@ -30,15 +35,26 @@ type Search = z.infer<typeof searchSchema>;
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tile — Buy, Sell & Hire across Nigeria" },
+      {
+        title: "Tile — Buy, Sell & Hire Across Nigeria",
+      },
       {
         name: "description",
-        content: "The premium classifieds marketplace for verified goods and professional services across Nigeria.",
+        content:
+          "Nigeria's trusted marketplace for buying, selling and hiring. Discover verified shops, products and professional services near you.",
       },
-      { property: "og:title", content: "Tile Marketplace" },
+      {
+        property: "og:title",
+        content: "Tile Marketplace",
+      },
       {
         property: "og:description",
-        content: "Buy, sell, and hire across Nigeria with trusted local vendors.",
+        content:
+          "Find trusted products, services and verified merchants across Nigeria.",
+      },
+      {
+        property: "og:type",
+        content: "website",
       },
     ],
     links: [
@@ -53,185 +69,410 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+
   validateSearch: searchSchema,
+
   component: Index,
 });
 
 type ProfileRow = {
   id: string;
+
   subscription_tier: string | null;
+
   is_verified: boolean | null;
+
   business_name: string | null;
+
   full_name: string | null;
+
+  avatar_url?: string | null;
+
+  shop_slug?: string | null;
 };
 
 function Index() {
   const navigate = useNavigate({ from: "/" });
   const { q, loc, cat } = Route.useSearch();
 
+  // Search & Filters
   const [searchInput, setSearchInput] = useState(q ?? "");
   const [selectedLocation, setSelectedLocation] = useState(loc ?? "all");
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
-  const [sortBy, setSortBy] = useState<string>("newest");
 
-  // 1. LISTINGS QUERY
-  const { data: listings = [], isLoading } = useQuery({
-    queryKey: ["listings", { q, loc, cat }],
-    queryFn: async () => {
-      let query = supabase
-        .from("listings")
-        .select(`
-          id,
-          title,
-          price,
-          type,
-          location,
-          images,
-          is_promoted,
-          category,
-          description,
-          views_count,
-          clicks_count,
-          user_id,
-          created_at
-        `)
-        .eq("status", "approved")
-        .limit(120);
+  // Marketplace View
+  const [activeTab, setActiveTab] = useState<
+    "all" | "goods" | "service" | "featured"
+  >("all");
 
-      if (q) {
-        query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`);
-      }
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "popular" | "price-low" | "price-high"
+  >("newest");
 
-      if (loc && loc !== "all") {
-        query = query.eq("location", loc);
-      }
+  // Reserved for automatic location detection (future feature)
+  const [detectedState, setDetectedState] = useState<string | null>(null);
+}
 
-      if (cat) {
-        query = query.eq("category", cat);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const rows = (data as Array<ListingCardData & { user_id: string; created_at: string }>) || [];
-      const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
-
-      if (!userIds.length) return rows;
-
-      const { data: profiles } = await supabase
-        .from("public_profiles")
-        .select("id, subscription_tier, is_verified")
-        .in("id", userIds);
-
-      const profileMap = new Map(((profiles || []) as ProfileRow[]).map((p) => [p.id, p]));
-
-      return rows.map((row) => ({
-        ...row,
-        seller_tier: profileMap.get(row.user_id)?.subscription_tier ?? null,
-        seller_verified: profileMap.get(row.user_id)?.is_verified ?? false,
-      }));
-    },
-  });
-
-  // 2. PLATFORM STATS QUERY
-  const { data: stats } = useQuery({
-    queryKey: ["platform-stats"],
-    queryFn: async () => {
-      const [{ count: listingsCount }, { count: shopsCount }, { count: sellersCount }] =
-        await Promise.all([
-          supabase.from("listings").select("*", { count: "exact", head: true }),
-          supabase.from("shops").select("*", { count: "exact", head: true }),
-          supabase.from("profiles").select("*", { count: "exact", head: true }),
-        ]);
-
-      return {
-        total_listings: listingsCount || 0,
-        active_shops: shopsCount || 0,
-        verified_vendors: sellersCount || 0,
-        active_categories: CATEGORIES.length,
-      };
-    },
-  });
-
-  // 3. CATEGORY COUNTS QUERY
-  const { data: catCounts = [] } = useQuery({
-    queryKey: ["category-counts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("listings")
-        .select("category")
-        .eq("status", "approved");
-
-      if (error) throw error;
-
-      const counts: Record<string, number> = {};
-      data?.forEach((item) => {
-        if (!item.category) return;
-        counts[item.category] = (counts[item.category] || 0) + 1;
-      });
-
-      return Object.entries(counts).map(([category, count]) => ({
+  /// ==========================
+// 1. LISTINGS QUERY
+// ==========================
+const { data: listings = [], isLoading } = useQuery({
+  queryKey: ["listings", { q, loc, cat }],
+  queryFn: async () => {
+    let query = supabase
+      .from("listings")
+      .select(`
+        id,
+        title,
+        price,
+        type,
         category,
-        count,
-      }));
-    },
-  });
+        description,
+        location,
+        images,
+        is_promoted,
+        views_count,
+        clicks_count,
+        user_id,
+        created_at
+      `)
+      .eq("status", "approved")
+      .limit(150);
 
-  // 4. TOP VENDORS QUERY
-  const { data: vendors = [] } = useQuery({
-    queryKey: ["top-vendors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("public_profiles")
-        .select("*")
-        .limit(6);
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // 5. DERIVED VALUES & MEMOS FOR THE JSX
-  const states = useMemo(() => [
-    { name: "Lagos" }, { name: "Abuja" }, { name: "Oyo" }, { name: "Rivers" }, { name: "Kano" }
-  ], []);
-
-  const quickCategories = useMemo(() => {
-    return CATEGORIES.map(cat => {
-      const match = catCounts.find(c => c.category === cat.slug);
-      return { ...cat, count: match ? match.count : 0 };
-    });
-  }, [catCounts]);
-
-  const trendingCategories = useMemo(() => {
-    return quickCategories.filter(c => c.count > 0).slice(0, 5);
-  }, [quickCategories]);
-
-  const processedListings = useMemo(() => {
-    let result = [...listings];
-    
-    if (activeTab !== "all") {
-      result = result.filter(l => l.type === activeTab);
+    if (q) {
+      query = query.or(
+        `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
+      );
     }
 
-    if (sortBy === "price-low") result.sort((a, b) => a.price - b.price);
-    else if (sortBy === "price-high") result.sort((a, b) => b.price - a.price);
-    else result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    if (loc && loc !== "all") {
+      query = query.eq("location", loc);
+    }
 
-    return result;
-  }, [listings, activeTab, sortBy]);
+    if (cat) {
+      query = query.eq("category", cat);
+    }
 
-  const executeSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate({
-      search: {
-        q: searchInput || undefined,
-        loc: selectedLocation !== "all" ? selectedLocation : undefined,
-        cat: cat || undefined,
-      },
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    const rows =
+      (data as Array<
+        ListingCardData & {
+          user_id: string;
+          created_at: string;
+        }
+      >) || [];
+
+    const userIds = [...new Set(rows.map((r) => r.user_id))];
+
+    if (!userIds.length) return rows;
+
+    const { data: profiles } = await supabase
+      .from("public_profiles")
+      .select(`
+        id,
+        subscription_tier,
+        is_verified,
+        business_name,
+        avatar_url,
+        shop_slug
+      `)
+      .in("id", userIds);
+
+    const profileMap = new Map(
+      ((profiles || []) as ProfileRow[]).map((p) => [p.id, p])
+    );
+
+    return rows
+      .map((listing) => ({
+        ...listing,
+
+        seller_tier:
+          profileMap.get(listing.user_id)?.subscription_tier ?? null,
+
+        seller_verified:
+          profileMap.get(listing.user_id)?.is_verified ?? false,
+
+        seller_shop:
+          profileMap.get(listing.user_id)?.shop_slug ?? null,
+
+        seller_name:
+          profileMap.get(listing.user_id)?.business_name ?? null,
+      }))
+      .sort((a, b) => {
+        // Sponsored ads always first
+        if (a.is_promoted !== b.is_promoted) {
+          return a.is_promoted ? -1 : 1;
+        }
+
+        // Verified sellers next
+        if (a.seller_verified !== b.seller_verified) {
+          return a.seller_verified ? -1 : 1;
+        }
+
+        // Newest afterwards
+        return (
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+        );
+      });
+  },
+});
+
+
+// ==========================
+// 2. PLATFORM STATS
+// ==========================
+const { data: stats } = useQuery({
+  queryKey: ["platform-stats"],
+  queryFn: async () => {
+    const [
+      { count: listingsCount },
+      { count: shopsCount },
+      { count: sellersCount },
+    ] = await Promise.all([
+      supabase
+        .from("listings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "approved"),
+
+      supabase
+        .from("shops")
+        .select("*", { count: "exact", head: true }),
+
+      supabase
+        .from("public_profiles")
+        .select("*", { count: "exact", head: true }),
+    ]);
+
+    return {
+      total_listings: listingsCount ?? 0,
+      active_shops: shopsCount ?? 0,
+      verified_vendors: sellersCount ?? 0,
+      active_categories: CATEGORIES.length,
+    };
+  },
+});
+
+
+// ==========================
+// 3. CATEGORY COUNTS
+// ==========================
+const { data: catCounts = [] } = useQuery({
+  queryKey: ["category-counts"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("listings")
+      .select("category")
+      .eq("status", "approved");
+
+    if (error) throw error;
+
+    const counts: Record<string, number> = {};
+
+    data?.forEach((item) => {
+      if (item.category) {
+        counts[item.category] =
+          (counts[item.category] || 0) + 1;
+      }
     });
-  };
 
+    return Object.entries(counts).map(([category, count]) => ({
+      category,
+      count,
+    }));
+  },
+});
+
+
+// ==========================
+// 4. FEATURED SHOPS
+// ==========================
+const { data: vendors = [] } = useQuery({
+  queryKey: ["featured-shops"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("public_profiles")
+      .select(`
+        id,
+        business_name,
+        full_name,
+        avatar_url,
+        shop_slug,
+        is_verified,
+        subscription_tier
+      `)
+      .not("shop_slug", "is", null)
+      .neq("shop_slug", "")
+      .limit(6);
+
+    if (error) throw error;
+
+    return data || [];
+  },
+});
+// ==========================
+// 5. DERIVED VALUES & MEMOS
+// ==========================
+
+// Use all locations already defined in your app
+const states = useMemo(
+  () => LOCATIONS.map((name) => ({ name })),
+  []
+);
+
+// Quick Categories
+const quickCategories = useMemo(() => {
+  return CATEGORIES.map((category) => {
+    const match = catCounts.find(
+      (c) => c.category === category.slug
+    );
+
+    return {
+      ...category,
+      count: match?.count ?? 0,
+    };
+  });
+}, [catCounts]);
+
+// Trending Categories
+const trendingCategories = useMemo(() => {
+  return [...quickCategories]
+    .filter((c) => c.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+}, [quickCategories]);
+
+// Process Listings
+const processedListings = useMemo(() => {
+  let result = [...listings];
+
+  // Filter by selected tab
+  switch (activeTab) {
+    case "goods":
+      result = result.filter((l) => l.type === "goods");
+      break;
+
+    case "service":
+      result = result.filter((l) => l.type === "service");
+      break;
+
+    case "featured":
+      result = result.filter((l) => l.is_promoted);
+      break;
+
+    default:
+      break;
+  }
+
+  // Sort listings
+  switch (sortBy) {
+    case "price-low":
+      result.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+      break;
+
+    case "price-high":
+      result.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+      break;
+
+    case "popular":
+      result.sort(
+        (a, b) =>
+          ((b.views_count ?? 0) + (b.clicks_count ?? 0)) -
+          ((a.views_count ?? 0) + (a.clicks_count ?? 0))
+      );
+      break;
+
+    case "oldest":
+      result.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
+      );
+      break;
+
+    case "newest":
+    default:
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      );
+      break;
+  }
+
+  return result;
+}, [listings, activeTab, sortBy]);
+
+  // Sorting
+  switch (sortBy) {
+    case "price-low":
+      result.sort(
+        (a, b) => (a.price ?? 0) - (b.price ?? 0)
+      );
+      break;
+
+    case "price-high":
+      result.sort(
+        (a, b) => (b.price ?? 0) - (a.price ?? 0)
+      );
+      break;
+
+    case "popular":
+      result.sort((a, b) => {
+        const scoreA =
+          (a.views_count ?? 0) +
+          (a.clicks_count ?? 0) * 3;
+
+        const scoreB =
+          (b.views_count ?? 0) +
+          (b.clicks_count ?? 0) * 3;
+
+        return scoreB - scoreA;
+      });
+      break;
+
+    case "oldest":
+      result.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
+      );
+      break;
+
+    default:
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      );
+  }
+
+  // Sponsored listings always stay on top
+  result.sort((a, b) => {
+    if (a.is_promoted === b.is_promoted) return 0;
+    return a.is_promoted ? -1 : 1;
+  });
+
+  return result;
+}, [listings, activeTab, sortBy]);
+
+// Search
+const executeSearch = (e: React.FormEvent) => {
+  e.preventDefault();
+
+  navigate({
+    search: {
+      q: searchInput || undefined,
+      loc:
+        selectedLocation !== "all"
+          ? selectedLocation
+          : undefined,
+      cat: cat || undefined,
+    },
+  });
+};
   return (
   <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
     <div>
@@ -431,176 +672,351 @@ function Index() {
       )}
 
         <section className="container mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* SIDEBAR */}
-          <aside className="lg:col-span-1 space-y-6">
-            {trendingCategories.length > 0 && (
-              <Card className="p-4 bg-background border shadow-sm space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Icons.Flame className="h-4 w-4 text-orange-500" />
-                  Trending Categories
-                </h3>
+  {/* SIDEBAR */}
+  <aside className="lg:col-span-1 space-y-6">
 
-                <div className="space-y-2">
-                  {trendingCategories.map((tc) => {
-                    const Ic =
-                      (Icons as unknown as Record<
-                        string,
-                        React.ComponentType<{ className?: string }>
-                      >)[tc.icon] ?? Icons.Tag;
+    {/* TRENDING CATEGORIES */}
+    {trendingCategories.length > 0 && (
+      <Card className="border shadow-sm overflow-hidden">
+        <div className="bg-primary text-primary-foreground px-4 py-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+            <Icons.Flame className="h-4 w-4 text-orange-300" />
+            Trending Categories
+          </h3>
+        </div>
 
-                    return (
-                      <Link
-                        key={tc.slug}
-                        to="/"
-                        search={{ cat: tc.slug }}
-                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/40 border border-transparent hover:border-border transition"
-                      >
-                        <Ic className="h-4 w-4 text-primary" />
-                        <div className="flex-1">
-                          <p className="text-xs font-bold">{tc.label}</p>
-                          <p className="text-[10px] text-muted-foreground font-semibold">
-                            {tc.count} active
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  })}
+        <div className="p-3 space-y-2">
+          {trendingCategories.map((tc) => {
+            const Ic =
+              (Icons as unknown as Record<
+                string,
+                React.ComponentType<{ className?: string }>
+              >)[tc.icon] ?? Icons.Tag;
+
+            return (
+              <Link
+                key={tc.slug}
+                to="/"
+                search={{ cat: tc.slug }}
+                className="flex items-center gap-3 rounded-xl border p-3 transition-all hover:border-primary hover:bg-primary/5"
+              >
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Ic className="h-5 w-5 text-primary" />
                 </div>
-              </Card>
-            )}
 
-            {/* PLATFORM SUMMARY */}
-            <Card className="p-4 bg-background border shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                Platform Summary
-              </h3>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {tc.label}
+                  </p>
 
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span>Listings</span>
-                  <span className="font-bold">{stats?.total_listings ?? 0}</span>
+                  <p className="text-xs text-muted-foreground">
+                    {tc.count.toLocaleString()} active listings
+                  </p>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Shops</span>
-                  <span className="font-bold">{stats?.active_shops ?? 0}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Sellers</span>
-                  <span className="font-bold">{stats?.verified_vendors ?? 0}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Categories</span>
-                  <span className="font-bold">{stats?.active_categories ?? 0}</span>
-                </div>
-              </div>
-            </Card>
-          </aside>
 
-          {/* MAIN CONTENT */}
-          <div className="lg:col-span-3 space-y-8">
-            {/* TOP SHOPS */}
-            {vendors.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <Icons.Store className="h-4 w-4 text-primary" />
-                  Featured Shops
-                </h3>
+                <Icons.ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            );
+          })}
+        </div>
+      </Card>
+    )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vendors.map((v) => (
-                    <Link
-                      key={v.id}
-                      to="/shop/$slug"
-                      params={{ slug: v.shop_slug ?? "" }}
-                      className="p-4 bg-background border rounded-xl shadow-sm hover:shadow-md transition flex items-center gap-4"
-                    >
-                      <div className="h-12 w-12 rounded-xl bg-primary/10 grid place-items-center overflow-hidden">
-                        {v.avatar_url ? (
-                          <img src={v.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <Icons.Store className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
+      
 
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold truncate">
-                          {v.business_name || v.full_name || "Shop"}
-                        </p>
-                        <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
-                          <span>
-                            {v.active_listings} listing
-                            {v.active_listings !== 1 ? "s" : ""}
-                          </span>
-                          {v.is_verified && <Icons.BadgeCheck className="h-4 w-4 text-green-500" />}
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
+           {/* PLATFORM SUMMARY */}
+<Card className="overflow-hidden border shadow-sm">
+  <div className="bg-primary text-primary-foreground px-4 py-3">
+    <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+      <Icons.BarChart3 className="h-4 w-4" />
+      Marketplace Overview
+    </h3>
+  </div>
 
-            {/* CONTROL BAR */}
-            <div className="bg-background p-3 rounded-xl border shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full sm:w-auto">
-                <TabsList className="grid grid-cols-4 bg-muted/60 p-1 rounded-lg h-auto">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="goods">Products</TabsTrigger>
-                  <TabsTrigger value="service">Services</TabsTrigger>
-                  <TabsTrigger value="featured">Featured</TabsTrigger>
-                </TabsList>
-              </Tabs>
+  <div className="p-4 space-y-3">
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-xs font-bold text-muted-foreground">Sort:</span>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="oldest">Oldest</SelectItem>
-                    <SelectItem value="popular">Most Viewed</SelectItem>
-                    <SelectItem value="price-low">Price Low → High</SelectItem>
-                    <SelectItem value="price-high">Price High → Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+    <div className="flex items-center justify-between rounded-lg border p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+          <Icons.Package className="h-5 w-5 text-blue-600" />
+        </div>
 
-            {/* LISTINGS GRID */}
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <Icons.Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground mt-2">Loading listings...</p>
-              </div>
-            ) : processedListings.length === 0 ? (
-              <Card className="p-10 text-center">
-                <Icons.PackageX className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                <h3 className="font-bold">No listings found</h3>
-                <p className="text-sm text-muted-foreground mt-2">Try changing your search filters.</p>
-                <Button
-                  className="mt-4"
-                  onClick={() => {
-                    setSearchInput("");
-                    setSelectedLocation("all");
-                    navigate({ search: {} });
-                  }}
-                >
-                  Browse All Listings
-                </Button>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {processedListings.map((l) => (
-                  <ListingCard key={l.id} l={l} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+        <div>
+          <p className="text-sm font-semibold">Listings</p>
+          <p className="text-xs text-muted-foreground">
+            Active marketplace ads
+          </p>
+        </div>
       </div>
 
+      <span className="text-lg font-bold">
+        {(stats?.total_listings ?? 0).toLocaleString()}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between rounded-lg border p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+          <Icons.Store className="h-5 w-5 text-emerald-600" />
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold">Shops</p>
+          <p className="text-xs text-muted-foreground">
+            Active merchant stores
+          </p>
+        </div>
+      </div>
+
+      <span className="text-lg font-bold">
+        {(stats?.active_shops ?? 0).toLocaleString()}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between rounded-lg border p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+          <Icons.Users className="h-5 w-5 text-amber-600" />
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold">Sellers</p>
+          <p className="text-xs text-muted-foreground">
+            Registered merchants
+          </p>
+        </div>
+      </div>
+
+      <span className="text-lg font-bold">
+        {(stats?.verified_vendors ?? 0).toLocaleString()}
+      </span>
+    </div>
+
+    <div className="flex items-center justify-between rounded-lg border p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+          <Icons.LayoutGrid className="h-5 w-5 text-purple-600" />
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold">Categories</p>
+          <p className="text-xs text-muted-foreground">
+            Browse by interest
+          </p>
+        </div>
+      </div>
+
+      <span className="text-lg font-bold">
+        {(stats?.active_categories ?? 0).toLocaleString()}
+      </span>
+    </div>
+
+  </div>
+</Card>
+</aside>
+          // 4. FEATURED SHOPS QUERY
+const { data: vendors = [] } = useQuery({
+  queryKey: ["featured-shops"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("public_profiles")
+      .select("*")
+      .not("shop_slug", "is", null) // only users that created a shop
+      .neq("shop_slug", "")
+      .order("subscription_tier", { ascending: false }) // Premium first
+      .order("is_verified", { ascending: false })
+      .limit(6);
+
+    if (error) throw error;
+
+    return data ?? [];
+  },
+});
+
+            {/* CONTROL BAR */}
+<div className="bg-background border rounded-2xl shadow-sm p-4">
+
+  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+    <div>
+      <h2 className="text-xl font-bold">
+        Browse Listings
+      </h2>
+
+      <p className="text-sm text-muted-foreground">
+        {processedListings.length.toLocaleString()} listing
+        {processedListings.length !== 1 ? "s" : ""} available
+      </p>
+    </div>
+
+    <div className="flex flex-col sm:flex-row gap-3">
+
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as any)}
+      >
+        <TabsList className="grid grid-cols-4">
+
+          <TabsTrigger value="all">
+            All
+          </TabsTrigger>
+
+          <TabsTrigger value="goods">
+            Products
+          </TabsTrigger>
+
+          <TabsTrigger value="service">
+            Services
+          </TabsTrigger>
+
+          <TabsTrigger value="featured">
+            Featured
+          </TabsTrigger>
+
+        </TabsList>
+      </Tabs>
+
+      <Select value={sortBy} onValueChange={setSortBy}>
+        <SelectTrigger className="w-full sm:w-[190px]">
+          <SelectValue placeholder="Sort listings" />
+        </SelectTrigger>
+
+        <SelectContent>
+          <SelectItem value="newest">Newest First</SelectItem>
+          <SelectItem value="oldest">Oldest First</SelectItem>
+          <SelectItem value="popular">Most Viewed</SelectItem>
+          <SelectItem value="price-low">
+            Price: Low → High
+          </SelectItem>
+          <SelectItem value="price-high">
+            Price: High → Low
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
+    </div>
+
+  </div>
+
+</div>
+
+{/* SPONSORED LISTINGS */}
+{processedListings.some((l) => l.is_promoted) && (
+  <section className="space-y-4">
+
+    <div className="flex items-center justify-between">
+
+      <h2 className="text-lg font-bold flex items-center gap-2">
+        <Icons.BadgeDollarSign className="h-5 w-5 text-amber-500" />
+        Sponsored Listings
+      </h2>
+
+      <span className="text-xs text-muted-foreground">
+        Promoted by sellers
+      </span>
+
+    </div>
+
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+
+      {processedListings
+        .filter((l) => l.is_promoted)
+        .slice(0, 10)
+        .map((l) => (
+          <ListingCard
+            key={l.id}
+            l={l}
+          />
+        ))}
+
+    </div>
+
+  </section>
+)}
+
+{/* LATEST LISTINGS */}
+
+<section className="space-y-4">
+
+  <div className="flex items-center justify-between">
+
+    <h2 className="text-lg font-bold flex items-center gap-2">
+      <Icons.Clock3 className="h-5 w-5 text-primary" />
+      Latest Listings
+    </h2>
+
+    <span className="text-sm text-muted-foreground">
+      Updated regularly
+    </span>
+
+  </div>
+
+  {isLoading ? (
+
+    <div className="flex flex-col items-center justify-center py-24">
+
+      <Icons.Loader2 className="h-10 w-10 animate-spin text-primary" />
+
+      <p className="mt-4 text-muted-foreground">
+        Loading listings...
+      </p>
+
+    </div>
+
+  ) : processedListings.length === 0 ? (
+
+    <Card className="p-12 text-center">
+
+      <Icons.PackageX className="mx-auto h-12 w-12 text-muted-foreground" />
+
+      <h3 className="mt-4 text-lg font-bold">
+        No listings found
+      </h3>
+
+      <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+        We couldn't find anything matching your current filters.
+        Try another category, location or browse all listings.
+      </p>
+
+      <Button
+        className="mt-6"
+        onClick={() => {
+          setSearchInput("");
+          setSelectedLocation("all");
+          navigate({ search: {} });
+        }}
+      >
+        Browse All Listings
+      </Button>
+
+    </Card>
+
+  ) : (
+
+    <>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+
+        {processedListings
+          .filter((l) => !l.is_promoted)
+          .map((l) => (
+            <ListingCard
+              key={l.id}
+              l={l}
+            />
+          ))}
+
+      </div>
+
+    </>
+
+  )}
+
+</section>
+
+</div>
+</section>
+</div>
       {/* FOOTER */}
       <footer className="bg-primary text-primary-foreground/80 mt-16 border-t border-primary-foreground/10">
         <div className="container mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
