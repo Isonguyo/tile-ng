@@ -155,7 +155,7 @@ function PostAd() {
           years_experience: vals.type === "service" ? vals.years_experience ?? null : null,
           service_mode: vals.type === "service" ? vals.service_mode ?? null : null,
           images: imagePaths,
-          status: "approved",
+          status: "pending",
         })
         .select()
         .single();
