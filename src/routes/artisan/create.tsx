@@ -47,7 +47,7 @@ const schema = z.object({
   profession: z.string().min(1, "Select your profession"),
   bio: z
     .string()
-    .min(30, "Tell customers about yourself")
+    .min(30, "Tell customers about yourself (minimum 30 characters)")
     .max(500, "Bio is too long"),
   phone: z.string().min(10, "Enter a valid phone number"),
   whatsapp: z.string().optional(),
@@ -144,6 +144,8 @@ function ArtisanCreatePage() {
     if (isStep2Valid) {
       setStep(3);
     } else {
+      // Diagnostic tool: Prints validation failures cleanly into the browser console
+      console.log("Validation failure details:", form.formState.errors);
       toast.error("Please provide all required professional credentials to proceed.");
     }
   };
