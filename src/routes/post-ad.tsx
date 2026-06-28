@@ -130,7 +130,7 @@ function PostAd() {
       let imagePaths: string[] = [];
       if (files.length) imagePaths = await uploadListingImages(user.id, files);
 
-      // Extract details and construct location safely prior to payload assembly
+      // 1. First find the labels before writing to the database
       const selectedState = states.find((s) => s.id === vals.state_id);
       const selectedLga = lgas.find((l) => l.id === vals.lga_id);
 
@@ -138,6 +138,7 @@ function PostAd() {
         .filter(Boolean)
         .join(", ");
 
+      // 2. Now run the single database submission query smoothly
       const { data, error } = await supabase
         .from("listings")
         .insert({
