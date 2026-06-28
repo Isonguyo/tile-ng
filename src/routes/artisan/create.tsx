@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   Select,
@@ -33,12 +34,14 @@ import {
   X,
   CheckCircle2,
   Briefcase,
+  Layers,
 } from "lucide-react";
 
 export const Route = createFileRoute("/artisan/create")({
   component: ArtisanCreatePage,
 });
 
+// STEP 3.1: Updated Zod schema with professional capability attributes
 const schema = z.object({
   full_name: z.string().min(2, "Enter your full name"),
   profession: z.string().min(1, "Select your profession"),
@@ -52,6 +55,12 @@ const schema = z.object({
   lga: z.string().min(1, "Select an LGA"),
   years_experience: z.coerce.number().min(0).max(80),
   is_available: z.boolean().default(true),
+  
+  // New Network Portfolio and Service Additions
+  starting_price: z.coerce.number().optional(),
+  offers_home_service: z.boolean().default(true),
+  offers_emergency_service: z.boolean().default(false),
+  available_weekends: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -65,7 +74,7 @@ function ArtisanCreatePage() {
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // File input DOM references
+  // Core Native Element input refs for decoupled file picking
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const portfolioInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,6 +90,12 @@ function ArtisanCreatePage() {
       lga: "",
       years_experience: 0,
       is_available: true,
+      
+      // STEP 3.1: Configured default values
+      starting_price: undefined,
+      offers_home_service: true,
+      offers_emergency_service: false,
+      available_weekends: false,
     },
   });
 
@@ -114,7 +129,7 @@ function ArtisanCreatePage() {
     },
   });
 
-  // Handle advancing from Step 2 to Step 3 with selective validation
+  // Selective navigation interceptors to shield incomplete steps
   const handleValidateBasicInfo = async () => {
     const isStep2Valid = await form.trigger([
       "full_name",
@@ -129,11 +144,24 @@ function ArtisanCreatePage() {
     if (isStep2Valid) {
       setStep(3);
     } else {
-      toast.error("Please fill out all required fields correctly before continuing.");
+      toast.error("Please provide all required professional credentials to proceed.");
     }
   };
 
-  // Step 4: Final Submission Logic to Supabase Storage and Profiles table
+  // STEP 3.5: Step 3 Verification interceptor
+  const handleAdvanceToReview = () => {
+    // Basic verification placeholders until upload assets are wired directly
+    if (!profilePhoto) {
+      toast.error("Please attach a professional profile photo.");
+      return;
+    }
+    if (portfolioImages.length < 3) {
+      toast.error("Please upload between 3 and 8 samples of your previous work.");
+      return;
+    }
+    setStep(4);
+  };
+
   const onSubmit = async (values: FormValues) => {
     if (!user) return;
     setSubmitting(true);
@@ -142,7 +170,7 @@ function ArtisanCreatePage() {
       let avatarUrl = "";
       let portfolioUrls: string[] = [];
 
-      // 1. Process Profile Picture Storage upload if available
+      // 1. Storage uploads for Profile Photo
       if (profilePhoto) {
         const fileExt = profilePhoto.name.split(".").pop();
         const filePath = `${user.id}/avatar-${Date.now()}.${fileExt}`;
@@ -154,7 +182,7 @@ function ArtisanCreatePage() {
         avatarUrl = filePath;
       }
 
-      // 2. Process Portfolio Media array uploads
+      // 2. Multi-file storage execution engine
       if (portfolioImages.length > 0) {
         for (const file of portfolioImages) {
           const fileExt = file.name.split(".").pop();
@@ -168,7 +196,7 @@ function ArtisanCreatePage() {
         }
       }
 
-      // 3. Update profiles schema entry with unified attributes
+      // 3. Profiles base mapping update 
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -182,6 +210,13 @@ function ArtisanCreatePage() {
           years_experience: values.years_experience,
           is_available: values.is_available,
           is_artisan: true,
+          
+          // Enhanced dynamic service configuration options
+          starting_price: values.starting_price || null,
+          offers_home_service: values.offers_home_service,
+          offers_emergency_service: values.offers_emergency_service,
+          available_weekends: values.available_weekends,
+          
           avatar_url: avatarUrl || undefined,
           portfolio_images: portfolioUrls, 
         })
@@ -189,11 +224,11 @@ function ArtisanCreatePage() {
 
       if (error) throw error;
 
-      toast.success("Tile Pro Professional profile published successfully!");
+      toast.success("Welcome to Tile Pro! Your specialized profile is officially live.");
       navigate({ to: "/" });
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "An error occurred while saving your profile data.");
+      toast.error(err?.message || "Could not synchronize profile settings.");
     } finally {
       setSubmitting(false);
     }
@@ -216,7 +251,6 @@ function ArtisanCreatePage() {
     );
   }
 
-  // Helper variables for step 4 review presentation lookup
   const selectedStateName = states.find((s: any) => s.id === watch.state)?.name || "";
   const selectedLgaName = lgas.find((l: any) => l.id === watch.lga)?.name || "";
 
@@ -227,13 +261,13 @@ function ArtisanCreatePage() {
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold tracking-tight">Become a Tile Pro</h1>
           <p className="mt-3 text-muted-foreground">
-            Build your professional profile and start getting discovered by customers looking for vetted service providers.
+            Join the professional network of verified service providers and installers across Nigeria.
           </p>
         </div>
 
         <Card className="overflow-hidden border shadow-sm">
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            {/* STEP 1: Introduction Screen */}
+            {/* STEP 1: Entrance/Onboarding Introduction */}
             {step === 1 && (
               <div className="p-8">
                 <div className="text-center">
@@ -279,7 +313,7 @@ function ArtisanCreatePage() {
               </div>
             )}
 
-            {/* STEP 2: Basic Identity Information */}
+            {/* STEP 2: Basic Identity Configuration */}
             {step === 2 && (
               <div className="p-8 space-y-6">
                 <div>
@@ -392,60 +426,57 @@ function ArtisanCreatePage() {
               </div>
             )}
 
-            {/* STEP 3: Portfolio Media Uploads */}
+            {/* STEP 3: Enhanced Portfolio & Scope Settings */}
             {step === 3 && (
               <div className="p-8 space-y-8">
                 <div>
-                  <h2 className="text-2xl font-bold">Portfolio & Assets</h2>
+                  <h2 className="text-2xl font-bold tracking-tight">📸 Portfolio</h2>
                   <p className="text-muted-foreground mt-2">
-                    Show customers real examples of your previous masonry or setup setups.
+                    This is what customers will look at before they initiate contact with you.
                   </p>
                 </div>
 
-                <Card className="p-6 bg-muted/20 border border-dashed">
-                  <h3 className="font-semibold text-base flex items-center gap-2">
-                    <Camera className="h-4 w-4 text-primary" /> Profile Photo
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Upload a clear profile image. Profiles with photos get up to 4x more visibility.
+                {/* STEP 3.3: Profile Photo Section */}
+                <Card className="p-6 border-dashed border-2 flex flex-col items-center bg-muted/5">
+                  <Camera className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="font-semibold text-center text-sm">👤 Profile Photo</h3>
+                  <p className="text-xs text-muted-foreground text-center mt-1 max-w-xs">
+                    Upload a clear, welcoming, and professional photo of yourself.
                   </p>
                   
-                  <div className="mt-4 flex items-center gap-4">
-                    <div className="h-16 w-16 border rounded-full bg-background flex items-center justify-center overflow-hidden relative">
-                      {profilePhoto ? (
+                  <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-xs">
+                    {profilePhoto && (
+                      <div className="h-16 w-16 border rounded-full overflow-hidden shadow-inner">
                         <img src={URL.createObjectURL(profilePhoto)} alt="Avatar" className="h-full w-full object-cover" />
-                      ) : (
-                        <Camera className="h-6 w-6 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div>
-                      <input
-                        type="file"
-                        ref={avatarInputRef}
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            setProfilePhoto(e.target.files[0]);
-                          }
-                        }}
-                      />
-                      <Button variant="outline" type="button" size="sm" onClick={() => avatarInputRef.current?.click()}>
-                        Choose File
-                      </Button>
-                    </div>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setProfilePhoto(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <Button variant="outline" className="w-full" type="button" onClick={() => avatarInputRef.current?.click()}>
+                      {profilePhoto ? "Change Photo" : "Choose Photo"}
+                    </Button>
                   </div>
                 </Card>
 
-                <Card className="p-6 bg-muted/20 border border-dashed">
-                  <h3 className="font-semibold text-base flex items-center gap-2">
-                    <Upload className="h-4 w-4 text-primary" /> Portfolio Images
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Upload 3–6 layout photos showing your absolute best work.
-                  </p>
+                {/* STEP 3.3: Previous Jobs Portfolio Section */}
+                <Card className="p-6 border-dashed border-2 bg-muted/5">
+                  <div className="text-center max-w-md mx-auto mb-4">
+                    <h3 className="font-semibold text-sm">🖼 Previous Jobs</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upload between 3 and 8 clear photos of real setup jobs or projects you have personally completed.
+                    </p>
+                  </div>
 
-                  <div className="mt-4">
+                  <div className="flex flex-col items-center">
                     <input
                       type="file"
                       ref={portfolioInputRef}
@@ -455,23 +486,23 @@ function ArtisanCreatePage() {
                       onChange={(e) => {
                         if (!e.target.files) return;
                         const uploaded = Array.from(e.target.files);
-                        setPortfolioImages((prev) => [...prev, ...uploaded].slice(0, 6));
+                        setPortfolioImages((prev) => [...prev, ...uploaded].slice(0, 8));
                       }}
                     />
-                    <Button variant="outline" type="button" size="sm" onClick={() => portfolioInputRef.current?.click()}>
-                      Select Files
+                    <Button variant="outline" className="w-full max-w-xs" type="button" onClick={() => portfolioInputRef.current?.click()}>
+                      Add Portfolio Photos
                     </Button>
                   </div>
 
                   {portfolioImages.length > 0 && (
-                    <div className="grid grid-cols-3 gap-3 mt-4">
+                    <div className="grid grid-cols-4 gap-3 mt-5">
                       {portfolioImages.map((file, idx) => (
-                        <div key={idx} className="relative rounded-lg overflow-hidden border aspect-video bg-background">
+                        <div key={idx} className="relative rounded-lg overflow-hidden border aspect-square bg-background">
                           <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
                           <button
                             type="button"
                             onClick={() => setPortfolioImages((p) => p.filter((_, i) => i !== idx))}
-                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1 hover:bg-black"
+                            className="absolute top-1 right-1 bg-black/80 text-white rounded-full p-1 hover:bg-black transition-colors"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -481,69 +512,168 @@ function ArtisanCreatePage() {
                   )}
                 </Card>
 
+                {/* Starting Price Field */}
+                <div className="space-y-2 max-w-sm">
+                  <Label htmlFor="starting_price" className="font-semibold text-sm">
+                    💰 Starting Price (Optional)
+                  </Label>
+                  <div className="relative rounded-md shadow-sm">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <span className="text-muted-foreground text-sm">₦</span>
+                    </div>
+                    <Input
+                      id="starting_price"
+                      type="number"
+                      className="pl-7"
+                      placeholder="e.g. 5,000"
+                      {...form.register("starting_price")}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Example: Starting from ₦5,000 per square meter or project base rate.
+                  </p>
+                </div>
+
+                {/* STEP 3.4: Dynamic Network Availability Grid */}
+                <div className="space-y-4 pt-2">
+                  <Label className="font-semibold text-sm block border-b pb-2">
+                    Service Terms & Availability Settings
+                  </Label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Available for Work */}
+                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                      <Controller
+                        name="is_available"
+                        control={form.control}
+                        render={({ field }) => (
+                          <Checkbox id="is_available" checked={field.value} onCheckedChange={field.onChange} />
+                        )}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <Label htmlFor="is_available" className="text-sm font-medium cursor-pointer">
+                          Available for work
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Instantly show up in customer matching queues.</p>
+                      </div>
+                    </div>
+
+                    {/* Home Service */}
+                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                      <Controller
+                        name="offers_home_service"
+                        control={form.control}
+                        render={({ field }) => (
+                          <Checkbox id="offers_home_service" checked={field.value} onCheckedChange={field.onChange} />
+                        )}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <Label htmlFor="offers_home_service" className="text-sm font-medium cursor-pointer">
+                          Home service
+                        </Label>
+                        <p className="text-xs text-muted-foreground">You are open to traveling directly to client construction locations.</p>
+                      </div>
+                    </div>
+
+                    {/* Emergency Support */}
+                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                      <Controller
+                        name="offers_emergency_service"
+                        control={form.control}
+                        render={({ field }) => (
+                          <Checkbox id="offers_emergency_service" checked={field.value} onCheckedChange={field.onChange} />
+                        )}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <Label htmlFor="offers_emergency_service" className="text-sm font-medium cursor-pointer">
+                          Emergency service
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Available for urgent repairs or callouts outside standard booking hours.</p>
+                      </div>
+                    </div>
+
+                    {/* Weekends */}
+                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                      <Controller
+                        name="available_weekends"
+                        control={form.control}
+                        render={({ field }) => (
+                          <Checkbox id="available_weekends" checked={field.value} onCheckedChange={field.onChange} />
+                        )}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <Label htmlFor="available_weekends" className="text-sm font-medium cursor-pointer">
+                          Available weekends
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Open to taking calls and finishing jobs on Saturdays and Sundays.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-between pt-4 border-t">
                   <Button variant="outline" onClick={() => setStep(2)} type="button">
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="button" onClick={() => setStep(4)}>
-                    Preview Profile
+                  <Button type="button" onClick={handleAdvanceToReview}>
+                    Continue
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* STEP 4: Review & Finalize Publish Details */}
+            {/* STEP 4: Review Card Details and Submission Panel */}
             {step === 4 && (
               <div className="p-8 space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold">Review Your Profile</h2>
+                  <h2 className="text-2xl font-bold tracking-tight">Review Your Profile Card</h2>
                   <p className="text-muted-foreground mt-2">
-                    Here is how your professional business card looks to prospective clients.
+                    Here is exactly how your premium credential profilecard will present itself to local leads.
                   </p>
                 </div>
 
-                <div className="border rounded-xl p-6 space-y-4 bg-muted/10">
+                <div className="border rounded-xl p-6 space-y-4 bg-muted/10 shadow-sm">
                   <div className="flex items-start gap-4">
-                    <div className="h-16 w-16 border rounded-full bg-background flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="h-16 w-16 border rounded-full bg-background flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                       {profilePhoto ? (
-                        <img src={URL.createObjectURL(profilePhoto)} alt="Avatar Preview" className="h-full w-full object-cover" />
+                        <img src={URL.createObjectURL(profilePhoto)} alt="Avatar" className="h-full w-full object-cover" />
                       ) : (
                         <Briefcase className="h-6 w-6 text-muted-foreground" />
                       )}
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-bold text-xl">{watch.full_name || "Untitled Name"}</h3>
+                      <h3 className="font-bold text-xl">{watch.full_name || "Artisan Professional"}</h3>
                       <p className="text-sm font-medium text-primary flex items-center gap-1">
-                        <span>👷</span> {watch.profession || "No Specialty Selected"}
+                        <span>👷</span> {watch.profession || "Specialization Pending"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        📍 {selectedLgaName || "LGA"}, {selectedStateName || "State"} • ⭐ {watch.years_experience || 0} Years Exp.
+                        📍 {selectedLgaName || "LGA Location"}, {selectedStateName || "State"} • ⭐ {watch.years_experience || 0} Years Exp.
                       </p>
                     </div>
                   </div>
 
-                  <hr className="my-2" />
+                  <hr />
 
                   <div className="space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Professional Summary</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Professional Biography</span>
                     <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                      {watch.bio || "No professional summary added yet."}
+                      {watch.bio || "No description provided."}
                     </p>
                   </div>
 
-                  <div className="pt-2 flex items-center gap-4 text-xs font-medium text-muted-foreground">
-                    <div>📞 Contact: <span className="text-foreground">{watch.phone || "Not Set"}</span></div>
-                    {watch.whatsapp && (
-                      <div>💬 WhatsApp: <span className="text-foreground">{watch.whatsapp}</span></div>
-                    )}
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 pt-2 text-xs border-t border-dashed">
+                    <div>💰 Base Pricing: <span className="font-semibold text-foreground">{watch.starting_price ? `₦${Number(watch.starting_price).toLocaleString()}` : "Contact for pricing"}</span></div>
+                    <div>⚡ Status: <span className="font-semibold text-emerald-600">{watch.is_available ? "Active / Available Today" : "Away"}</span></div>
+                    <div>🏠 Location Terms: <span className="font-semibold text-foreground">{watch.offers_home_service ? "Offers Home Service" : "In-Shop Only"}</span></div>
+                    <div>📆 Schedule Scope: <span className="font-semibold text-foreground">{watch.available_weekends ? "Weekends Available" : "Weekdays Only"}</span></div>
                   </div>
 
                   {portfolioImages.length > 0 && (
-                    <div className="space-y-2 pt-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Project Media ({portfolioImages.length} items)
+                    <div className="space-y-2 pt-2 border-t">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Verified Work Gallery ({portfolioImages.length} uploads)
                       </span>
                       <div className="grid grid-cols-4 gap-2">
                         {portfolioImages.map((file, i) => (
@@ -562,7 +692,7 @@ function ArtisanCreatePage() {
                     Back
                   </Button>
                   <Button type="submit" disabled={submitting}>
-                    {submitting ? "Publishing Pro..." : "Confirm & Publish Profile"}
+                    {submitting ? "Publishing Pro..." : "Publish My Profile"}
                   </Button>
                 </div>
               </div>
