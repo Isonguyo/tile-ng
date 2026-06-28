@@ -130,84 +130,57 @@ function PostAd() {
       let imagePaths: string[] = [];
       if (files.length) imagePaths = await uploadListingImages(user.id, files);
 
-      const { data, error } = await supabase.from("listings").insert({
-        const selectedState = states.find((s) => s.id === vals.state_id);
-const selectedLga = lgas.find((l) => l.id === vals.lga_id);
+      // Extract details and construct location safely prior to payload assembly
+      const selectedState = states.find((s) => s.id === vals.state_id);
+      const selectedLga = lgas.find((l) => l.id === vals.lga_id);
 
-const location = [
-  selectedLga?.name,
-  selectedState?.name,
-]
-  .filter(Boolean)
-  .join(", ");
+      const location = [selectedLga?.name, selectedState?.name]
+        .filter(Boolean)
+        .join(", ");
 
-const { data, error } = await supabase
-  .from("listings")
-  .insert({
-    user_id: user.id,
-    type: vals.type,
-    category: vals.category,
-    title: vals.title,
-    description: vals.description,
+      const { data, error } = await supabase
+        .from("listings")
+        .insert({
+          user_id: user.id,
+          type: vals.type,
+          category: vals.category,
+          title: vals.title,
+          description: vals.description,
+          location,
+          phone: vals.phone,
+          price: vals.price ?? null,
+          condition: vals.type === "goods" ? vals.condition ?? null : null,
+          brand: vals.type === "goods" ? vals.brand ?? null : null,
+          years_experience: vals.type === "service" ? vals.years_experience ?? null : null,
+          service_mode: vals.type === "service" ? vals.service_mode ?? null : null,
+          images: imagePaths,
+          status: "approved",
+        })
+        .select()
+        .single();
 
-    // Your database currently expects a text location
-    location,
+      if (error) {
+        console.error(error);
+        throw error;
+      }
 
-    phone: vals.phone,
-
-    price: vals.price ?? null,
-
-    condition:
-      vals.type === "goods"
-        ? vals.condition ?? null
-        : null,
-
-    brand:
-      vals.type === "goods"
-        ? vals.brand ?? null
-        : null,
-
-    years_experience:
-      vals.type === "service"
-        ? vals.years_experience ?? null
-        : null,
-
-    service_mode:
-      vals.type === "service"
-        ? vals.service_mode ?? null
-        : null,
-
-    images: imagePaths,
-    status: "approved",
-  })
-  .select()
-  .single();
-
-if (error) {
-  console.error(error);
-  throw error;
-}
-
-toast.success("Ad submitted successfully!");
-
-nav({
-  to: "/listing/$id",
-  params: { id: data.id },
-});
-      }).select().single();
-
-      if (error) throw error;
       toast.success("Ad submitted successfully!");
-      nav({ to: "/listing/$id", params: { id: data.id } });
-  } catch (e) {
-  console.error("POST AD ERROR:", e);
 
-  if (e && typeof e === "object" && "message" in e) {
-    toast.error(String((e as any).message));
-  } else {
-    toast.error("Failed to post ad.");
-  }
-} finally { setSubmitting(false); }
+      nav({
+        to: "/listing/$id",
+        params: { id: data.id },
+      });
+    } catch (e) {
+      console.error("POST AD ERROR:", e);
+
+      if (e && typeof e === "object" && "message" in e) {
+        toast.error(String((e as any).message));
+      } else {
+        toast.error("Failed to post ad.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const onInvalid = (errors: any) => {
