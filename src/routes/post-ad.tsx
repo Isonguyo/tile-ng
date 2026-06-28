@@ -131,29 +131,83 @@ function PostAd() {
       if (files.length) imagePaths = await uploadListingImages(user.id, files);
 
       const { data, error } = await supabase.from("listings").insert({
-        user_id: user.id,
-        type: vals.type,
-        category: vals.category,
-        title: vals.title,
-        description: vals.description,
-        state_id: vals.state_id,
-        lga_id: vals.lga_id,
-        phone: vals.phone,
-        price: vals.price ?? null,
-        condition: vals.type === "goods" ? vals.condition : null,
-        brand: vals.type === "goods" ? vals.brand : null,
-        years_experience: vals.type === "service" ? vals.years_experience : null,
-        service_mode: vals.type === "service" ? vals.service_mode : null,
-        images: imagePaths,
-        status: "approved"
+        const selectedState = states.find((s) => s.id === vals.state_id);
+const selectedLga = lgas.find((l) => l.id === vals.lga_id);
+
+const location = [
+  selectedLga?.name,
+  selectedState?.name,
+]
+  .filter(Boolean)
+  .join(", ");
+
+const { data, error } = await supabase
+  .from("listings")
+  .insert({
+    user_id: user.id,
+    type: vals.type,
+    category: vals.category,
+    title: vals.title,
+    description: vals.description,
+
+    // Your database currently expects a text location
+    location,
+
+    phone: vals.phone,
+
+    price: vals.price ?? null,
+
+    condition:
+      vals.type === "goods"
+        ? vals.condition ?? null
+        : null,
+
+    brand:
+      vals.type === "goods"
+        ? vals.brand ?? null
+        : null,
+
+    years_experience:
+      vals.type === "service"
+        ? vals.years_experience ?? null
+        : null,
+
+    service_mode:
+      vals.type === "service"
+        ? vals.service_mode ?? null
+        : null,
+
+    images: imagePaths,
+    status: "approved",
+  })
+  .select()
+  .single();
+
+if (error) {
+  console.error(error);
+  throw error;
+}
+
+toast.success("Ad submitted successfully!");
+
+nav({
+  to: "/listing/$id",
+  params: { id: data.id },
+});
       }).select().single();
 
       if (error) throw error;
       toast.success("Ad submitted successfully!");
       nav({ to: "/listing/$id", params: { id: data.id } });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to post ad parameters");
-    } finally { setSubmitting(false); }
+  } catch (e) {
+  console.error("POST AD ERROR:", e);
+
+  if (e && typeof e === "object" && "message" in e) {
+    toast.error(String((e as any).message));
+  } else {
+    toast.error("Failed to post ad.");
+  }
+} finally { setSubmitting(false); }
   };
 
   const onInvalid = (errors: any) => {
