@@ -22,8 +22,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
-  Package,
-  Wrench,
 } from "lucide-react";
 
 export const Route = createFileRoute("/post-ad")({
@@ -51,7 +49,7 @@ function PostAd() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   
-  const TOTAL_STEPS = 4;
+  const TOTAL_STEPS = 3;
 
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
@@ -59,7 +57,7 @@ function PostAd() {
 
   const form = useForm<FormVals>({
     resolver: zodResolver(schema),
-    defaultValues: { type: "goods" },
+    defaultValues: { type: "goods", category: "" },
   });
   const watch = form.watch();
 
@@ -71,17 +69,10 @@ function PostAd() {
     if (step > 1) setStep((s) => s - 1);
   };
 
-  const selectListingType = (type: "goods" | "service") => {
-    form.setValue("type", type);
-    form.setValue("category", "");
-    setStep(2);
-  };
-
   const handleDetectLocation = () => {
     toast.info("Location detection features coming soon.");
   };
 
-  // Metadata Hooked directly onto State mapping
   const { data: states = [] } = useQuery({
     queryKey: ["post-states"],
     queryFn: async () => {
@@ -91,7 +82,6 @@ function PostAd() {
     },
   });
 
-  // LGAs now stream filtered records directly using state_id relationship context
   const { data: lgas = [] } = useQuery({
     queryKey: ["post-lgas", watch.state_id],
     queryFn: async () => {
@@ -130,7 +120,6 @@ function PostAd() {
       let imagePaths: string[] = [];
       if (files.length) imagePaths = await uploadListingImages(user.id, files);
 
-      // 1. First find the labels before writing to the database
       const selectedState = states.find((s) => s.id === vals.state_id);
       const selectedLga = lgas.find((l) => l.id === vals.lga_id);
 
@@ -138,7 +127,6 @@ function PostAd() {
         .filter(Boolean)
         .join(", ");
 
-      // 2. Now run the single database submission query smoothly
       const { data, error } = await supabase
         .from("listings")
         .insert({
@@ -173,7 +161,6 @@ function PostAd() {
       });
     } catch (e) {
       console.error("POST AD ERROR:", e);
-
       if (e && typeof e === "object" && "message" in e) {
         toast.error(String((e as any).message));
       } else {
@@ -197,7 +184,7 @@ function PostAd() {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-3xl font-bold">Post an Ad</h1>
         <div className="flex items-center gap-2 my-4">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3].map((s) => (
             <div key={s} className={`flex-1 h-2 rounded-full ${step >= s ? "bg-accent" : "bg-muted"}`} />
           ))}
         </div>
@@ -211,70 +198,77 @@ function PostAd() {
                   Choose whether you're selling a physical product or offering a professional service.
                 </p>
 
-                <div className="grid gap-4 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => selectListingType("goods")}
-                    className={`rounded-xl border-2 p-5 text-left transition-all ${
-                      watch.type === "goods"
-                        ? "border-accent bg-accent/10"
-                        : "border-border hover:border-accent/40"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold">📦 Sell a Product</h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Phones, laptops, cars, land, fashion, furniture, food, electronics and other physical items.
-                        </p>
+                <div className="flex flex-col sm:flex-row gap-4 mt-6">
+                  {(["goods", "service"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => {
+                        form.setValue("type", t, { shouldValidate: true });
+                        form.setValue("category", "", { shouldValidate: true });
+                      }}
+                      className={`flex-1 rounded-xl border-2 p-5 text-left transition-all relative ${
+                        watch.type === t
+                          ? "border-accent bg-accent/5 ring-1 ring-accent"
+                          : "border-border hover:border-accent/40"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="text-lg font-bold">
+                          {t === "goods" ? "📦 Sell a Product" : "🛠 Offer a Service"}
+                        </div>
+                        {watch.type === t && <Check className="h-5 w-5 text-accent shrink-0" />}
                       </div>
-                      {watch.type === "goods" && <Check className="h-6 w-6 text-accent" />}
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => selectListingType("service")}
-                    className={`rounded-xl border-2 p-5 text-left transition-all ${
-                      watch.type === "service"
-                        ? "border-accent bg-accent/10"
-                        : "border-border hover:border-accent/40"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold">🛠 Offer a Service</h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Photography, plumbing, barbering, electrical work, tutoring, software development, catering and other professional services.
-                        </p>
-                      </div>
-                      {watch.type === "service" && <Check className="h-6 w-6 text-accent" />}
-                    </div>
-                  </button>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {t === "goods"
+                          ? "Phones, Laptops, Cars, Clothes, Electronics, and other physical items."
+                          : "Photography, Plumbing, Tuning, Business Consults, and specialized trade craft."}
+                      </p>
+                    </button>
+                  ))}
                 </div>
 
-                <div className="mt-6">
-                  <Label className="mb-2 block">Category</Label>
-                  <Select
-                    value={watch.category}
-                    onValueChange={(v) => form.setValue("category", v, { shouldValidate: true })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select a ${watch.type} category`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => (
-                        <SelectItem key={c.slug} value={c.slug}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {watch.type && (
+                  <div className="space-y-3 mt-6 pt-4 border-t animate-in fade-in duration-200">
+                    <div>
+                      <Label className="text-base font-semibold">Select Category</Label>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Choose the niche matching your listing layout description.
+                      </p>
+                    </div>
 
-                <div className="flex justify-end">
+                    <div className="grid grid-cols-2 gap-3">
+                      {CATEGORIES.filter((c) => c.type === watch.type).map((c) => {
+                        const isSelected = watch.category === c.slug;
+                        return (
+                          <button
+                            key={c.slug}
+                            type="button"
+                            onClick={() => form.setValue("category", c.slug, { shouldValidate: true })}
+                            className={`p-4 rounded-xl border text-left transition-all flex items-center justify-between text-sm font-medium ${
+                              isSelected
+                                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                                : "border-border bg-card hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <span className="truncate">{c.label}</span>
+                            {isSelected && <Check className="h-4 w-4 text-accent shrink-0 ml-2" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {!watch.category && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium pt-1">
+                        Select a specific category card before continuing.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-4 border-t mt-4">
                   <Button type="button" disabled={!watch.category} onClick={nextStep}>
-                    Continue
+                    Next
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -351,7 +345,7 @@ function PostAd() {
                   </>
                 )}
 
-                <div className="flex justify-between">
+                <div className="flex justify-between pt-4 border-t">
                   <Button type="button" variant="outline" onClick={prevStep}>
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
@@ -460,7 +454,7 @@ function PostAd() {
                   <Input {...form.register("phone")} placeholder="08012345678" />
                 </div>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between pt-4 border-t">
                   <Button type="button" variant="outline" onClick={prevStep}>
                     <ChevronLeft className="h-4 w-4 mr-2" />
                     Back
