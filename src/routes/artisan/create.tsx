@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -32,6 +32,7 @@ import {
   Upload,
   X,
   CheckCircle2,
+  Briefcase,
 } from "lucide-react";
 
 export const Route = createFileRoute("/artisan/create")({
@@ -64,6 +65,10 @@ function ArtisanCreatePage() {
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // File input DOM references
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const portfolioInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -81,7 +86,6 @@ function ArtisanCreatePage() {
 
   const watch = form.watch();
 
-  // FIXED: Added "id" to the select statement so state.id is populated correctly
   const { data: states = [] } = useQuery({
     queryKey: ["artisan-states"],
     queryFn: async () => {
@@ -110,56 +114,88 @@ function ArtisanCreatePage() {
     },
   });
 
-  const onSubmit = async (vals: FormValues) => {
+  // Handle advancing from Step 2 to Step 3 with selective validation
+  const handleValidateBasicInfo = async () => {
+    const isStep2Valid = await form.trigger([
+      "full_name",
+      "profession",
+      "bio",
+      "phone",
+      "state",
+      "lga",
+      "years_experience",
+    ]);
+
+    if (isStep2Valid) {
+      setStep(3);
+    } else {
+      toast.error("Please fill out all required fields correctly before continuing.");
+    }
+  };
+
+  // Step 4: Final Submission Logic to Supabase Storage and Profiles table
+  const onSubmit = async (values: FormValues) => {
     if (!user) return;
     setSubmitting(true);
+
     try {
       let avatarUrl = "";
       let portfolioUrls: string[] = [];
 
-      // Optional placeholder logic for files:
-      // Insert your custom edge functions or Supabase storage upload methods if needed
+      // 1. Process Profile Picture Storage upload if available
       if (profilePhoto) {
         const fileExt = profilePhoto.name.split(".").pop();
-        const filePath = `${user.id}/avatar-${Math.random()}.${fileExt}`;
-        const { error: uploadErr } = await supabase.storage
+        const filePath = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+        const { error: avatarErr } = await supabase.storage
           .from("avatars")
-          .upload(filePath, profilePhoto);
-        if (!uploadErr) avatarUrl = filePath;
+          .upload(filePath, profilePhoto, { cacheControl: "3600", upsert: true });
+        
+        if (avatarErr) throw avatarErr;
+        avatarUrl = filePath;
       }
 
-      const { error } = await supabase.from("artisans").insert({
-        user_id: user.id,
-        full_name: vals.full_name,
-        profession: vals.profession,
-        bio: vals.bio,
-        phone: vals.phone,
-        whatsapp: vals.whatsapp || null,
-        state_id: vals.state,
-        lga_id: vals.lga,
-        years_experience: vals.years_experience,
-        avatar_url: avatarUrl,
-        portfolio_images: portfolioUrls,
-        is_available: vals.is_available,
-        status: "pending",
-      });
+      // 2. Process Portfolio Media array uploads
+      if (portfolioImages.length > 0) {
+        for (const file of portfolioImages) {
+          const fileExt = file.name.split(".").pop();
+          const filePath = `${user.id}/portfolio-${Date.now()}-${Math.random().toString(36).substr(2, 5)}.${fileExt}`;
+          const { error: portErr } = await supabase.storage
+            .from("portfolios")
+            .upload(filePath, file, { cacheControl: "3600", upsert: true });
+
+          if (portErr) throw portErr;
+          portfolioUrls.push(filePath);
+        }
+      }
+
+      // 3. Update profiles schema entry with unified attributes
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: values.full_name,
+          profession: values.profession,
+          bio: values.bio,
+          phone: values.phone,
+          whatsapp: values.whatsapp || null,
+          state: values.state,
+          lga: values.lga,
+          years_experience: values.years_experience,
+          is_available: values.is_available,
+          is_artisan: true,
+          avatar_url: avatarUrl || undefined,
+          portfolio_images: portfolioUrls, 
+        })
+        .eq("id", user.id);
 
       if (error) throw error;
 
-      toast.success("Artisan application submitted successfully!");
+      toast.success("Tile Pro Professional profile published successfully!");
       navigate({ to: "/" });
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message || "Failed to submit application.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "An error occurred while saving your profile data.");
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const onInvalid = (errors: any) => {
-    const first = Object.keys(errors)[0];
-    if (first) {
-      toast.error(`Validation error on field: ${first}`);
     }
   };
 
@@ -180,20 +216,24 @@ function ArtisanCreatePage() {
     );
   }
 
+  // Helper variables for step 4 review presentation lookup
+  const selectedStateName = states.find((s: any) => s.id === watch.state)?.name || "";
+  const selectedLgaName = lgas.find((l: any) => l.id === watch.lga)?.name || "";
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <div className="container mx-auto max-w-3xl px-4 py-10">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold">Become a Tile Artisan</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Become a Tile Pro</h1>
           <p className="mt-3 text-muted-foreground">
-            Build your professional profile and start getting discovered by customers looking for trusted artisans.
+            Build your professional profile and start getting discovered by customers looking for vetted service providers.
           </p>
         </div>
 
-        <Card className="overflow-hidden">
-          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
-            {/* STEP 1: Welcome/Onboarding Screen */}
+        <Card className="overflow-hidden border shadow-sm">
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            {/* STEP 1: Introduction Screen */}
             {step === 1 && (
               <div className="p-8">
                 <div className="text-center">
@@ -239,7 +279,7 @@ function ArtisanCreatePage() {
               </div>
             )}
 
-            {/* STEP 2: Basic Information Forms */}
+            {/* STEP 2: Basic Identity Information */}
             {step === 2 && (
               <div className="p-8 space-y-6">
                 <div>
@@ -344,7 +384,7 @@ function ArtisanCreatePage() {
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="button" onClick={() => setStep(3)}>
+                  <Button type="button" onClick={handleValidateBasicInfo}>
                     Continue
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -352,31 +392,36 @@ function ArtisanCreatePage() {
               </div>
             )}
 
-            {/* STEP 3: Media Upload Form Flow */}
+            {/* STEP 3: Portfolio Media Uploads */}
             {step === 3 && (
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-8">
                 <div>
-                  <h2 className="text-2xl font-bold">Profile Photo & Portfolio</h2>
+                  <h2 className="text-2xl font-bold">Portfolio & Assets</h2>
                   <p className="text-muted-foreground mt-2">
-                    Showcase your past projects and give your profile a welcoming professional presence.
+                    Show customers real examples of your previous masonry or setup setups.
                   </p>
                 </div>
 
-                {/* Profile Photo Upload */}
-                <div className="space-y-3">
-                  <Label>Profile Picture</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="h-20 w-20 border rounded-full bg-muted flex items-center justify-center overflow-hidden relative">
+                <Card className="p-6 bg-muted/20 border border-dashed">
+                  <h3 className="font-semibold text-base flex items-center gap-2">
+                    <Camera className="h-4 w-4 text-primary" /> Profile Photo
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload a clear profile image. Profiles with photos get up to 4x more visibility.
+                  </p>
+                  
+                  <div className="mt-4 flex items-center gap-4">
+                    <div className="h-16 w-16 border rounded-full bg-background flex items-center justify-center overflow-hidden relative">
                       {profilePhoto ? (
-                        <img src={URL.createObjectURL(profilePhoto)} alt="Avatar Preview" className="h-full w-full object-cover" />
+                        <img src={URL.createObjectURL(profilePhoto)} alt="Avatar" className="h-full w-full object-cover" />
                       ) : (
-                        <Camera className="h-8 w-8 text-muted-foreground" />
+                        <Camera className="h-6 w-6 text-muted-foreground" />
                       )}
                     </div>
                     <div>
                       <input
                         type="file"
-                        id="avatar-upload"
+                        ref={avatarInputRef}
                         accept="image/*"
                         className="hidden"
                         onChange={(e) => {
@@ -385,22 +430,25 @@ function ArtisanCreatePage() {
                           }
                         }}
                       />
-                      <Button variant="outline" type="button" asChild size="sm">
-                        <label htmlFor="avatar-upload" className="cursor-pointer">
-                          Upload Photo
-                        </label>
+                      <Button variant="outline" type="button" size="sm" onClick={() => avatarInputRef.current?.click()}>
+                        Choose File
                       </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                {/* Multi-Portfolio Photo Uploader */}
-                <div className="space-y-3">
-                  <Label>Recent Projects Portfolio</Label>
-                  <div className="border-2 border-dashed rounded-xl p-6 text-center bg-muted/10">
+                <Card className="p-6 bg-muted/20 border border-dashed">
+                  <h3 className="font-semibold text-base flex items-center gap-2">
+                    <Upload className="h-4 w-4 text-primary" /> Portfolio Images
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload 3–6 layout photos showing your absolute best work.
+                  </p>
+
+                  <div className="mt-4">
                     <input
-                      id="portfolio-upload"
                       type="file"
+                      ref={portfolioInputRef}
                       multiple
                       accept="image/*"
                       className="hidden"
@@ -410,24 +458,20 @@ function ArtisanCreatePage() {
                         setPortfolioImages((prev) => [...prev, ...uploaded].slice(0, 6));
                       }}
                     />
-                    <label htmlFor="portfolio-upload" className="cursor-pointer flex flex-col items-center gap-2">
-                      <Upload className="h-8 w-8 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-sm">Upload context photos matching your layout setup</p>
-                        <p className="text-xs text-muted-foreground">Up to 6 images max</p>
-                      </div>
-                    </label>
+                    <Button variant="outline" type="button" size="sm" onClick={() => portfolioInputRef.current?.click()}>
+                      Select Files
+                    </Button>
                   </div>
 
                   {portfolioImages.length > 0 && (
                     <div className="grid grid-cols-3 gap-3 mt-4">
                       {portfolioImages.map((file, idx) => (
-                        <div key={idx} className="relative rounded-lg overflow-hidden border aspect-video">
+                        <div key={idx} className="relative rounded-lg overflow-hidden border aspect-video bg-background">
                           <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
                           <button
                             type="button"
                             onClick={() => setPortfolioImages((p) => p.filter((_, i) => i !== idx))}
-                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1"
+                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1 hover:bg-black"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -435,15 +479,90 @@ function ArtisanCreatePage() {
                       ))}
                     </div>
                   )}
-                </div>
+                </Card>
 
                 <div className="flex justify-between pt-4 border-t">
                   <Button variant="outline" onClick={() => setStep(2)} type="button">
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
+                  <Button type="button" onClick={() => setStep(4)}>
+                    Preview Profile
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: Review & Finalize Publish Details */}
+            {step === 4 && (
+              <div className="p-8 space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold">Review Your Profile</h2>
+                  <p className="text-muted-foreground mt-2">
+                    Here is how your professional business card looks to prospective clients.
+                  </p>
+                </div>
+
+                <div className="border rounded-xl p-6 space-y-4 bg-muted/10">
+                  <div className="flex items-start gap-4">
+                    <div className="h-16 w-16 border rounded-full bg-background flex items-center justify-center overflow-hidden shrink-0">
+                      {profilePhoto ? (
+                        <img src={URL.createObjectURL(profilePhoto)} alt="Avatar Preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <Briefcase className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-xl">{watch.full_name || "Untitled Name"}</h3>
+                      <p className="text-sm font-medium text-primary flex items-center gap-1">
+                        <span>👷</span> {watch.profession || "No Specialty Selected"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        📍 {selectedLgaName || "LGA"}, {selectedStateName || "State"} • ⭐ {watch.years_experience || 0} Years Exp.
+                      </p>
+                    </div>
+                  </div>
+
+                  <hr className="my-2" />
+
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Professional Summary</span>
+                    <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                      {watch.bio || "No professional summary added yet."}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                    <div>📞 Contact: <span className="text-foreground">{watch.phone || "Not Set"}</span></div>
+                    {watch.whatsapp && (
+                      <div>💬 WhatsApp: <span className="text-foreground">{watch.whatsapp}</span></div>
+                    )}
+                  </div>
+
+                  {portfolioImages.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Project Media ({portfolioImages.length} items)
+                      </span>
+                      <div className="grid grid-cols-4 gap-2">
+                        {portfolioImages.map((file, i) => (
+                          <div key={i} className="aspect-square border rounded-md overflow-hidden bg-background">
+                            <img src={URL.createObjectURL(file)} alt="" className="h-full w-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between pt-4 border-t">
+                  <Button variant="outline" onClick={() => setStep(3)} type="button" disabled={submitting}>
+                    <ChevronLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
                   <Button type="submit" disabled={submitting}>
-                    {submitting ? "Submitting..." : "Submit Profile"}
+                    {submitting ? "Publishing Pro..." : "Confirm & Publish Profile"}
                   </Button>
                 </div>
               </div>
