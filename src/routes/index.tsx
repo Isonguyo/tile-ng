@@ -7,6 +7,9 @@ import { ListingCard, type ListingCardData } from "@/components/listing-card";
 import { CATEGORIES, LOCATIONS } from "@/lib/categories";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -14,7 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import * as Icons from "lucide-react";
 import { z } from "zod";
 import type { ComponentType } from "react";
@@ -61,31 +66,59 @@ type ProfileRow = {
   id: string;
   subscription_tier: string | null;
   is_verified: boolean | null;
+
   business_name: string | null;
   full_name: string | null;
+
   avatar_url?: string | null;
+  profile_photo?: string | null;
+
   shop_slug?: string | null;
+
   location?: string | null;
+  state?: string | null;
+  lga?: string | null;
+
+  profession?: string | null;
+  avg_rating?: number | null;
+  total_sales?: number | null;
+
   active_listings?: number;
 };
 
 function Index() {
   const navigate = useNavigate({ from: "/" });
   const { q, loc, cat } = Route.useSearch();
+
+  // Reference used when jumping to listings after searching
   const listingsRef = useRef<HTMLDivElement>(null);
 
-  // Derived filter state flag
-  const isFiltering = Boolean(q) || Boolean(cat) || (loc && loc !== "all");
+  // -----------------------------------------
+  // PAGE MODE
+  // -----------------------------------------
+  const isFiltering =
+    Boolean(q) ||
+    Boolean(cat) ||
+    (loc !== undefined && loc !== "all");
 
-  // Search & Filters local input state
+  // -----------------------------------------
+  // SEARCH STATE
+  // -----------------------------------------
   const [searchInput, setSearchInput] = useState(q ?? "");
   const [selectedLocation, setSelectedLocation] = useState(loc ?? "all");
 
-  // Marketplace Feed state
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular" | "price-low" | "price-high">("newest");
+  // Future-ready (we'll later add category search here if needed)
+  const [activeTab, setActiveTab] = useState<
+    "all" | "goods" | "service" | "featured"
+  >("all");
 
-  // Smooth scroll to listings container when search params update
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "popular" | "price-low" | "price-high"
+  >("newest");
+
+  // -----------------------------------------
+  // AUTO SCROLL TO RESULTS
+  // -----------------------------------------
   useEffect(() => {
     if (!isFiltering) return;
 
@@ -93,14 +126,15 @@ function Index() {
       behavior: "smooth",
       block: "start",
     });
-  }, [q, cat, loc, isFiltering]);
+  }, [isFiltering, q, loc, cat]);
 
-  // Synchronize inputs when query properties reset or change elsewhere
+  // -----------------------------------------
+  // KEEP INPUTS IN SYNC WITH URL
+  // -----------------------------------------
   useEffect(() => {
     setSearchInput(q ?? "");
     setSelectedLocation(loc ?? "all");
   }, [q, loc]);
-
   // ==========================
   // 1. LISTINGS QUERY
   // ==========================
@@ -355,292 +389,649 @@ function Index() {
   }, [cat]);
 
   return (
-    <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
-      <div>
-        <SiteHeader />
+  <div className="min-h-screen bg-background flex flex-col">
+    <div>
+      <SiteHeader />
 
-        {/* 1. HERO SECTION (Landing Mode Only) */}
-        {!isFiltering && (
-          <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground">
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:26px_26px]" />
-            <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
-              <div className="max-w-4xl mx-auto text-center space-y-6">
-                <span className="inline-flex items-center rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide backdrop-blur">
-                  🇳🇬 Nigeria's Marketplace for Goods & Services
-                </span>
-                <h1 className="text-4xl md:text-6xl font-black leading-tight tracking-tight">
-                  Find Trusted Stores,<br />Products & Services Near You
-                </h1>
-                <p className="max-w-2xl mx-auto text-primary-foreground/90 text-base md:text-lg leading-relaxed">
-                  Shop from verified businesses, discover local services, compare prices and connect directly with trusted sellers across Nigeria.
-                </p>
-                <div className="flex flex-wrap justify-center gap-4 pt-3">
-                  <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8">
-                    <Link to="/">Browse Listings</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="secondary" className="font-bold">
-                    <Link to="/dashboard">Open Your Shop</Link>
-                  </Button>
-                </div>
+      {/* ================= HERO ================= */}
+      {!isFiltering && (
+        <section className="relative overflow-hidden border-b bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-white">
 
-                <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Icons.Package className="h-5 w-5" />
-                    <span>Explore <strong>{Number(stats?.total_listings ?? 0).toLocaleString()}</strong> Listings</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icons.Store className="h-5 w-5" />
-                    <span><strong>{Number(stats?.active_shops ?? 0).toLocaleString()}</strong> Shops</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icons.BadgeCheck className="h-5 w-5" />
-                    <span><strong>{Number(stats?.verified_vendors ?? 0).toLocaleString()}</strong> Verified Sellers</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] opacity-10 [background-size:28px_28px]" />
 
-        {/* 2. STATS ROW SUMMARY CARD (Landing Mode Only) */}
-        {!isFiltering && (
-          <section className="container mx-auto px-4 -mt-8 relative z-20">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-blue-500 bg-blue-500/10" },
-                { label: "Verified Sellers", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-emerald-500 bg-emerald-500/10" },
-                { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-500 bg-amber-500/10" },
-                { label: "Categories", val: quickCategories.length, icon: Icons.LayoutGrid, color: "text-purple-500 bg-purple-500/10" },
-              ].map((s, i) => {
-                const Ic = s.icon;
-                return (
-                  <Card key={i} className="p-4 rounded-xl bg-background shadow-md border flex items-center gap-4">
-                    <div className={`hidden sm:flex p-3 rounded-lg ${s.color}`}><Ic className="h-5 w-5" /></div>
-                    <div>
-                      <p className="text-xl md:text-2xl font-extrabold">{Number(s.val).toLocaleString()}</p>
-                      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</p>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-        )}
+          <div className="container mx-auto px-4 py-20 relative z-10">
 
-        {/* 3. FEATURED STORES (Landing Mode Only) */}
-        {!isFiltering && verifiedMerchants.length > 0 && (
-          <section className="container mx-auto px-4 pt-12 pb-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Icons.Store className="h-6 w-6 text-primary" />
-                  Featured Stores
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Discover trusted businesses with active listings across Nigeria.
-                </p>
-              </div>
-              <Button asChild variant="outline">
-                <Link to="/shops">View All</Link>
-              </Button>
-            </div>
+            <div className="max-w-5xl mx-auto text-center">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {verifiedMerchants.map((v) => (
-                <Link
-                  key={v.id}
-                  to="/shop/$slug"
-                  params={{ slug: v.shop_slug! }}
-                  className="group rounded-2xl border bg-background overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                >
-                  <div className="h-24 bg-gradient-to-br from-primary/10 via-primary/5 to-background flex items-center justify-center">
-                    {v.avatar_url ? (
-                      <img src={v.avatar_url} className="h-14 w-14 rounded-full object-cover border-2 border-background" />
-                    ) : (
-                      <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Icons.Store className="h-6 w-6 text-primary" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <h3 className="font-bold truncate text-sm">{v.business_name || v.full_name}</h3>
-                      {v.is_verified && <Icons.BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">{v.location || "Nigeria"}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+              <span className="inline-flex items-center rounded-full bg-white/15 px-5 py-2 text-sm font-semibold backdrop-blur">
+                🇳🇬 Nigeria's Marketplace for Products, Services & Artisans
+              </span>
 
-        {/* 4. VERIFIED TRUST FLAGBANNER (Landing Mode Only) */}
-        {!isFiltering && verifiedMerchants.length > 0 && (
-          <section className="container mx-auto px-4 py-6">
-            <div className="bg-gradient-to-r from-emerald-500/10 via-background to-background border border-emerald-500/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="space-y-2 max-w-xl text-center md:text-left">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  <Icons.BadgeCheck className="h-3.5 w-3.5" /> Verified Merchants Only
-                </div>
-                <h3 className="text-xl font-bold tracking-tight">Trade Safely with Verified Merchants</h3>
-                <p className="text-sm text-muted-foreground">
-                  We review business credentials, historical fulfillment consistency, and identity markers so you can buy items or book trade services with absolute confidence.
-                </p>
-              </div>
-              <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 font-bold shrink-0">
-                <Link to="/shops" search={{ verified: true }}>Find Verified Sellers</Link>
-              </Button>
-            </div>
-          </section>
-        )}
+              <h1 className="mt-6 text-5xl md:text-7xl font-black tracking-tight leading-tight">
+                Buy.
+                <span className="text-accent"> Sell.</span>
+                <br />
+                Hire Trusted Professionals.
+              </h1>
 
-        {/* 5. HOT TRENDING PRODUCTS STREAM (Landing Mode Only) */}
-        {!isFiltering && trendingListings.length > 0 && (
-          <section className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Icons.Flame className="h-6 w-6 text-orange-500 animate-pulse" />
-                <h2 className="text-2xl font-bold tracking-tight">Trending Products</h2>
-              </div>
-              <Link to="/" search={{ sortBy: "popular" }} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
-                View All <Icons.ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x">
-              {trendingListings.map((l) => (
-                <div key={l.id} className="snap-start shrink-0 w-[220px]">
-                  <ListingCard l={l} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 6. BROWSE BY CATEGORY GRID (Landing Mode Only) */}
-        {!isFiltering && quickCategories.length > 0 && (
-          <section className="container mx-auto px-4 py-8 bg-muted/30 border-y border-muted-foreground/10 my-6">
-            <div className="max-w-4xl mb-6">
-              <h2 className="text-2xl font-bold tracking-tight">Browse by Category</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Explore thousands of verified products and services organized explicitly by trade class.
+              <p className="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-white/90">
+                Find products, verified stores, skilled artisans and local
+                professionals across Nigeria — all in one trusted marketplace.
               </p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {quickCategories.map((c) => {
-                const Ic = (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[c.icon] ?? Icons.Tag;
-                const active = cat === c.slug;
-                return (
-                  <Button
-                    key={c.slug}
-                    variant="ghost"
-                    onClick={() => handleCategoryFilter(c.slug)}
-                    className={`h-auto flex flex-col items-center justify-center text-center rounded-2xl border p-5 transition-all group normal-case whitespace-normal ${
-                      active 
-                        ? "border-accent bg-accent/10 ring-2 ring-accent hover:bg-accent/10" 
-                        : "bg-background hover:border-primary hover:shadow-md hover:bg-background"
-                    }`}
-                  >
-                    <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                      <Ic className="h-6 w-6 text-primary" />
-                    </div>
-                    <p className="text-sm font-bold truncate max-w-[140px] text-foreground">{c.label}</p>
-                    <p className="text-xs text-muted-foreground mt-1 font-medium bg-muted px-2 py-0.5 rounded-full">
-                      {c.count.toLocaleString()}
-                    </p>
-                  </Button>
-                );
-              })}
-            </div>
-          </section>
-        )}
 
-        {/* 7. ALL LISTINGS SECTION & SEARCH RESULTS VIEW CONTAINER */}
-        <section ref={listingsRef} className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-8 scroll-mt-16">
-          {/* SEARCH FILTERS CONTROLS ASIDE */}
-          <aside className="lg:col-span-1 space-y-6">
-            {/* TRENDING TOP CATEGORIES (Sidebar - Landing Mode Only) */}
-            {!isFiltering && trendingCategories.length > 0 && (
-              <Card className="border shadow-sm overflow-hidden">
-                <div className="bg-primary text-primary-foreground px-4 py-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Icons.Flame className="h-4 w-4 text-orange-300" /> Top Categories
-                  </h3>
-                </div>
-                <div className="p-3 space-y-2">
-                  {trendingCategories.map((tc) => {
-                    const Ic = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tc.icon] ?? Icons.Tag;
-                    return (
-                      <Button
-                        key={tc.slug}
-                        variant="ghost"
-                        onClick={() => handleCategoryFilter(tc.slug)}
-                        className="w-full h-auto justify-start flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-primary hover:bg-primary/5"
-                      >
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Ic className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate text-foreground">{tc.label}</p>
-                          <p className="text-xs text-muted-foreground">{tc.count.toLocaleString()} active listings</p>
-                        </div>
-                        <Icons.ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-auto" />
-                      </Button>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
+              {/* BIG SEARCH BAR */}
 
-            {/* FILTER FORM ASIDE BLOCK */}
-            <Card className="p-4 border shadow-sm space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Filter Listings</h3>
-              <form onSubmit={executeSearch} className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">Keywords</label>
+              <Card className="mt-10 p-4 bg-white shadow-2xl rounded-2xl">
+
+                <form
+                  onSubmit={executeSearch}
+                  className="grid lg:grid-cols-[1fr_220px_180px] gap-3"
+                >
+
                   <div className="relative">
-                    <Icons.Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+
+                    <Icons.Search className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
+
                     <input
-                      type="text"
-                      placeholder="Search items..."
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
-                      className="w-full bg-background border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="Search products, services or artisans..."
+                      className="w-full h-14 rounded-xl border pl-12 pr-4 text-base"
                     />
-                  </div>
-                </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">State Location</label>
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger className="w-full bg-background">
-                      <SelectValue placeholder="Select Location" />
+                  </div>
+
+                  <Select
+                    value={selectedLocation}
+                    onValueChange={setSelectedLocation}
+                  >
+                    <SelectTrigger className="h-14 rounded-xl">
+                      <SelectValue placeholder="Location" />
                     </SelectTrigger>
+
                     <SelectContent>
-                      <SelectItem value="all">All Nigeria</SelectItem>
-                      {LOCATIONS.map((locName) => (
-                        <SelectItem key={locName} value={locName}>{locName}</SelectItem>
+
+                      <SelectItem value="all">
+                        All Nigeria
+                      </SelectItem>
+
+                      {LOCATIONS.map((state) => (
+                        <SelectItem
+                          key={state}
+                          value={state}
+                        >
+                          {state}
+                        </SelectItem>
                       ))}
+
                     </SelectContent>
                   </Select>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-14 font-bold text-base"
+                  >
+                    Search Marketplace
+                  </Button>
+
+                </form>
+
+              </Card>
+
+              {/* QUICK STATS */}
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-12">
+
+                <Card className="bg-white/10 border-white/20 backdrop-blur text-white p-5">
+                  <p className="text-3xl font-black">
+                    {Number(stats?.total_listings ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-white/80">
+                    Listings
+                  </p>
+                </Card>
+
+                <Card className="bg-white/10 border-white/20 backdrop-blur text-white p-5">
+                  <p className="text-3xl font-black">
+                    {Number(stats?.active_shops ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-white/80">
+                    Shops
+                  </p>
+                </Card>
+
+                <Card className="bg-white/10 border-white/20 backdrop-blur text-white p-5">
+                  <p className="text-3xl font-black">
+                    {Number(stats?.verified_vendors ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-white/80">
+                    Verified Sellers
+                  </p>
+                </Card>
+
+                <Card className="bg-white/10 border-white/20 backdrop-blur text-white p-5">
+                  <p className="text-3xl font-black">
+                    {quickCategories.length}
+                  </p>
+                  <p className="text-sm text-white/80">
+                    Categories
+                  </p>
+                </Card>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+      )}
+
+      {/* ================= FEATURED STORES ================= */}
+
+      {!isFiltering && verifiedMerchants.length > 0 && (
+
+        <section className="container mx-auto px-4 py-14">
+
+          <div className="flex items-center justify-between mb-8">
+
+            <div>
+
+              <h2 className="text-3xl font-bold">
+                Featured Stores
+              </h2>
+
+              <p className="text-muted-foreground mt-1">
+                Trusted businesses recommended by Tile.
+              </p>
+
+            </div>
+
+            <Button asChild variant="outline">
+              <Link to="/shops">
+                View All Stores
+              </Link>
+            </Button>
+
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+
+            {verifiedMerchants.map((v) => (
+
+              <Link
+                key={v.id}
+                to="/shop/$slug"
+                params={{ slug: v.shop_slug! }}
+                className="group overflow-hidden rounded-2xl border bg-card transition hover:-translate-y-1 hover:shadow-xl"
+              >
+
+                <div className="h-28 bg-gradient-to-r from-primary/10 to-primary/5 flex items-center justify-center">
+
+                  {v.avatar_url ? (
+
+                    <img
+                      src={v.avatar_url}
+                      className="h-20 w-20 rounded-full object-cover border-4 border-white"
+                    />
+
+                  ) : (
+
+                    <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+
+                      <Icons.Store className="h-8 w-8 text-primary" />
+
+                    </div>
+
+                  )}
+
                 </div>
 
-                <Button type="submit" className="w-full font-bold">Apply Filter</Button>
-                
-                {isFiltering && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    className="w-full text-xs border border-dashed"
-                    onClick={clearAllFilters}
-                  >
-                    Clear Filters
-                  </Button>
-                )}
-              </form>
-            </Card>
-          </aside>
+                <div className="p-5 text-center">
 
+                  <div className="flex justify-center items-center gap-1">
+
+                    <h3 className="font-bold truncate">
+                      {v.business_name || v.full_name}
+                    </h3>
+
+                    {v.is_verified && (
+                      <Icons.BadgeCheck className="h-4 w-4 text-green-500" />
+                    )}
+
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {v.location || "Nigeria"}
+                  </p>
+
+                </div>
+
+              </Link>
+
+            ))}
+
+          </div>
+
+        </section>
+
+      )}
+       {/* ========================================================= */}
+{/* 4. POPULAR CATEGORIES */}
+{/* ========================================================= */}
+{!isFiltering && quickCategories.length > 0 && (
+  <section className="container mx-auto px-4 py-10">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h2 className="text-2xl font-bold">
+          Browse Categories
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          Explore products and services across Nigeria.
+        </p>
+      </div>
+
+      <Button asChild variant="ghost">
+        <Link to="/">View All</Link>
+      </Button>
+    </div>
+
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {quickCategories.map((c) => {
+        const Ic =
+          (Icons as Record<
+            string,
+            ComponentType<{ className?: string }>
+          >)[c.icon] ?? Icons.Tag;
+
+        return (
+          <Button
+            key={c.slug}
+            variant="ghost"
+            onClick={() => handleCategoryFilter(c.slug)}
+            className="h-auto rounded-2xl border bg-background p-5 flex flex-col gap-3 hover:border-primary hover:shadow-md"
+          >
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Ic className="h-6 w-6 text-primary" />
+            </div>
+
+            <div>
+              <p className="font-semibold">{c.label}</p>
+              <p className="text-xs text-muted-foreground">
+                {c.count.toLocaleString()} listings
+              </p>
+            </div>
+          </Button>
+        );
+      })}
+    </div>
+  </section>
+)}
+
+{/* ========================================================= */}
+{/* 5. FEATURED STORES */}
+{/* ========================================================= */}
+{!isFiltering && verifiedMerchants.length > 0 && (
+  <section className="container mx-auto px-4 py-10">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h2 className="text-2xl font-bold">
+          Featured Stores
+        </h2>
+
+        <p className="text-muted-foreground text-sm">
+          Trusted businesses with active shops.
+        </p>
+      </div>
+
+      <Button asChild variant="outline">
+        <Link to="/shops">
+          View All
+        </Link>
+      </Button>
+    </div>
+
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {verifiedMerchants.map((v) => (
+        <Link
+          key={v.id}
+          to="/shop/$slug"
+          params={{ slug: v.shop_slug! }}
+          className="rounded-2xl border bg-background hover:shadow-lg transition"
+        >
+          <div className="h-24 bg-primary/5 flex items-center justify-center">
+            {v.avatar_url ? (
+              <img
+                src={v.avatar_url}
+                className="h-16 w-16 rounded-full object-cover"
+              />
+            ) : (
+              <Icons.Store className="h-10 w-10 text-primary" />
+            )}
+          </div>
+
+          <div className="p-4 text-center">
+            <p className="font-semibold truncate">
+              {v.business_name || v.full_name}
+            </p>
+
+            <p className="text-xs text-muted-foreground">
+              {v.location || "Nigeria"}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  </section>
+)}
+
+{/* ========================================================= */}
+{/* 6. TRENDING PRODUCTS */}
+{/* ========================================================= */}
+{!isFiltering && trendingListings.length > 0 && (
+  <section className="container mx-auto px-4 py-10">
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-2">
+        <Icons.Flame className="h-6 w-6 text-orange-500" />
+        <h2 className="text-2xl font-bold">
+          Trending Listings
+        </h2>
+      </div>
+
+      <Button asChild variant="ghost">
+        <Link to="/">
+          View All
+        </Link>
+      </Button>
+    </div>
+
+    <div className="flex gap-4 overflow-x-auto pb-3">
+      {trendingListings.map((listing) => (
+        <div
+          key={listing.id}
+          className="w-[230px] shrink-0"
+        >
+          <ListingCard l={listing} />
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
+{/* ========================================================= */}
+{/* 7. WHY TILE */}
+{/* ========================================================= */}
+{!isFiltering && (
+  <section className="container mx-auto px-4 py-12">
+    <Card className="rounded-3xl border bg-gradient-to-r from-primary/5 to-primary/10 p-8">
+      <div className="grid md:grid-cols-3 gap-8 text-center">
+
+        <div>
+          <Icons.BadgeCheck className="mx-auto h-10 w-10 text-green-600 mb-3" />
+          <h3 className="font-bold">
+            Verified Sellers
+          </h3>
+
+          <p className="text-sm text-muted-foreground mt-2">
+            Trade with merchants that have completed identity verification.
+          </p>
+        </div>
+
+        <div>
+          <Icons.MapPin className="mx-auto h-10 w-10 text-primary mb-3" />
+          <h3 className="font-bold">
+            Find Nearby
+          </h3>
+
+          <p className="text-sm text-muted-foreground mt-2">
+            Discover artisans, products and businesses around your location.
+          </p>
+        </div>
+
+        <div>
+          <Icons.Store className="mx-auto h-10 w-10 text-orange-500 mb-3" />
+          <h3 className="font-bold">
+            Thousands of Listings
+          </h3>
+
+          <p className="text-sm text-muted-foreground mt-2">
+            Browse products and services from every state in Nigeria.
+          </p>
+        </div>
+
+      </div>
+    </Card>
+  </section>
+)}
+
+        {/* 7. ALL LISTINGS SECTION & SEARCH RESULTS VIEW CONTAINER */}
+<section
+  ref={listingsRef}
+  className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-8 scroll-mt-16"
+>
+  {/* SEARCH FILTERS CONTROLS ASIDE */}
+  <aside className="lg:col-span-1">
+    <div className="lg:sticky lg:top-24 space-y-6">
+
+      {/* TRENDING TOP CATEGORIES */}
+      {!isFiltering && trendingCategories.length > 0 && (
+        <Card className="border shadow-sm overflow-hidden">
+          <div className="bg-primary text-primary-foreground px-4 py-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+              <Icons.Flame className="h-4 w-4 text-orange-300" />
+              Top Categories
+            </h3>
+          </div>
+
+          <div className="p-3 space-y-2">
+            {trendingCategories.map((tc) => {
+              const Ic =
+                (Icons as unknown as Record<
+                  string,
+                  React.ComponentType<{ className?: string }>
+                >)[tc.icon] ?? Icons.Tag;
+
+              return (
+                <Button
+                  key={tc.slug}
+                  variant="ghost"
+                  onClick={() => handleCategoryFilter(tc.slug)}
+                  className="w-full h-auto justify-start flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-primary hover:bg-primary/5"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Ic className="h-5 w-5 text-primary" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate text-foreground">
+                      {tc.label}
+                    </p>
+
+                    <div className="inline-flex mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      {tc.count.toLocaleString()} Listings
+                    </div>
+                  </div>
+
+                  <Icons.ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-auto" />
+                </Button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* FILTER FORM */}
+      <Card className="p-4 border shadow-sm space-y-4">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          Filter Listings
+        </h3>
+
+        <form onSubmit={executeSearch} className="space-y-4">
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-muted-foreground">
+              Keywords
+            </label>
+
+            <div className="relative">
+              <Icons.Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+
+              <input
+                type="text"
+                placeholder="Search products or services..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full bg-background border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-muted-foreground">
+              State
+            </label>
+
+            <Select
+              value={selectedLocation}
+              onValueChange={setSelectedLocation}
+            >
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Select State" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="all">All Nigeria</SelectItem>
+
+                {LOCATIONS.map((locName) => (
+                  <SelectItem key={locName} value={locName}>
+                    {locName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* QUICK FILTERS */}
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground">
+              Quick Filters
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={activeTab === "goods" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("goods")}
+              >
+                Products
+              </Button>
+
+              <Button
+                type="button"
+                variant={activeTab === "service" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("service")}
+              >
+                Services
+              </Button>
+
+              <Button
+                type="button"
+                variant={activeTab === "featured" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("featured")}
+              >
+                Featured
+              </Button>
+
+              <Button
+                type="button"
+                variant={activeTab === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("all")}
+              >
+                All
+              </Button>
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full font-bold">
+            Apply Filters
+          </Button>
+
+          {isFiltering && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full text-xs border border-dashed"
+              onClick={clearAllFilters}
+            >
+              Clear Filters
+            </Button>
+          )}
+        </form>
+      </Card>
+
+      {/* MARKETPLACE STATS */}
+
+      {!isFiltering && (
+        <Card className="p-4 border shadow-sm">
+          <h3 className="font-bold mb-4 flex items-center gap-2">
+            <Icons.BarChart3 className="h-5 w-5 text-primary" />
+            Marketplace Stats
+          </h3>
+
+          <div className="space-y-3 text-sm">
+
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Listings
+              </span>
+
+              <span className="font-semibold">
+                {Number(stats?.total_listings ?? 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Shops
+              </span>
+
+              <span className="font-semibold">
+                {Number(stats?.active_shops ?? 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Verified Sellers
+              </span>
+
+              <span className="font-semibold text-emerald-600">
+                {Number(stats?.verified_vendors ?? 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Categories
+              </span>
+
+              <span className="font-semibold">
+                {quickCategories.length}
+              </span>
+            </div>
+
+          </div>
+        </Card>
+      )}
+
+    </div>
+  </aside>
           {/* GRID STREAM MAIN FEED CONTAINER */}
           <div className="lg:col-span-3 space-y-6">
             {/* SEARCH RESULTS MODE BREADCRUMB / CONTROLS */}
@@ -715,39 +1106,60 @@ function Index() {
             )}
 
             {/* STANDARD GRID FEED CONTAINER */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Icons.Clock3 className="h-4 w-4 text-primary" /> Regular Feed Stream
-                </h2>
-              </div>
+<section className="space-y-4">
+  <div className="flex items-center justify-between">
+    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+      <Icons.Clock3 className="h-4 w-4 text-primary" />
+      Latest Listings
+    </h2>
 
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-24">
-                  <Icons.Loader2 className="h-10 w-10 animate-spin text-primary" />
-                  <p className="mt-4 text-muted-foreground">Loading listings...</p>
-                </div>
-              ) : processedListings.length === 0 ? (
-                <div className="text-center py-16 border rounded-2xl bg-background border-dashed space-y-3">
-                  <div className="p-3 bg-muted w-12 h-12 rounded-full flex items-center justify-center mx-auto">
-                    <Icons.PackageOpen className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-bold text-lg">No Listings Match Filters</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                    We couldn't find any approved products or services answering this selection. Try updating keywords or location configurations.
-                  </p>
-                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                    Clear Active Conditions
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {processedListings.map((l) => (
-                    <ListingCard key={l.id} l={l} />
-                  ))}
-                </div>
-              )}
-            </section>
+    {!isLoading && (
+      <span className="text-xs text-muted-foreground">
+        {processedListings.length.toLocaleString()} listing
+        {processedListings.length !== 1 ? "s" : ""}
+      </span>
+    )}
+  </div>
+
+  {isLoading ? (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <Card
+          key={i}
+          className="h-72 animate-pulse"
+        />
+      ))}
+    </div>
+  ) : processedListings.length === 0 ? (
+    <Card className="py-14 text-center">
+      <Icons.SearchX className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+
+      <h3 className="text-lg font-bold">
+        No listings found
+      </h3>
+
+      <p className="text-sm text-muted-foreground mt-2">
+        Try changing your search keywords, location or category.
+      </p>
+
+      <Button
+        className="mt-6"
+        onClick={clearAllFilters}
+      >
+        Browse All Listings
+      </Button>
+    </Card>
+  ) : (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+      {processedListings.map((l) => (
+        <ListingCard
+          key={l.id}
+          l={l}
+        />
+      ))}
+    </div>
+  )}
+</section>
           </div>
         </section>
       </div>
