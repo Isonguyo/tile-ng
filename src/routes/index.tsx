@@ -7,6 +7,7 @@ import { ListingCard, type ListingCardData } from "@/components/listing-card";
 import { CATEGORIES, LOCATIONS } from "@/lib/categories";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -68,6 +69,32 @@ type ProfileRow = {
   location?: string | null;
   active_listings?: number;
 };
+
+type ArtisanRow = {
+  id: string;
+  full_name: string | null;
+  business_name: string | null;
+  profession: string | null;
+  avatar_url: string | null;
+  location: string | null;
+  shop_slug: string | null;
+  is_verified: boolean | null;
+  avg_rating: number | null;
+  active_listings: number | null;
+};
+
+const POPULAR_SERVICES = [
+  { label: "Electricians", slug: "electrician", icon: "Plug" },
+  { label: "Plumbers", slug: "plumber", icon: "Droplet" },
+  { label: "Mechanics", slug: "mechanic", icon: "Wrench" },
+  { label: "Cleaners", slug: "cleaner", icon: "Sparkles" },
+  { label: "Painters", slug: "painter", icon: "Paintbrush" },
+  { label: "Carpenters", slug: "carpenter", icon: "Hammer" },
+  { label: "Hair Stylists", slug: "hair-stylist", icon: "Scissors" },
+  { label: "Photographers", slug: "photographer", icon: "Camera" },
+  { label: "Fashion Designers", slug: "fashion-designer", icon: "Shirt" },
+  { label: "Web Developers", slug: "web-developer", icon: "Laptop" },
+];
 
 function Index() {
   const navigate = useNavigate({ from: "/" });
@@ -161,7 +188,7 @@ function Index() {
   // ==========================
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
-    enabled: !isFiltering, // Only fetch if user is on default homepage
+    enabled: !isFiltering,
     queryFn: async () => {
       const [{ count: listingsCount }, { count: shopsCount }, { count: sellersCount }] = await Promise.all([
         supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "approved"),
@@ -259,6 +286,38 @@ function Index() {
   });
 
   // ==========================
+  // 4.7 FEATURED ARTISANS QUERY (Trending/Top Professionals)
+  // ==========================
+  const { data: featuredArtisans = [] } = useQuery({
+    queryKey: ["featured-artisans"],
+    enabled: !isFiltering,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("public_profiles")
+        .select(`
+          id,
+          full_name,
+          business_name,
+          profession,
+          avatar_url,
+          location,
+          shop_slug,
+          is_verified,
+          avg_rating,
+          active_listings
+        `)
+        .not("profession", "is", null)
+        .not("shop_slug", "is", null)
+        .order("is_verified", { ascending: false })
+        .order("avg_rating", { ascending: false })
+        .limit(8);
+
+      if (error) throw error;
+      return (data as ArtisanRow[]) ?? [];
+    },
+  });
+
+  // ==========================
   // 5. DERIVED VALUES & MEMOS
   // ==========================
   const quickCategories = useMemo(() => {
@@ -348,7 +407,6 @@ function Index() {
     navigate({ search: {} });
   };
 
-  // Find explicit display text for the active category filter header
   const activeCategoryLabel = useMemo(() => {
     if (!cat) return "";
     return CATEGORIES.find((c) => c.slug === cat)?.label ?? cat;
@@ -359,7 +417,7 @@ function Index() {
       <div>
         <SiteHeader />
 
-        {/* 1. HERO SECTION (Landing Mode Only) */}
+        {/* 1. HERO SECTION */}
         {!isFiltering && (
           <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground">
             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:26px_26px]" />
@@ -402,7 +460,7 @@ function Index() {
           </section>
         )}
 
-        {/* 2. STATS ROW SUMMARY CARD (Landing Mode Only) */}
+        {/* 2. STATS ROW SUMMARY CARD */}
         {!isFiltering && (
           <section className="container mx-auto px-4 -mt-8 relative z-20">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -427,7 +485,7 @@ function Index() {
           </section>
         )}
 
-        {/* 3. FEATURED STORES (Landing Mode Only) */}
+        {/* 3. FEATURED STORES */}
         {!isFiltering && verifiedMerchants.length > 0 && (
           <section className="container mx-auto px-4 pt-12 pb-6">
             <div className="flex items-center justify-between mb-6">
@@ -475,7 +533,7 @@ function Index() {
           </section>
         )}
 
-        {/* 4. VERIFIED TRUST FLAGBANNER (Landing Mode Only) */}
+        {/* 4. VERIFIED TRUST FLAGBANNER */}
         {!isFiltering && verifiedMerchants.length > 0 && (
           <section className="container mx-auto px-4 py-6">
             <div className="bg-gradient-to-r from-emerald-500/10 via-background to-background border border-emerald-500/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -495,7 +553,7 @@ function Index() {
           </section>
         )}
 
-        {/* 5. HOT TRENDING PRODUCTS STREAM (Landing Mode Only) */}
+        {/* 5. HOT TRENDING PRODUCTS STREAM */}
         {!isFiltering && trendingListings.length > 0 && (
           <section className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-6">
@@ -517,7 +575,123 @@ function Index() {
           </section>
         )}
 
-        {/* 6. BROWSE BY CATEGORY GRID (Landing Mode Only) */}
+        {/* 6. FEATURED PROFESSIONALS & ARTISANS (Trending Professionals) */}
+        {!isFiltering && featuredArtisans.length > 0 && (
+          <section className="container mx-auto px-4 py-12">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <Badge className="mb-3 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 gap-1">
+                  🔥 Trending Professionals
+                </Badge>
+                <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                  Find Skilled Artisans Near You
+                </h2>
+                <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+                  Hire verified electricians, plumbers, mechanics, fashion designers,
+                  carpenters, photographers, cleaners, painters, welders,
+                  technicians and hundreds of skilled professionals across Nigeria.
+                </p>
+              </div>
+              <Button asChild variant="outline" className="self-start sm:self-center">
+                <Link to="/artisans">
+                  Browse All Artisans
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredArtisans.map((artisan) => (
+                <Link
+                  key={artisan.id}
+                  to="/shop/$slug"
+                  params={{ slug: artisan.shop_slug! }}
+                  className="group rounded-3xl border bg-card overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                >
+                  <div className="h-28 bg-gradient-to-r from-primary/10 to-primary/5 flex items-center justify-center relative">
+                    {artisan.avatar_url ? (
+                      <img
+                        src={artisan.avatar_url}
+                        className="h-20 w-20 rounded-full object-cover border-4 border-background absolute -bottom-6 shadow-sm"
+                      />
+                    ) : (
+                      <div className="h-20 w-20 rounded-full bg-background border-4 border-background flex items-center justify-center absolute -bottom-6 shadow-sm">
+                        <Icons.UserRound className="h-10 w-10 text-primary" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-8 p-5 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5">
+                      <h3 className="font-bold truncate text-base">
+                        {artisan.business_name || artisan.full_name}
+                      </h3>
+                      {artisan.is_verified && (
+                        <Icons.BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
+                      )}
+                    </div>
+
+                    <p className="text-sm font-medium text-primary mt-1">
+                      {artisan.profession}
+                    </p>
+
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center sm:justify-start gap-1">
+                      📍 {artisan.location || "Nigeria"}
+                    </p>
+
+                    <div className="flex items-center justify-between mt-5 pt-3 border-t border-muted">
+                      <Badge variant="secondary" className="font-bold text-xs">
+                        ⭐ {artisan.avg_rating ? Number(artisan.avg_rating).toFixed(1) : "New"}
+                      </Badge>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {artisan.active_listings ?? 0} Jobs
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-primary font-bold mt-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-0.5">
+                      View Profile <Icons.ArrowRight className="h-3 w-3" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 6.5 POPULAR SERVICES QUICK FILTER STRIP */}
+        {!isFiltering && (
+          <section className="container mx-auto px-4 py-4 mb-6">
+            <div className="border-t border-b border-muted py-6">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
+                Popular Services
+              </h3>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
+                {POPULAR_SERVICES.map((service) => {
+                  const ServiceIcon = (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[service.icon] ?? Icons.Wrench;
+                  return (
+                    <Button
+                      key={service.slug}
+                      variant="outline"
+                      onClick={() => {
+                        navigate({
+                          search: (prev) => ({
+                            ...prev,
+                            q: service.label,
+                          }),
+                        });
+                      }}
+                      className="rounded-full flex items-center gap-2 h-10 px-5 shrink-0 hover:border-primary hover:bg-primary/5 transition-all text-sm font-medium snap-start"
+                    >
+                      <ServiceIcon className="h-4 w-4 text-primary" />
+                      {service.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 7. BROWSE BY CATEGORY GRID */}
         {!isFiltering && quickCategories.length > 0 && (
           <section className="container mx-auto px-4 py-8 bg-muted/30 border-y border-muted-foreground/10 my-6">
             <div className="max-w-4xl mb-6">
@@ -555,11 +729,11 @@ function Index() {
           </section>
         )}
 
-        {/* 7. ALL LISTINGS SECTION & SEARCH RESULTS VIEW CONTAINER */}
+        {/* 8. ALL LISTINGS SECTION & SEARCH RESULTS VIEW CONTAINER */}
         <section ref={listingsRef} className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-8 scroll-mt-16">
           {/* SEARCH FILTERS CONTROLS ASIDE */}
           <aside className="lg:col-span-1 space-y-6">
-            {/* TRENDING TOP CATEGORIES (Sidebar - Landing Mode Only) */}
+            {/* TRENDING TOP CATEGORIES */}
             {!isFiltering && trendingCategories.length > 0 && (
               <Card className="border shadow-sm overflow-hidden">
                 <div className="bg-primary text-primary-foreground px-4 py-3">
@@ -618,133 +792,95 @@ function Index() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Nigeria</SelectItem>
-                      {LOCATIONS.map((locName) => (
-                        <SelectItem key={locName} value={locName}>{locName}</SelectItem>
+                      {LOCATIONS.map((l) => (
+                        <SelectItem key={l.slug} value={l.slug}>{l.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <Button type="submit" className="w-full font-bold">Apply Filter</Button>
-                
+                <Button type="submit" className="w-full font-bold">
+                  Apply Filters
+                </Button>
+
                 {isFiltering && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    className="w-full text-xs border border-dashed"
-                    onClick={clearAllFilters}
-                  >
-                    Clear Filters
+                  <Button type="button" variant="ghost" onClick={clearAllFilters} className="w-full text-xs">
+                    Clear Active Filters
                   </Button>
                 )}
               </form>
             </Card>
           </aside>
 
-          {/* GRID STREAM MAIN FEED CONTAINER */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* SEARCH RESULTS MODE BREADCRUMB / CONTROLS */}
-            <div className="bg-background border rounded-2xl shadow-sm p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  {isFiltering ? (
-                    <div className="space-y-1">
-                      <Button
-                        variant="link"
-                        onClick={clearAllFilters}
-                        className="h-auto p-0 text-muted-foreground text-xs font-semibold hover:no-underline flex items-center gap-1"
-                      >
-                        <Icons.ArrowLeft className="h-3 w-3" /> Back to Homepage
-                      </Button>
-                      <h2 className="text-xl font-black tracking-tight text-foreground">
-                        Results for:{" "}
-                        <span className="text-primary font-bold">
-                          {q ? `"${q}"` : activeCategoryLabel || loc || "Filtered Listings"}
-                        </span>
-                      </h2>
-                    </div>
-                  ) : (
-                    <h2 className="text-xl font-bold">All Listings</h2>
-                  )}
-                  
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {processedListings.length.toLocaleString()} listing{processedListings.length !== 1 ? "s" : ""} found
-                  </p>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-                    <TabsList className="grid grid-cols-4">
-                      <TabsTrigger value="all">All</TabsTrigger>
-                      <TabsTrigger value="goods">Products</TabsTrigger>
-                      <TabsTrigger value="service">Services</TabsTrigger>
-                      <TabsTrigger value="featured">Featured</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+          {/* MAIN LISTINGS GRID FEED */}
+          <main className="lg:col-span-3 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+              <div>
+                <h2 className="text-xl font-black tracking-tight">
+                  {isFiltering ? `Search Results ${activeCategoryLabel ? `in ${activeCategoryLabel}` : ""}` : "Explore Marketplace Feed"}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Showing {processedListings.length} approved listings across chosen filters.
+                </p>
+              </div>
 
-                  <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-                    <SelectTrigger className="w-full sm:w-[170px]">
-                      <SelectValue placeholder="Sort listings" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">Newest First</SelectItem>
-                      <SelectItem value="oldest">Oldest First</SelectItem>
-                      <SelectItem value="popular">Most Viewed</SelectItem>
-                      <SelectItem value="price-low">Price: Low → High</SelectItem>
-                      <SelectItem value="price-high">Price: High → Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full sm:w-auto">
+                  <TabsList className="grid grid-cols-4 w-full sm:w-auto">
+                    <TabsTrigger value="all" className="text-xs font-bold">All</TabsTrigger>
+                    <TabsTrigger value="goods" className="text-xs font-bold">Goods</TabsTrigger>
+                    <TabsTrigger value="service" className="text-xs font-bold">Services</TabsTrigger>
+                    <TabsTrigger value="featured" className="text-xs font-bold">Featured</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                  <SelectTrigger className="w-full sm:w-[140px] bg-background">
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest First</SelectItem>
+                    <SelectItem value="oldest">Oldest First</SelectItem>
+                    <SelectItem value="popular">Popularity</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* SPONSORED ADS ROW (Landing Mode Only) */}
-            {!isFiltering && processedListings.some((l) => l.is_promoted) && (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Icons.BadgeDollarSign className="h-4 w-4 text-amber-500" /> Sponsored Listings
-                  </h2>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                  {processedListings.filter((l) => l.is_promoted).slice(0, 4).map((l) => (
-                    <ListingCard key={l.id} l={l} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* STANDARD GRID FEED CONTAINER */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Icons.Clock3 className="h-4 w-4 text-primary" /> Regular Feed Stream
-                </h2>
+            {isLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 py-12">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="h-[280px] bg-muted animate-pulse rounded-2xl" />
+                ))}
               </div>
-
-              {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Icons.Loader2 className="h-8 w-8 animate-spin text-primary" />
+            ) : processedListings.length === 0 ? (
+              <Card className="p-12 text-center max-w-md mx-auto space-y-4 border border-dashed rounded-2xl">
+                <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                  <Icons.SearchX className="h-6 w-6 text-muted-foreground" />
                 </div>
-              ) : processedListings.length === 0 ? (
-                <div className="text-center py-12 border border-dashed rounded-2xl bg-background">
-                  <Icons.Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="font-semibold text-muted-foreground">No listings found</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">Try adapting your keywords or choice of location filters</p>
+                <div className="space-y-1">
+                  <h4 className="font-bold">No items match your criteria</h4>
+                  <p className="text-xs text-muted-foreground">Try loosening search keywords, selecting standard categories, or switching states.</p>
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                  {processedListings.map((l) => (
-                    <ListingCard key={l.id} l={l} />
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
+                <Button size="sm" onClick={clearAllFilters}>Reset All View Filters</Button>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {processedListings.map((l) => (
+                  <ListingCard key={l.id} l={l} />
+                ))}
+              </div>
+            )}
+          </main>
         </section>
       </div>
+
+      {/* FOOTER */}
+      <footer className="bg-muted/40 border-t py-6 text-center text-xs text-muted-foreground">
+        <p>&copy; {new Date().getFullYear()} Tile Marketplace. Connecting trustworthy commercial hubs safely across Nigeria.</p>
+      </footer>
     </div>
   );
 }
-
-export default Index;
