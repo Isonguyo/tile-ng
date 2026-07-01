@@ -62,11 +62,11 @@ const schema = z.object({
   state: z.string().min(1, "Select a state"),
   lga: z.string().min(1, "Select an LGA"),
   years_experience: z.coerce.number().min(0).max(80),
-  is_available: z.boolean().default(true),
+  is_available: z.boolean(),
   starting_price: z.coerce.number().optional(),
-  offers_home_service: z.boolean().default(true),
-  offers_emergency_service: z.boolean().default(false),
-  available_weekends: z.boolean().default(false),
+  offers_home_service: z.boolean(),
+  offers_emergency_service: z.boolean(),
+  available_weekends: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -84,7 +84,7 @@ function ArtisanCreatePage() {
   const portfolioInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema) as unknown as import("react-hook-form").Resolver<FormValues>,
+    resolver: zodResolver(schema),
     defaultValues: {
       full_name: "",
       profession: "",
