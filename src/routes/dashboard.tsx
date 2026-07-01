@@ -251,7 +251,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
     setBusy(true);
     try {
       const path = await uploadKyc(user.id, file);
-      await supabase.from("public_profiles").update({ kyc_status: "pending", kyc_doc_url: path }).eq("id", user.id);
+      await supabase.from("profiles").update({ kyc_status: "pending", kyc_doc_url: path }).eq("id", user.id);
       toast.success("KYC submitted — awaiting review");
       onUpload();
     } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
@@ -284,7 +284,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
     if (!user || !form.business_name) return toast.error("Business name required");
     setBusy(true);
     const { data: slug } = await supabase.rpc("gen_shop_slug", { _name: form.business_name });
-    const { error } = await supabase.from("public_profiles").update({
+    const { error } = await supabase.from("profiles").update({
       ...form, is_merchant: true, shop_slug: slug,
     }).eq("id", user.id);
     setBusy(false);
@@ -519,7 +519,7 @@ function ListingRow({ l, onChange }: {
       return;
     }
 
-    const { error } = await supabase.rpc("promote_listing", {
+    const { error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>)("promote_listing", {
       p_listing_id: l.id,
       p_user_id: userId,
     });
