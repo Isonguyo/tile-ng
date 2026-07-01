@@ -16,9 +16,11 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
+import { Route as ArtisansIndexRouteImport } from './routes/artisans/index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
 import { Route as ListingIdRouteImport } from './routes/listing.$id'
+import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
 
 const PostAdRoute = PostAdRouteImport.update({
   id: '/post-ad',
@@ -55,6 +57,11 @@ const MessagesIndexRoute = MessagesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MessagesRoute,
 } as any)
+const ArtisansIndexRoute = ArtisansIndexRouteImport.update({
+  id: '/artisans/',
+  path: '/artisans/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopSlugRoute = ShopSlugRouteImport.update({
   id: '/shop/$slug',
   path: '/shop/$slug',
@@ -70,6 +77,11 @@ const ListingIdRoute = ListingIdRouteImport.update({
   path: '/listing/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtisanCreateRoute = ArtisanCreateRouteImport.update({
+  id: '/artisan/create',
+  path: '/artisan/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,9 +90,11 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/messages': typeof MessagesRouteWithChildren
   '/post-ad': typeof PostAdRoute
+  '/artisan/create': typeof ArtisanCreateRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/artisans/': typeof ArtisansIndexRoute
   '/messages/': typeof MessagesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,9 +103,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/post-ad': typeof PostAdRoute
+  '/artisan/create': typeof ArtisanCreateRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/artisans': typeof ArtisansIndexRoute
   '/messages': typeof MessagesIndexRoute
 }
 export interface FileRoutesById {
@@ -102,9 +118,11 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/messages': typeof MessagesRouteWithChildren
   '/post-ad': typeof PostAdRoute
+  '/artisan/create': typeof ArtisanCreateRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/artisans/': typeof ArtisansIndexRoute
   '/messages/': typeof MessagesIndexRoute
 }
 export interface FileRouteTypes {
@@ -116,9 +134,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/messages'
     | '/post-ad'
+    | '/artisan/create'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
+    | '/artisans/'
     | '/messages/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,9 +147,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/post-ad'
+    | '/artisan/create'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
+    | '/artisans'
     | '/messages'
   id:
     | '__root__'
@@ -139,9 +161,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/messages'
     | '/post-ad'
+    | '/artisan/create'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
+    | '/artisans/'
     | '/messages/'
   fileRoutesById: FileRoutesById
 }
@@ -152,8 +176,10 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   MessagesRoute: typeof MessagesRouteWithChildren
   PostAdRoute: typeof PostAdRoute
+  ArtisanCreateRoute: typeof ArtisanCreateRoute
   ListingIdRoute: typeof ListingIdRoute
   ShopSlugRoute: typeof ShopSlugRoute
+  ArtisansIndexRoute: typeof ArtisansIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -207,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MessagesIndexRouteImport
       parentRoute: typeof MessagesRoute
     }
+    '/artisans/': {
+      id: '/artisans/'
+      path: '/artisans'
+      fullPath: '/artisans/'
+      preLoaderRoute: typeof ArtisansIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shop/$slug': {
       id: '/shop/$slug'
       path: '/shop/$slug'
@@ -226,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/listing/$id'
       fullPath: '/listing/$id'
       preLoaderRoute: typeof ListingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artisan/create': {
+      id: '/artisan/create'
+      path: '/artisan/create'
+      fullPath: '/artisan/create'
+      preLoaderRoute: typeof ArtisanCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -252,8 +292,10 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   MessagesRoute: MessagesRouteWithChildren,
   PostAdRoute: PostAdRoute,
+  ArtisanCreateRoute: ArtisanCreateRoute,
   ListingIdRoute: ListingIdRoute,
   ShopSlugRoute: ShopSlugRoute,
+  ArtisansIndexRoute: ArtisansIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
