@@ -84,7 +84,7 @@ function ArtisanCreatePage() {
   const portfolioInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as unknown as import("react-hook-form").Resolver<FormValues>,
     defaultValues: {
       full_name: "",
       profession: "",

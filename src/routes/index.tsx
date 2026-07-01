@@ -313,7 +313,7 @@ function Index() {
         .limit(8);
 
       if (error) throw error;
-      return (data as ArtisanRow[]) ?? [];
+      return ((data as unknown) as ArtisanRow[]) ?? [];
     },
   });
 
@@ -394,7 +394,7 @@ function Index() {
   const handleCategoryFilter = (slug: string) => {
     const isCurrentCat = cat === slug;
     navigate({
-      search: (prev) => ({
+      search: (prev: Record<string, unknown>) => ({
         ...prev,
         cat: isCurrentCat ? undefined : slug,
       }),
@@ -673,7 +673,7 @@ function Index() {
                       variant="outline"
                       onClick={() => {
                         navigate({
-                          search: (prev) => ({
+                          search: (prev: Record<string, unknown>) => ({
                             ...prev,
                             q: service.label,
                           }),
@@ -793,7 +793,7 @@ function Index() {
                     <SelectContent>
                       <SelectItem value="all">All Nigeria</SelectItem>
                       {LOCATIONS.map((l) => (
-                        <SelectItem key={l.slug} value={l.slug}>{l.label}</SelectItem>
+                        <SelectItem key={l} value={l}>{l}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
