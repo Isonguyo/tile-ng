@@ -40,14 +40,15 @@ export function HeroSearch({ initialQ = "", initialLoc = "all" }: { initialQ?: s
     queryFn: async () => {
       const { data, error } = await supabase.rpc("trending_searches");
       if (error) return [] as Array<{ term: string; hits: number }>;
-      return (data as Array<{ term: string; hits: number }>) ?? [];
+      const rows = (data ?? []) as Array<{ query?: string; term?: string; hits: number }>;
+      return rows.map((r) => ({ term: r.term ?? r.query ?? "", hits: r.hits }));
     },
   });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const term = q.trim();
-    if (term) supabase.rpc("log_search", { p_term: term }).then(() => {});
+    if (term) supabase.rpc("log_search", { _q: term } as never).then(() => {});
     nav({
       to: "/",
       search: {
