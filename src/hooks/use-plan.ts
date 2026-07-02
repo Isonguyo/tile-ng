@@ -40,7 +40,8 @@ export type PlanCapability =
   | "ai_desc"
   | "vanity_slug"
   | "goods_quota"
-  | "services_quota";
+  | "services_quota"
+  | "premium_inbox";
 
 export function hasCapability(plan: PlanLimits | null | undefined, cap: PlanCapability): boolean {
   if (!plan) return false;
@@ -51,5 +52,6 @@ export function hasCapability(plan: PlanLimits | null | undefined, cap: PlanCapa
     case "vanity_slug": return plan.can_vanity_slug;
     case "goods_quota": return plan.used_goods < plan.max_goods;
     case "services_quota": return plan.used_services < plan.max_services;
+    case "premium_inbox": return plan.tier === "pro" || plan.tier === "vip";
   }
 }

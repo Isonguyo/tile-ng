@@ -1,17 +1,29 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { z } from "zod";
+import { useEffect, useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { friendlyAuthError } from "@/lib/auth-errors";
-import { PasswordStrength, scorePassword } from "@/components/password-strength";
-import { Loader2, ShoppingBag, Store, Wrench } from "lucide-react";
+import { PasswordStrength, scorePassword } from "@/components/auth/password-strength";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { EmailVerificationNotice } from "@/components/auth/email-verification-notice";
+import { signupSchema, accountTypes, type AccountType } from "@/lib/auth-schemas";
+import { Loader2, ShoppingBag, Store, Wrench, Eye, EyeOff, Phone, Briefcase } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+
+type SignupFormValues = z.infer<typeof signupSchema>;
+
+const typeIcons: Record<AccountType, typeof ShoppingBag> = {
+  buyer: ShoppingBag,
+  merchant: Store,
+  artisan: Wrench,
+};
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -23,123 +35,210 @@ export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Enter your full name").max(80),
-  email: z.string().email("Enter a valid email").max(255),
-  password: z.string().min(8, "Password must be at least 8 characters").max(72),
-  account_type: z.enum(["buyer", "merchant", "artisan"]),
-});
-
-const TYPES: Array<{ value: "buyer" | "merchant" | "artisan"; label: string; hint: string; Icon: typeof ShoppingBag }> = [
-  { value: "buyer", label: "Buyer", hint: "Discover and shop from vendors", Icon: ShoppingBag },
-  { value: "merchant", label: "Merchant", hint: "Sell goods & open a shop", Icon: Store },
-  { value: "artisan", label: "Artisan", hint: "Offer services & book jobs", Icon: Wrench },
-];
-
 function SignupPage() {
   const nav = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", account_type: "buyer" as const });
+  const { user, loading } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsed = schema.safeParse(form);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
-    if (scorePassword(form.password).score < 2) return toast.error("Choose a stronger password");
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isValid },
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    mode: "onChange",
+    defaultValues: {
+      full_name: "",
+      email: "",
+      password: "",
+      confirm_password: "",
+      phone_number: "",
+      business_name: "",
+      account_type: "buyer",
+    },
+  });
+
+  const password = watch("password");
+  const email = watch("email");
+  const accountType = watch("account_type");
+
+  useEffect(() => {
+    if (!loading && user) nav({ to: "/dashboard" });
+  }, [loading, nav, user]);
+
+  useEffect(() => {
+    if (!cooldown) return;
+    const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
+
+  const onSubmit = async (values: SignupFormValues) => {
+    if (busy) return;
+    const strength = scorePassword(values.password);
+    if (strength.score < 3) {
+      toast.error("Choose a stronger password before continuing.");
+      return;
+    }
+
     setBusy(true);
+    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/verify-email` : undefined;
     const { data, error } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
+      email: values.email,
+      password: values.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/verify-email`,
-        data: { full_name: form.name, account_type: form.account_type },
+        emailRedirectTo: redirectTo,
+        data: {
+          full_name: values.full_name,
+          account_type: values.account_type,
+          phone_number: values.phone_number || null,
+          business_name: values.business_name || null,
+        },
       },
     });
-    if (!error && data.user) {
-      await supabase.from("profiles").update({ full_name: form.name, account_type: form.account_type }).eq("id", data.user.id);
-    }
+
     setBusy(false);
-    if (error) return toast.error(friendlyAuthError(error.message));
-    if (data.session) {
-      toast.success("Account created — welcome to Tile");
-      nav({ to: "/dashboard" });
-    } else {
-      toast.success("Check your email to verify your account");
-      nav({ to: "/verify-email" });
+
+    if (error) {
+      toast.error(friendlyAuthError(error.message));
+      return;
     }
+
+    if (data.session) {
+      toast.success("Account created. You’re ready to explore Tile.");
+      nav({ to: "/dashboard" });
+      return;
+    }
+
+    setEmailSent(true);
+    toast.success("Account created. Please verify your email to continue.");
   };
 
-  const google = async () => {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (r.error) toast.error("Google sign-in failed");
+  const resendEmail = async () => {
+    if (!email) {
+      toast.error("Enter your email before requesting another verification link.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setBusy(false);
+    if (error) {
+      toast.error(friendlyAuthError(error.message));
+      return;
+    }
+    toast.success("Verification email sent.");
+    setCooldown(60);
   };
+
+  const canSubmit = useMemo(() => Boolean(watch("full_name") && watch("email") && password && watch("confirm_password") && isValid), [isValid, password, watch]);
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 py-10 bg-gradient-to-br from-background via-background to-primary/5">
-      <Card className="w-full max-w-lg p-8 border shadow-2xl">
-        <Link to="/" className="flex items-center gap-2 justify-center mb-6">
-          <div className="h-10 w-10 rounded-lg bg-primary grid place-items-center text-primary-foreground font-black">T</div>
-          <span className="text-2xl font-bold">Tile</span>
-        </Link>
-        <h1 className="text-2xl font-bold text-center">Create your account</h1>
-        <p className="text-sm text-muted-foreground text-center mt-1">Join Nigeria's fastest-growing marketplace</p>
-
-        <form onSubmit={submit} className="space-y-4 mt-6">
-          <div>
-            <Label>I am a…</Label>
-            <RadioGroup
-              value={form.account_type}
-              onValueChange={(v) => setForm((f) => ({ ...f, account_type: v as typeof f.account_type }))}
-              className="grid grid-cols-3 gap-2 mt-2"
-            >
-              {TYPES.map(({ value, label, hint, Icon }) => (
-                <label
-                  key={value}
-                  className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${
-                    form.account_type === value ? "border-primary bg-primary/5 ring-2 ring-primary" : "hover:border-primary/50"
-                  }`}
-                >
-                  <RadioGroupItem value={value} className="sr-only" />
-                  <Icon className="h-5 w-5 mx-auto text-primary" />
-                  <p className="mt-1.5 text-sm font-semibold">{label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>
-                </label>
-              ))}
-            </RadioGroup>
+    <AuthLayout title="Create your account" description="Join Tile to buy, sell, and discover trusted goods and services across Nigeria." backTo="/" backLabel="Back home" compact>
+      {emailSent ? (
+        <EmailVerificationNotice email={email} onResend={resendEmail} busy={busy} cooldown={cooldown} />
+      ) : (
+        <>
+          <div className="mb-6 text-center">
+            <p className="text-sm text-muted-foreground">Build your profile and start trading with confidence</p>
           </div>
 
-          <div>
-            <Label htmlFor="name">Full name</Label>
-            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required autoComplete="name" />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required autoComplete="email" />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required autoComplete="new-password" minLength={8} />
-            <div className="mt-2"><PasswordStrength password={form.password} /></div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            <div className="space-y-2">
+              <Label>I’m signing up as</Label>
+              <RadioGroup
+                value={accountType}
+                onValueChange={(value) => setValue("account_type", value as AccountType)}
+                className="grid gap-2 sm:grid-cols-3"
+              >
+                {accountTypes.map(({ value, label, hint }) => {
+                  const Icon = typeIcons[value];
+                  return (
+                    <label key={value} className={`cursor-pointer rounded-xl border p-3 text-left transition-all ${accountType === value ? "border-primary bg-primary/5 ring-2 ring-primary" : "hover:border-primary/50"}`}>
+                      <RadioGroupItem value={value} className="sr-only" />
+                      <Icon className="mb-2 h-5 w-5 text-primary" />
+                      <p className="text-sm font-semibold">{label}</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Full name</Label>
+              <Input id="full_name" autoComplete="name" {...register("full_name")} />
+              {errors.full_name ? <p className="text-sm text-red-600">{errors.full_name.message}</p> : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input id="email" type="email" autoComplete="email" {...register("email")} />
+              {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : null}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="phone_number">Phone number</Label>
+                <div className="relative">
+                  <Phone className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input id="phone_number" className="pl-9" {...register("phone_number")} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="business_name">Business name</Label>
+                <div className="relative">
+                  <Briefcase className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input id="business_name" className="pl-9" {...register("business_name")} />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" {...register("password")} />
+                <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password ? <p className="text-sm text-red-600">{errors.password.message}</p> : null}
+              <PasswordStrength password={password} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm_password">Confirm password</Label>
+              <div className="relative">
+                <Input id="confirm_password" type={showConfirm ? "text" : "password"} autoComplete="new-password" {...register("confirm_password")} />
+                <button type="button" aria-label={showConfirm ? "Hide confirmation password" : "Show confirmation password"} onClick={() => setShowConfirm((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirm_password ? <p className="text-sm text-red-600">{errors.confirm_password.message}</p> : null}
+            </div>
+
+            <Button type="submit" disabled={busy || !canSubmit} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {busy ? "Creating account…" : "Create account"}
+            </Button>
+          </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div>
           </div>
 
-          <Button type="submit" disabled={busy} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Create account
-          </Button>
-          <p className="text-[11px] text-muted-foreground text-center">
-            By continuing you agree to our Terms and Privacy Policy.
+          <OAuthButtons disabled={busy} />
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already have an account? <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link>
           </p>
-        </form>
-
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-          <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">or</span></div>
-        </div>
-        <Button variant="outline" className="w-full" onClick={google}>Continue with Google</Button>
-
-        <p className="mt-6 text-sm text-center text-muted-foreground">
-          Already have an account? <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
-        </p>
-      </Card>
-    </div>
+        </>
+      )}
+    </AuthLayout>
   );
 }

@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { friendlyAuthError } from "@/lib/auth-errors";
-import { Loader2, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { forgotPasswordSchema } from "@/lib/auth-schemas";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { Loader2, Mail, CheckCircle2 } from "lucide-react";
+
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({ meta: [{ title: "Reset your password — Tile" }] }),
@@ -16,58 +20,68 @@ export const Route = createFileRoute("/forgot-password")({
 });
 
 function ForgotPage() {
-  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isValid },
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    mode: "onChange",
+    defaultValues: { email: "" },
+  });
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsed = z.string().email().safeParse(email);
-    if (!parsed.success) return toast.error("Enter a valid email");
+  const email = watch("email");
+
+  const submit = async (values: ForgotPasswordFormValues) => {
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(values.email, { redirectTo });
     setBusy(false);
-    if (error) return toast.error(friendlyAuthError(error.message));
+    if (error) {
+      toast.error(friendlyAuthError(error.message));
+      return;
+    }
     setSent(true);
   };
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 bg-gradient-to-br from-background via-background to-primary/5">
-      <Card className="w-full max-w-md p-8 border shadow-2xl">
-        <Link to="/login" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="h-4 w-4" /> Back to sign in
-        </Link>
-        <h1 className="text-2xl font-bold">Forgot password?</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Enter your email and we'll send you a link to reset it.
-        </p>
-        {sent ? (
-          <div className="mt-6 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+    <AuthLayout title="Forgot password?" description="Enter your email and we’ll send a secure reset link to your inbox." backTo="/login" backLabel="Back to sign in" compact>
+      {sent ? (
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
             <div>
-              <p className="text-sm font-semibold">Check your inbox</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                If <span className="font-mono">{email}</span> is registered, we've sent you a reset link.
+              <p className="font-semibold">Check your inbox</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                If {email} is registered, we’ve sent a secure reset link.
               </p>
             </div>
           </div>
-        ) : (
-          <form onSubmit={submit} className="space-y-4 mt-6">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="pl-9" />
-              </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input id="email" type="email" autoComplete="email" className="pl-9" {...register("email")} />
             </div>
-            <Button type="submit" disabled={busy} className="w-full">
-              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Send reset link
-            </Button>
-          </form>
-        )}
-      </Card>
-    </div>
+            {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : <p className="text-xs text-muted-foreground">We’ll never share your email with third parties.</p>}
+          </div>
+
+          <Button type="submit" disabled={busy || !isValid} className="w-full">
+            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {busy ? "Sending reset link…" : "Send reset link"}
+          </Button>
+        </form>
+      )}
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Remembered it? <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link>
+      </p>
+    </AuthLayout>
   );
 }

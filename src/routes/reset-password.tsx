@@ -1,14 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { friendlyAuthError } from "@/lib/auth-errors";
-import { PasswordStrength, scorePassword } from "@/components/password-strength";
-import { Loader2, Lock } from "lucide-react";
+import { PasswordStrength, scorePassword } from "@/components/auth/password-strength";
+import { resetPasswordSchema } from "@/lib/auth-schemas";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { Loader2, Lock, Eye, EyeOff } from "lucide-react";
+
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Set a new password — Tile" }] }),
@@ -17,63 +22,91 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPage() {
   const nav = useNavigate();
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isValid },
+  } = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    mode: "onChange",
+    defaultValues: { password: "", confirm_password: "" },
+  });
+
+  const password = watch("password");
 
   useEffect(() => {
-    // Supabase will emit PASSWORD_RECOVERY when the recovery link is clicked.
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    // If page loaded without event but there is already a session, allow.
-    supabase.auth.getSession().then(({ data }) => { if (data.session) setReady(true); });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setReady(true);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirm) return toast.error("Passwords do not match");
-    if (scorePassword(password).score < 2) return toast.error("Choose a stronger password");
+  const submit = async (values: ResetPasswordFormValues) => {
+    const strength = scorePassword(values.password);
+    if (strength.score < 3) {
+      toast.error("Choose a stronger password before continuing.");
+      return;
+    }
+
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ password: values.password });
     setBusy(false);
-    if (error) return toast.error(friendlyAuthError(error.message));
-    toast.success("Password updated");
-    nav({ to: "/dashboard" });
+    if (error) {
+      toast.error(friendlyAuthError(error.message));
+      return;
+    }
+    toast.success("Password updated successfully.");
+    nav({ to: "/login" });
   };
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 bg-gradient-to-br from-background via-background to-primary/5">
-      <Card className="w-full max-w-md p-8 border shadow-2xl">
-        <h1 className="text-2xl font-bold">Set a new password</h1>
-        <p className="text-sm text-muted-foreground mt-1">Choose something you'll remember.</p>
+    <AuthLayout title="Set a new password" description="Protect your Tile account with a strong password you can remember." backTo="/login" backLabel="Back to sign in" compact>
+      {!ready ? (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700">
+          Open this page from the secure reset link in your email so we can update your password safely.
+        </div>
+      ) : null}
 
-        {!ready && (
-          <p className="mt-6 text-sm text-amber-400">
-            Open this page from the reset link in your email.
-          </p>
-        )}
+      <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4" noValidate>
+        <div className="space-y-2">
+          <Label htmlFor="password">New password</Label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" className="pl-9 pr-10" {...register("password")} />
+            <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.password ? <p className="text-sm text-red-600">{errors.password.message}</p> : null}
+          <PasswordStrength password={password} />
+        </div>
 
-        <form onSubmit={submit} className="space-y-4 mt-6">
-          <div>
-            <Label htmlFor="pw">New password</Label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-9" minLength={8} required />
-            </div>
-            <div className="mt-2"><PasswordStrength password={password} /></div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm_password">Confirm password</Label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input id="confirm_password" type={showConfirm ? "text" : "password"} autoComplete="new-password" className="pl-9 pr-10" {...register("confirm_password")} />
+            <button type="button" aria-label={showConfirm ? "Hide confirmation password" : "Show confirmation password"} onClick={() => setShowConfirm((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
+              {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
-          <div>
-            <Label htmlFor="cf">Confirm password</Label>
-            <Input id="cf" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} required />
-          </div>
-          <Button type="submit" disabled={busy || !ready} className="w-full">
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Update password
-          </Button>
-        </form>
-      </Card>
-    </div>
+          {errors.confirm_password ? <p className="text-sm text-red-600">{errors.confirm_password.message}</p> : null}
+        </div>
+
+        <Button type="submit" disabled={busy || !ready || !isValid} className="w-full">
+          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          {busy ? "Updating password…" : "Update password"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

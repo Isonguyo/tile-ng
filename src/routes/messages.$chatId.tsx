@@ -7,9 +7,10 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { ArrowLeft, Send, Check, CheckCheck, ImageIcon } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, ImageIcon, Sparkles, Pin } from "lucide-react";
 import { getSignedUrl } from "@/lib/storage";
 import { toast } from "sonner";
+import { usePlan, hasCapability } from "@/hooks/use-plan";
 
 export const Route = createFileRoute("/messages/$chatId")({
   head: () => ({ meta: [{ title: "Chat — Tile" }] }),
@@ -29,6 +30,7 @@ function ChatPage() {
   const { chatId } = Route.useParams();
   const { user, loading } = useAuth();
   const nav = useNavigate();
+  const { data: plan } = usePlan();
 
   useEffect(() => { if (!loading && !user) nav({ to: "/auth" }); }, [user, loading, nav]);
 
@@ -145,7 +147,7 @@ function ChatPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
-      <ChatHeader meta={meta} />
+      <ChatHeader meta={meta} plan={plan} />
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-muted/30">
         <div className="container mx-auto px-3 py-4 max-w-2xl space-y-2">
           {hasMore && (
@@ -186,7 +188,7 @@ function ChatPage() {
   );
 }
 
-function ChatHeader({ meta }: { meta: ChatMeta | null | undefined }) {
+function ChatHeader({ meta, plan }: { meta: ChatMeta | null | undefined; plan: any }) {
   const [img, setImg] = useState<string | null>(null);
   useEffect(() => {
     const first = meta?.listing?.images?.[0];
@@ -206,6 +208,9 @@ function ChatHeader({ meta }: { meta: ChatMeta | null | undefined }) {
               {meta?.listing?.title ?? "View listing"}
             </Link>
           )}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+            {hasCapability(plan, "premium_inbox") ? <span className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> Premium inbox</span> : <span className="flex items-center gap-1"><Pin className="h-3 w-3" /> Pinned chats ready</span>}
+          </div>
         </div>
       </div>
     </div>
