@@ -38,6 +38,221 @@ export type Database = {
         }
         Relationships: []
       }
+      artisan_portfolio: {
+        Row: {
+          artisan_id: string
+          created_at: string | null
+          id: string
+          image_url: string
+        }
+        Insert: {
+          artisan_id: string
+          created_at?: string | null
+          id?: string
+          image_url: string
+        }
+        Update: {
+          artisan_id?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artisan_portfolio_artisan_id_fkey"
+            columns: ["artisan_id"]
+            isOneToOne: false
+            referencedRelation: "artisan_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artisan_profiles: {
+        Row: {
+          average_rating: number | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_available: boolean | null
+          is_verified: boolean | null
+          lga: string | null
+          phone: string | null
+          profession: string
+          profile_photo: string | null
+          slug: string | null
+          state: string | null
+          total_reviews: number | null
+          updated_at: string | null
+          user_id: string
+          whatsapp: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_available?: boolean | null
+          is_verified?: boolean | null
+          lga?: string | null
+          phone?: string | null
+          profession: string
+          profile_photo?: string | null
+          slug?: string | null
+          state?: string | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id: string
+          whatsapp?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_available?: boolean | null
+          is_verified?: boolean | null
+          lga?: string | null
+          phone?: string | null
+          profession?: string
+          profile_photo?: string | null
+          slug?: string | null
+          state?: string | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id?: string
+          whatsapp?: string | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      artisan_reviews: {
+        Row: {
+          artisan_id: string
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          reviewer_id: string | null
+        }
+        Insert: {
+          artisan_id: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          reviewer_id?: string | null
+        }
+        Update: {
+          artisan_id?: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          reviewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artisan_reviews_artisan_id_fkey"
+            columns: ["artisan_id"]
+            isOneToOne: false
+            referencedRelation: "artisan_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artisan_skills: {
+        Row: {
+          artisan_id: string
+          id: string
+          skill: string
+        }
+        Insert: {
+          artisan_id: string
+          id?: string
+          skill: string
+        }
+        Update: {
+          artisan_id?: string
+          id?: string
+          skill?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artisan_skills_artisan_id_fkey"
+            columns: ["artisan_id"]
+            isOneToOne: false
+            referencedRelation: "artisan_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          metadata?: Json
+        }
+        Relationships: []
+      }
+      chat_pins: {
+        Row: {
+          chat_id: string
+          pinned_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          pinned_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          pinned_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_pins_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chats: {
         Row: {
           buyer_id: string
@@ -70,6 +285,35 @@ export type Database = {
           },
         ]
       }
+      cities: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          state_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          state_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          state_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -92,6 +336,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lgas: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          state_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          state_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          state_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgas_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
             referencedColumns: ["id"]
           },
         ]
@@ -241,6 +514,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string
+          available_weekends: boolean | null
           avatar_url: string | null
           avg_rating: number
           bank_account: string | null
@@ -251,26 +526,39 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_artisan: boolean | null
+          is_available: boolean | null
           is_merchant: boolean
           is_verified: boolean
           kyc_doc_url: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           lga: string | null
           location: string | null
+          offers_emergency_service: boolean | null
+          offers_home_service: boolean | null
           phone: string | null
           portfolio_images: string[]
           portfolio_url: string | null
+          profession: string | null
+          profile_photo: string | null
           response_minutes: number
+          response_rate: number | null
+          service_radius: number | null
           shop_slug: string | null
+          starting_price: number | null
           state: string | null
           subscription_tier: Database["public"]["Enums"]["sub_tier"]
           subscription_until: string | null
           total_sales: number
+          travels_outside_lga: boolean | null
           updated_at: string
           wallet_balance: number
           whatsapp: string | null
+          years_experience: number | null
         }
         Insert: {
+          account_type?: string
+          available_weekends?: boolean | null
           avatar_url?: string | null
           avg_rating?: number
           bank_account?: string | null
@@ -281,26 +569,39 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          is_artisan?: boolean | null
+          is_available?: boolean | null
           is_merchant?: boolean
           is_verified?: boolean
           kyc_doc_url?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           lga?: string | null
           location?: string | null
+          offers_emergency_service?: boolean | null
+          offers_home_service?: boolean | null
           phone?: string | null
           portfolio_images?: string[]
           portfolio_url?: string | null
+          profession?: string | null
+          profile_photo?: string | null
           response_minutes?: number
+          response_rate?: number | null
+          service_radius?: number | null
           shop_slug?: string | null
+          starting_price?: number | null
           state?: string | null
           subscription_tier?: Database["public"]["Enums"]["sub_tier"]
           subscription_until?: string | null
           total_sales?: number
+          travels_outside_lga?: boolean | null
           updated_at?: string
           wallet_balance?: number
           whatsapp?: string | null
+          years_experience?: number | null
         }
         Update: {
+          account_type?: string
+          available_weekends?: boolean | null
           avatar_url?: string | null
           avg_rating?: number
           bank_account?: string | null
@@ -311,24 +612,74 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_artisan?: boolean | null
+          is_available?: boolean | null
           is_merchant?: boolean
           is_verified?: boolean
           kyc_doc_url?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           lga?: string | null
           location?: string | null
+          offers_emergency_service?: boolean | null
+          offers_home_service?: boolean | null
           phone?: string | null
           portfolio_images?: string[]
           portfolio_url?: string | null
+          profession?: string | null
+          profile_photo?: string | null
           response_minutes?: number
+          response_rate?: number | null
+          service_radius?: number | null
           shop_slug?: string | null
+          starting_price?: number | null
           state?: string | null
           subscription_tier?: Database["public"]["Enums"]["sub_tier"]
           subscription_until?: string | null
           total_sales?: number
+          travels_outside_lga?: boolean | null
           updated_at?: string
           wallet_balance?: number
           whatsapp?: string | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          reason: string
+          reporter_id: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          reason: string
+          reporter_id?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          reason?: string
+          reporter_id?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -373,6 +724,51 @@ export type Database = {
           },
         ]
       }
+      search_logs: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          location: string | null
+          query: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          query: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          query?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      shop_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          shop_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          shop_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          shop_id?: string
+        }
+        Relationships: []
+      }
       shop_reviews: {
         Row: {
           comment: string | null
@@ -402,6 +798,92 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      states: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          boost_credits: number
+          can_ai_desc: boolean
+          can_promote: boolean
+          can_shop: boolean
+          can_vanity_slug: boolean
+          display_name: string
+          features: string[]
+          max_goods: number
+          max_services: number
+          price_ngn: number
+          tier: Database["public"]["Enums"]["sub_tier"]
+        }
+        Insert: {
+          boost_credits?: number
+          can_ai_desc?: boolean
+          can_promote?: boolean
+          can_shop?: boolean
+          can_vanity_slug?: boolean
+          display_name: string
+          features?: string[]
+          max_goods?: number
+          max_services?: number
+          price_ngn?: number
+          tier: Database["public"]["Enums"]["sub_tier"]
+        }
+        Update: {
+          boost_credits?: number
+          can_ai_desc?: boolean
+          can_promote?: boolean
+          can_shop?: boolean
+          can_vanity_slug?: boolean
+          display_name?: string
+          features?: string[]
+          max_goods?: number
+          max_services?: number
+          price_ngn?: number
+          tier?: Database["public"]["Enums"]["sub_tier"]
+        }
+        Relationships: []
+      }
+      typing_indicators: {
+        Row: {
+          chat_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "typing_indicators_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -557,6 +1039,8 @@ export type Database = {
       activate_subscription: {
         Args: { _tier: Database["public"]["Enums"]["sub_tier"] }
         Returns: {
+          account_type: string
+          available_weekends: boolean | null
           avatar_url: string | null
           avg_rating: number
           bank_account: string | null
@@ -567,24 +1051,35 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_artisan: boolean | null
+          is_available: boolean | null
           is_merchant: boolean
           is_verified: boolean
           kyc_doc_url: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           lga: string | null
           location: string | null
+          offers_emergency_service: boolean | null
+          offers_home_service: boolean | null
           phone: string | null
           portfolio_images: string[]
           portfolio_url: string | null
+          profession: string | null
+          profile_photo: string | null
           response_minutes: number
+          response_rate: number | null
+          service_radius: number | null
           shop_slug: string | null
+          starting_price: number | null
           state: string | null
           subscription_tier: Database["public"]["Enums"]["sub_tier"]
           subscription_until: string | null
           total_sales: number
+          travels_outside_lga: boolean | null
           updated_at: string
           wallet_balance: number
           whatsapp: string | null
+          years_experience: number | null
         }
         SetofOptions: {
           from: "*"
@@ -610,6 +1105,8 @@ export type Database = {
       admin_list_pending_kyc: {
         Args: never
         Returns: {
+          account_type: string
+          available_weekends: boolean | null
           avatar_url: string | null
           avg_rating: number
           bank_account: string | null
@@ -620,24 +1117,35 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_artisan: boolean | null
+          is_available: boolean | null
           is_merchant: boolean
           is_verified: boolean
           kyc_doc_url: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           lga: string | null
           location: string | null
+          offers_emergency_service: boolean | null
+          offers_home_service: boolean | null
           phone: string | null
           portfolio_images: string[]
           portfolio_url: string | null
+          profession: string | null
+          profile_photo: string | null
           response_minutes: number
+          response_rate: number | null
+          service_radius: number | null
           shop_slug: string | null
+          starting_price: number | null
           state: string | null
           subscription_tier: Database["public"]["Enums"]["sub_tier"]
           subscription_until: string | null
           total_sales: number
+          travels_outside_lga: boolean | null
           updated_at: string
           wallet_balance: number
           whatsapp: string | null
+          years_experience: number | null
         }[]
         SetofOptions: {
           from: "*"
@@ -719,6 +1227,8 @@ export type Database = {
       get_my_profile: {
         Args: never
         Returns: {
+          account_type: string
+          available_weekends: boolean | null
           avatar_url: string | null
           avg_rating: number
           bank_account: string | null
@@ -729,24 +1239,35 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_artisan: boolean | null
+          is_available: boolean | null
           is_merchant: boolean
           is_verified: boolean
           kyc_doc_url: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           lga: string | null
           location: string | null
+          offers_emergency_service: boolean | null
+          offers_home_service: boolean | null
           phone: string | null
           portfolio_images: string[]
           portfolio_url: string | null
+          profession: string | null
+          profile_photo: string | null
           response_minutes: number
+          response_rate: number | null
+          service_radius: number | null
           shop_slug: string | null
+          starting_price: number | null
           state: string | null
           subscription_tier: Database["public"]["Enums"]["sub_tier"]
           subscription_until: string | null
           total_sales: number
+          travels_outside_lga: boolean | null
           updated_at: string
           wallet_balance: number
           whatsapp: string | null
+          years_experience: number | null
         }[]
         SetofOptions: {
           from: "*"
@@ -755,12 +1276,45 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_plan_limits: {
+        Args: never
+        Returns: {
+          active_until: string
+          boost_credits: number
+          can_ai_desc: boolean
+          can_promote: boolean
+          can_shop: boolean
+          can_vanity_slug: boolean
+          display_name: string
+          features: string[]
+          max_goods: number
+          max_services: number
+          price_ngn: number
+          tier: Database["public"]["Enums"]["sub_tier"]
+          used_goods: number
+          used_services: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      is_following_shop: { Args: { _shop_id: string }; Returns: boolean }
+      log_admin_action: {
+        Args: {
+          _action: string
+          _entity?: string
+          _entity_id?: string
+          _metadata?: Json
+        }
+        Returns: undefined
+      }
+      log_search: {
+        Args: { _cat?: string; _loc?: string; _q: string }
+        Returns: undefined
       }
       mark_chat_read: { Args: { _chat_id: string }; Returns: undefined }
       mark_notifications_read: { Args: never; Returns: undefined }
@@ -805,6 +1359,12 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      shop_follower_count: { Args: { _shop_id: string }; Returns: number }
+      submit_report: {
+        Args: { _details?: string; _id: string; _reason: string; _type: string }
+        Returns: string
+      }
+      toggle_follow_shop: { Args: { _shop_id: string }; Returns: boolean }
       top_vendors: {
         Args: { _limit?: number }
         Returns: {
@@ -824,6 +1384,13 @@ export type Database = {
       }
       track_listing_click: { Args: { _id: string }; Returns: undefined }
       track_listing_view: { Args: { _id: string }; Returns: undefined }
+      trending_searches: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          hits: number
+          query: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"

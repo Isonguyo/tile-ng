@@ -12,4 +12,12 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Force Nitro on with the Vercel preset so `npm run build` (outside the
+  // Lovable sandbox, e.g. on Vercel CI) produces a Vercel-compatible
+  // SSR bundle: static assets and an SSR function under `.vercel/output/`.
+  // Without this override the package defaults to Cloudflare and Vercel gets
+  // a `dist/server/server.js` it doesn't know how to serve, producing 404s.
+  nitro: {
+    preset: "vercel",
+  },
 });
