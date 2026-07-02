@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { ListingCard, type ListingCardData } from "@/components/listing-card";
 import { CATEGORIES, LOCATIONS } from "@/lib/categories";
+import { HeroSearch } from "@/components/hero-search";
+import { LiveActivityFeed } from "@/components/live-activity-feed";
+import { AnimatedCounter } from "@/components/animated-counter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -432,28 +435,34 @@ function Index() {
                 <p className="max-w-2xl mx-auto text-primary-foreground/90 text-base md:text-lg leading-relaxed">
                   Shop from verified businesses, discover local services, compare prices and connect directly with trusted sellers across Nigeria.
                 </p>
-                <div className="flex flex-wrap justify-center gap-4 pt-3">
-                  <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8">
-                    <Link to="/">Browse Listings</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="secondary" className="font-bold">
+                <div className="pt-4">
+                  <HeroSearch initialQ={q ?? ""} initialLoc={loc ?? "all"} />
+                </div>
+                <div className="flex flex-wrap justify-center gap-3 pt-2">
+                  <Button asChild size="sm" variant="secondary" className="font-bold">
                     <Link to="/dashboard">Open Your Shop</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="ghost" className="font-bold text-primary-foreground hover:bg-white/10">
+                    <Link to="/artisans">Hire an Artisan</Link>
                   </Button>
                 </div>
 
                 <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
                   <div className="flex items-center gap-2">
                     <Icons.Package className="h-5 w-5" />
-                    <span>Explore <strong>{Number(stats?.total_listings ?? 0).toLocaleString()}</strong> Listings</span>
+                    <span>Explore <strong><AnimatedCounter value={stats?.total_listings ?? 0} /></strong> Listings</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Icons.Store className="h-5 w-5" />
-                    <span><strong>{Number(stats?.active_shops ?? 0).toLocaleString()}</strong> Shops</span>
+                    <span><strong><AnimatedCounter value={stats?.active_shops ?? 0} /></strong> Shops</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Icons.BadgeCheck className="h-5 w-5" />
-                    <span><strong>{Number(stats?.verified_vendors ?? 0).toLocaleString()}</strong> Verified Sellers</span>
+                    <span><strong><AnimatedCounter value={stats?.verified_vendors ?? 0} /></strong> Verified Sellers</span>
                   </div>
+                </div>
+                <div className="pt-6 max-w-2xl mx-auto text-left">
+                  <LiveActivityFeed />
                 </div>
               </div>
             </div>
