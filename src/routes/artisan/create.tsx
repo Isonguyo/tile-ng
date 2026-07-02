@@ -180,7 +180,10 @@ function ArtisanCreatePage() {
 
       if (profilePhoto) {
         const fileExt = profilePhoto.name.split(".").pop();
-        const filePath = `artisans/${user.id}/avatar-${Date.now()}.${fileExt}`;
+        
+        // ❌ OLD: `artisans/${user.id}/avatar-${Date.now()}.${fileExt}`
+        // ✅ NEW: Start directly with user.id
+        const filePath = `${user.id}/artisan-avatar-${Date.now()}.${fileExt}`;
         
         const { error: avatarErr } = await supabase.storage
           .from("listings")
@@ -198,7 +201,10 @@ function ArtisanCreatePage() {
       if (portfolioImages.length > 0) {
         for (const file of portfolioImages) {
           const fileExt = file.name.split(".").pop();
-          const filePath = `artisans/${user.id}/portfolio-${crypto.randomUUID()}.${fileExt}`;
+          
+          // ❌ OLD: `artisans/${user.id}/portfolio-${crypto.randomUUID()}.${fileExt}`
+          // ✅ NEW: Start directly with user.id
+          const filePath = `${user.id}/artisan-portfolio-${crypto.randomUUID()}.${fileExt}`;
           
           const { error: portErr } = await supabase.storage
             .from("listings")
@@ -231,9 +237,9 @@ function ArtisanCreatePage() {
           offers_home_service: values.offers_home_service,
           offers_emergency_service: values.offers_emergency_service,
           available_weekends: values.available_weekends,
-          avatar_url: avatarUrl,
-          profile_photo: avatarUrl,
-          portfolio_images: portfolioUrls, 
+          avatar_url: avatarUrl || undefined,        // Use || undefined so it doesn't overwrite with empty string
+          profile_photo: avatarUrl || undefined,     // Use || undefined
+          portfolio_images: portfolioUrls.length > 0 ? portfolioUrls : undefined, 
         })
         .eq("id", user.id);
 
