@@ -103,7 +103,7 @@ function ChatRowItem({ c }: { c: ChatRow }) {
   const togglePin = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const { data, error } = await supabase.rpc("toggle_chat_pin", { _chat_id: c.id });
+    const { data, error } = await (supabase.rpc as any)("toggle_chat_pin", { _chat_id: c.id });
     if (error) return toast.error(error.message);
     setPinned(Boolean(data));
     toast.success(data ? "Conversation pinned" : "Conversation unpinned");

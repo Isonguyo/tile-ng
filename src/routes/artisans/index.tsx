@@ -96,8 +96,8 @@ function ArtisanDirectoryPage() {
                     <div className="h-16 w-16 rounded-full overflow-hidden bg-muted flex-shrink-0 border">
                       {artisan.profile_photo || artisan.avatar_url ? (
                         <img 
-                          src={artisan.profile_photo || artisan.avatar_url} 
-                          alt={artisan.full_name} 
+                          src={artisan.profile_photo || artisan.avatar_url || undefined} 
+                          alt={artisan.full_name || "Artisan"} 
                           className="h-full w-full object-cover" 
                         />
                       ) : (
