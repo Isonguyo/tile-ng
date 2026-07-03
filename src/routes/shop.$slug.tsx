@@ -10,14 +10,15 @@ import { ListingCard, type ListingCardData } from "@/components/listing-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatNaira } from "@/lib/categories";
 import { QRCodeSVG } from "qrcode.react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { 
-  Share2, Phone, MessageCircle, MapPin, BadgeCheck, Star, Send, 
-  Search, SlidersHorizontal, Package, Users, ShoppingBag, Heart, Eye
+import {
+  Share2, Phone, MessageCircle, MapPin, BadgeCheck, Star, Send,
+  Search, SlidersHorizontal, Package, Users, Heart, Eye, TrendingUp,
+  Award, Zap, Flame, Trophy, CheckCircle2, Clock, Save, Bookmark
 } from "lucide-react";
 
 export const Route = createFileRoute("/shop/$slug")({
