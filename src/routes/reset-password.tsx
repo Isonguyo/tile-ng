@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
