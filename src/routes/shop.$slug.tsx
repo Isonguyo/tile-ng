@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import {
   Share2, Phone, MessageCircle, MapPin, BadgeCheck, Star, Send,
   Search, SlidersHorizontal, Package, Users, Heart, Eye, TrendingUp,
-  Award, Zap, Flame, Trophy, CheckCircle2, ShoppingBag, ChevronLeft, ChevronRight
+  Award, Zap, Flame, Trophy, CheckCircle2, Bookmark, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 export const Route = createFileRoute("/shop/$slug")({
