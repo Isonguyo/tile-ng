@@ -1176,7 +1176,48 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_activity_feed: {
+        Args: { _limit?: number }
+        Returns: {
+          at: string
+          entity_id: string
+          kind: string
+          subtitle: string
+          title: string
+        }[]
+      }
       admin_approve_listing: { Args: { _id: string }; Returns: undefined }
+      admin_broadcast: {
+        Args: {
+          _audience: string
+          _body: string
+          _link?: string
+          _title: string
+        }
+        Returns: number
+      }
+      admin_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_subscribers: number
+          artisans_total: number
+          chats_24h: number
+          kyc_pending: number
+          listings_pending: number
+          listings_today: number
+          listings_total: number
+          lite: number
+          pro: number
+          reports_open: number
+          revenue_month: number
+          revenue_today: number
+          revenue_total: number
+          shops_total: number
+          users_today: number
+          users_total: number
+          vip: number
+        }[]
+      }
       admin_flag_seller: { Args: { _listing_id: string }; Returns: undefined }
       admin_generate_invite_code: { Args: never; Returns: string }
       admin_list_invite_codes: {
@@ -1243,6 +1284,20 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_list_reports: {
+        Args: { _status?: string }
+        Returns: {
+          created_at: string
+          details: string
+          entity_id: string
+          entity_type: string
+          id: string
+          reason: string
+          reporter_id: string
+          reporter_name: string
+          status: string
+        }[]
+      }
       admin_list_users: {
         Args: never
         Returns: {
@@ -1254,6 +1309,23 @@ export type Database = {
           is_verified: boolean
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           subscription_tier: Database["public"]["Enums"]["sub_tier"]
+        }[]
+      }
+      admin_moderation_queue: {
+        Args: never
+        Returns: {
+          account_age_days: number
+          category: string
+          created_at: string
+          id: string
+          images: string[]
+          price: number
+          risk_reasons: string[]
+          risk_score: number
+          seller_id: string
+          seller_name: string
+          seller_phone: string
+          title: string
         }[]
       }
       admin_pending_listings: {
@@ -1275,6 +1347,10 @@ export type Database = {
         Args: { _id: string; _reason: string }
         Returns: undefined
       }
+      admin_resolve_report: {
+        Args: { _action: string; _note?: string; _report_id: string }
+        Returns: undefined
+      }
       admin_revenue_stats: {
         Args: never
         Returns: {
@@ -1287,6 +1363,42 @@ export type Database = {
           total_subscribers: number
           vip_active: number
           yearly_revenue: number
+        }[]
+      }
+      admin_update_platform_settings: {
+        Args: {
+          _banner: string
+          _disable_messaging: boolean
+          _disable_payments: boolean
+          _disable_posting: boolean
+          _disable_registration: boolean
+          _disable_withdrawals: boolean
+          _maintenance: boolean
+        }
+        Returns: undefined
+      }
+      admin_user_inspector: {
+        Args: { _uid: string }
+        Returns: {
+          active_listings: number
+          chats_count: number
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_artisan: boolean
+          is_verified: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          listings_count: number
+          phone: string
+          reports_against: number
+          shop_slug: string
+          state: string
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
+          subscription_until: string
+          trust_score: number
+          wallet_balance: number
+          wallet_txns: number
         }[]
       }
       category_counts: {
@@ -1409,6 +1521,7 @@ export type Database = {
         Returns: boolean
       }
       is_following_shop: { Args: { _shop_id: string }; Returns: boolean }
+      is_staff: { Args: { _uid: string }; Returns: boolean }
       log_admin_action: {
         Args: {
           _action: string
@@ -1516,6 +1629,7 @@ export type Database = {
           query: string
         }[]
       }
+      user_trust_score: { Args: { _uid: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user" | "moderator" | "support"
