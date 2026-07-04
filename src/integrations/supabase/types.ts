@@ -384,6 +384,7 @@ export type Database = {
           location: string
           phone: string | null
           price: number | null
+          promoted_until: string | null
           rejection_reason: string | null
           renewed_count: number
           service_mode: Database["public"]["Enums"]["service_mode"] | null
@@ -409,6 +410,7 @@ export type Database = {
           location: string
           phone?: string | null
           price?: number | null
+          promoted_until?: string | null
           rejection_reason?: string | null
           renewed_count?: number
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
@@ -434,6 +436,7 @@ export type Database = {
           location?: string
           phone?: string | null
           price?: number | null
+          promoted_until?: string | null
           rejection_reason?: string | null
           renewed_count?: number
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
@@ -541,6 +544,7 @@ export type Database = {
           portfolio_url: string | null
           profession: string | null
           profile_photo: string | null
+          promotion_credits: number
           response_minutes: number
           response_rate: number | null
           service_radius: number | null
@@ -584,6 +588,7 @@ export type Database = {
           portfolio_url?: string | null
           profession?: string | null
           profile_photo?: string | null
+          promotion_credits?: number
           response_minutes?: number
           response_rate?: number | null
           service_radius?: number | null
@@ -627,6 +632,7 @@ export type Database = {
           portfolio_url?: string | null
           profession?: string | null
           profile_photo?: string | null
+          promotion_credits?: number
           response_minutes?: number
           response_rate?: number | null
           service_radius?: number | null
@@ -814,6 +820,48 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      subscription_history: {
+        Row: {
+          amount: number
+          created_at: string
+          expires_at: string
+          id: string
+          payment_reference: string | null
+          started_at: string
+          status: string
+          tier: Database["public"]["Enums"]["sub_tier"]
+          user_id: string
+          wallet_after: number
+          wallet_before: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          expires_at: string
+          id?: string
+          payment_reference?: string | null
+          started_at?: string
+          status?: string
+          tier: Database["public"]["Enums"]["sub_tier"]
+          user_id: string
+          wallet_after: number
+          wallet_before: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          payment_reference?: string | null
+          started_at?: string
+          status?: string
+          tier?: Database["public"]["Enums"]["sub_tier"]
+          user_id?: string
+          wallet_after?: number
+          wallet_before?: number
         }
         Relationships: []
       }
@@ -1066,6 +1114,7 @@ export type Database = {
           portfolio_url: string | null
           profession: string | null
           profile_photo: string | null
+          promotion_credits: number
           response_minutes: number
           response_rate: number | null
           service_radius: number | null
@@ -1132,6 +1181,7 @@ export type Database = {
           portfolio_url: string | null
           profession: string | null
           profile_photo: string | null
+          promotion_credits: number
           response_minutes: number
           response_rate: number | null
           service_radius: number | null
@@ -1221,6 +1271,22 @@ export type Database = {
         }
         Returns: string
       }
+      dashboard_stats: {
+        Args: never
+        Returns: {
+          approved_count: number
+          chats_total: number
+          clicks_total: number
+          conversion_rate: number
+          favorites_total: number
+          listings_count: number
+          pending_count: number
+          promoted_active: number
+          unread_messages: number
+          views_total: number
+          wallet_balance: number
+        }[]
+      }
       ensure_chat: { Args: { _listing_id: string }; Returns: string }
       expire_old_listings: { Args: never; Returns: number }
       gen_shop_slug: { Args: { _name: string }; Returns: string }
@@ -1254,6 +1320,7 @@ export type Database = {
           portfolio_url: string | null
           profession: string | null
           profile_photo: string | null
+          promotion_credits: number
           response_minutes: number
           response_rate: number | null
           service_radius: number | null
@@ -1318,6 +1385,21 @@ export type Database = {
       }
       mark_chat_read: { Args: { _chat_id: string }; Returns: undefined }
       mark_notifications_read: { Args: never; Returns: undefined }
+      merchant_health_score: {
+        Args: never
+        Returns: {
+          active_listings: number
+          avg_rating: number
+          has_avatar: boolean
+          has_bio: boolean
+          has_shop: boolean
+          kyc_done: boolean
+          profile_complete: boolean
+          recommendations: string[]
+          score: number
+          verified: boolean
+        }[]
+      }
       my_chats: {
         Args: never
         Returns: {
@@ -1348,6 +1430,10 @@ export type Database = {
           total_listings: number
           verified_vendors: number
         }[]
+      }
+      promote_listing: {
+        Args: { _days?: number; _listing_id: string }
+        Returns: string
       }
       redeem_admin_code: { Args: { _code: string }; Returns: boolean }
       renew_listing: { Args: { _listing_id: string }; Returns: string }
