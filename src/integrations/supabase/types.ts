@@ -515,6 +515,45 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_settings: {
+        Row: {
+          disable_messaging: boolean
+          disable_payments: boolean
+          disable_posting: boolean
+          disable_registration: boolean
+          disable_withdrawals: boolean
+          emergency_banner: string | null
+          id: number
+          maintenance_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          disable_messaging?: boolean
+          disable_payments?: boolean
+          disable_posting?: boolean
+          disable_registration?: boolean
+          disable_withdrawals?: boolean
+          emergency_banner?: string | null
+          id?: number
+          maintenance_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          disable_messaging?: boolean
+          disable_payments?: boolean
+          disable_posting?: boolean
+          disable_registration?: boolean
+          disable_withdrawals?: boolean
+          emergency_banner?: string | null
+          id?: number
+          maintenance_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: string
@@ -1479,7 +1518,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "moderator" | "support"
       item_condition: "new" | "used_like_new" | "used_good" | "used_fair"
       kyc_status: "none" | "pending" | "verified" | "rejected"
       listing_status:
@@ -1618,7 +1657,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "moderator", "support"],
       item_condition: ["new", "used_like_new", "used_good", "used_fair"],
       kyc_status: ["none", "pending", "verified", "rejected"],
       listing_status: ["pending", "approved", "rejected", "flagged", "expired"],
