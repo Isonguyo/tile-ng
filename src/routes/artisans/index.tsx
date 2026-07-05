@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, MapPin, ShieldCheck, Briefcase, Star, UserRound } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, MapPin, ShieldCheck, Briefcase, Star, UserRound, Sparkles, BadgeCheck } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/artisans/")({
@@ -12,8 +15,11 @@ export const Route = createFileRoute("/artisans/")({
 });
 
 function ArtisanDirectoryPage() {
-  // ✨ Fetch real artisan profiles from your Supabase table
-  const { data: artisans = [], isLoading } = useQuery({
+  const [qProfession, setQProfession] = useState("");
+  const [qState, setQState] = useState("");
+  const [qLga, setQLga] = useState("");
+
+  const { data: artisans = [], isLoading, isError } = useQuery({
     queryKey: ["public-artisans"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,6 +32,18 @@ function ArtisanDirectoryPage() {
       return data ?? [];
     },
   });
+
+  const filtered = useMemo(() => {
+    const p = qProfession.trim().toLowerCase();
+    const s = qState.trim().toLowerCase();
+    const l = qLga.trim().toLowerCase();
+    return artisans.filter((a) => {
+      if (p && !(a.profession ?? "").toLowerCase().includes(p)) return false;
+      if (s && !(a.state ?? "").toLowerCase().includes(s)) return false;
+      if (l && !(a.lga ?? "").toLowerCase().includes(l)) return false;
+      return true;
+    });
+  }, [artisans, qProfession, qState, qLga]);
 
   return (
     <div className="min-h-screen bg-background">
