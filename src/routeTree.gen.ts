@@ -25,6 +25,7 @@ import { Route as ArtisansIndexRouteImport } from './routes/artisans/index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
 import { Route as ListingIdRouteImport } from './routes/listing.$id'
+import { Route as ArtisansIdRouteImport } from './routes/artisans.$id'
 import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -107,6 +108,11 @@ const ListingIdRoute = ListingIdRouteImport.update({
   path: '/listing/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtisansIdRoute = ArtisansIdRouteImport.update({
+  id: '/artisans/$id',
+  path: '/artisans/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ArtisanCreateRoute = ArtisanCreateRouteImport.update({
   id: '/artisan/create',
   path: '/artisan/create',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/artisan/create': typeof ArtisanCreateRoute
+  '/artisans/$id': typeof ArtisansIdRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/artisan/create': typeof ArtisanCreateRoute
+  '/artisans/$id': typeof ArtisansIdRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/artisan/create': typeof ArtisanCreateRoute
+  '/artisans/$id': typeof ArtisansIdRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/artisan/create'
+    | '/artisans/$id'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/artisan/create'
+    | '/artisans/$id'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/artisan/create'
+    | '/artisans/$id'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
@@ -242,6 +254,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   ArtisanCreateRoute: typeof ArtisanCreateRoute
+  ArtisansIdRoute: typeof ArtisansIdRoute
   ListingIdRoute: typeof ListingIdRoute
   ShopSlugRoute: typeof ShopSlugRoute
   ArtisansIndexRoute: typeof ArtisansIndexRoute
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ListingIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/artisans/$id': {
+      id: '/artisans/$id'
+      path: '/artisans/$id'
+      fullPath: '/artisans/$id'
+      preLoaderRoute: typeof ArtisansIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/artisan/create': {
       id: '/artisan/create'
       path: '/artisan/create'
@@ -398,6 +418,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   ArtisanCreateRoute: ArtisanCreateRoute,
+  ArtisansIdRoute: ArtisansIdRoute,
   ListingIdRoute: ListingIdRoute,
   ShopSlugRoute: ShopSlugRoute,
   ArtisansIndexRoute: ArtisansIndexRoute,
@@ -405,13 +426,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

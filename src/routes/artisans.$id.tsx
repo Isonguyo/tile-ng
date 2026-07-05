@@ -23,15 +23,12 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/artisans/$id")({
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData?.full_name
-          ? `${loaderData.full_name} — Artisan on Tile`
-          : "Artisan Profile — Tile",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const name = (loaderData as { full_name?: string | null } | undefined)?.full_name;
+    return {
+      meta: [{ title: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile" }],
+    };
+  },
   loader: async ({ params }) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -81,7 +78,7 @@ function ArtisanDetailPage() {
   const [preview, setPreview] = useState<string | null>(null);
 
   const avatar = artisan.profile_photo || artisan.avatar_url;
-  const gallery = (artisan.portfolio_images ?? []).filter(Boolean);
+  const gallery: string[] = ((artisan.portfolio_images ?? []) as string[]).filter(Boolean);
   const waPhone = sanitizePhone(artisan.whatsapp || artisan.phone);
   const telPhone = artisan.phone?.replace(/\s+/g, "") || null;
 
