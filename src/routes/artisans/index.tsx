@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, MapPin, ShieldCheck, Briefcase, Star, UserRound } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, MapPin, ShieldCheck, Briefcase, Star, UserRound, Sparkles, BadgeCheck } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/artisans/")({
@@ -12,8 +15,11 @@ export const Route = createFileRoute("/artisans/")({
 });
 
 function ArtisanDirectoryPage() {
-  // ✨ Fetch real artisan profiles from your Supabase table
-  const { data: artisans = [], isLoading } = useQuery({
+  const [qProfession, setQProfession] = useState("");
+  const [qState, setQState] = useState("");
+  const [qLga, setQLga] = useState("");
+
+  const { data: artisans = [], isLoading, isError } = useQuery({
     queryKey: ["public-artisans"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,6 +32,18 @@ function ArtisanDirectoryPage() {
       return data ?? [];
     },
   });
+
+  const filtered = useMemo(() => {
+    const p = qProfession.trim().toLowerCase();
+    const s = qState.trim().toLowerCase();
+    const l = qLga.trim().toLowerCase();
+    return artisans.filter((a) => {
+      if (p && !(a.profession ?? "").toLowerCase().includes(p)) return false;
+      if (s && !(a.state ?? "").toLowerCase().includes(s)) return false;
+      if (l && !(a.lga ?? "").toLowerCase().includes(l)) return false;
+      return true;
+    });
+  }, [artisans, qProfession, qState, qLga]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,22 +92,53 @@ function ArtisanDirectoryPage() {
 
       {/* Artisan Cards Grid Listing Section */}
       <section className="container mx-auto max-w-7xl px-4 pb-20">
-        <h2 className="text-2xl font-bold mb-6 text-foreground">Available Tile Professionals</h2>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="text-2xl font-bold text-foreground">Available Tile Professionals</h2>
+          <p className="text-sm text-muted-foreground">{filtered.length} of {artisans.length} artisans</p>
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-6 grid gap-3 border-border/70 p-4 sm:grid-cols-3">
+          <div className="relative">
+            <Briefcase className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input value={qProfession} onChange={(e) => setQProfession(e.target.value)} placeholder="Profession (e.g. Tiler)" className="pl-9" />
+          </div>
+          <div className="relative">
+            <MapPin className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input value={qState} onChange={(e) => setQState(e.target.value)} placeholder="State" className="pl-9" />
+          </div>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input value={qLga} onChange={(e) => setQLga(e.target.value)} placeholder="LGA" className="pl-9" />
+          </div>
+        </Card>
 
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Loading artisans...</div>
-        ) : artisans.length === 0 ? (
+        ) : isError ? (
+          <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">Couldn’t load artisans. Please retry.</div>
+        ) : filtered.length === 0 ? (
           <div className="rounded-xl border border-dashed p-16 text-center">
             <Search className="mx-auto h-14 w-14 text-muted-foreground" />
             <h2 className="mt-6 text-2xl font-semibold">No Artisans Found</h2>
             <p className="mt-3 text-muted-foreground max-w-md mx-auto">
-              Be the first to join the network! Create an artisan profile to start appearing in search results here.
+              Try clearing your filters or expanding your search area.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {artisans.map((artisan) => (
-              <Card key={artisan.id} className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+            {filtered.map((artisan) => {
+              const tier = (artisan.subscription_tier ?? "free").toString().toLowerCase();
+              const isPremium = tier === "pro" || tier === "vip";
+              const isTopRated = (artisan.years_experience ?? 0) >= 5 || (artisan.avg_rating ?? 0) >= 4.5;
+              return (
+              <Card
+                key={artisan.id}
+                className={
+                  "overflow-hidden border shadow-sm hover:shadow-lg transition-all flex flex-col justify-between " +
+                  (isPremium ? "border-amber-400/50 ring-1 ring-amber-400/30" : isTopRated ? "border-primary/40" : "")
+                }
+              >
                 <div className="p-6">
                   <div className="flex items-start gap-4">
                     {/* Avatar Display */}
@@ -108,7 +157,10 @@ function ArtisanDirectoryPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <h3 className="font-bold text-lg text-foreground line-clamp-1">{artisan.full_name || "Anonymous Artisan"}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-lg text-foreground line-clamp-1">{artisan.full_name || "Anonymous Artisan"}</h3>
+                        {artisan.is_verified ? <BadgeCheck className="h-4 w-4 text-emerald-600" /> : null}
+                      </div>
                       <p className="text-sm font-medium text-primary">{artisan.profession || "Specialist Installer"}</p>
                       
                       <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
@@ -117,6 +169,17 @@ function ArtisanDirectoryPage() {
                       </div>
                     </div>
                   </div>
+
+                  {(isPremium || isTopRated) && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {isPremium && (
+                        <Badge className="gap-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20"><Sparkles className="h-3 w-3" /> {tier.toUpperCase()}</Badge>
+                      )}
+                      {isTopRated && (
+                        <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3 w-3" /> Top rated</Badge>
+                      )}
+                    </div>
+                  )}
 
                   <p className="text-sm text-muted-foreground mt-4 line-clamp-3 italic">
                     "{artisan.bio || "No biography provided yet."}"
@@ -141,11 +204,11 @@ function ArtisanDirectoryPage() {
                     ))}
                   </div>
                   <Button size="sm" asChild>
-                    <Link to={`/artisans/${artisan.id}`}>View Profile</Link>
+                    <Link to="/artisans/$id" params={{ id: artisan.id }}>View Profile</Link>
                   </Button>
                 </div>
               </Card>
-            ))}
+            );})}
           </div>
         )}
       </section>

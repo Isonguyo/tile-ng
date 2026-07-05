@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CATEGORIES } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
 import { usePlan, hasCapability } from "@/hooks/use-plan";
+import { MerchantHealthCard, QuotaBar } from "@/components/merchant-health";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadListingImages } from "@/lib/storage";
 import { toast } from "sonner";
@@ -391,6 +392,17 @@ function PostAd() {
             <p className="text-sm text-muted-foreground mt-1">{canOpenShop ? "Shop enabled" : "Shop requires Lite or higher"}</p>
             <div className="mt-3 space-y-1 text-sm text-muted-foreground">
               {planSummary.map((item) => <p key={item}>• {item}</p>)}
+            </div>
+            {plan && (
+              <div className="mt-4 space-y-3">
+                <QuotaBar used={plan.used_goods} max={plan.max_goods} label="Active goods listings" />
+                {plan.max_services > 0 && (
+                  <QuotaBar used={plan.used_services} max={plan.max_services} label="Active services" />
+                )}
+              </div>
+            )}
+            <div className="mt-4">
+              <MerchantHealthCard />
             </div>
           </div>
         </div>
