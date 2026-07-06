@@ -633,7 +633,7 @@ function RejectModal({ onConfirm }: { onConfirm: (reason: string) => void }) {
   );
 }
 
-function PendingTitle({ l }: { l: { id: string; title: string; type: string; images: string[] } }) {
+function PendingTitle({ l }: { l: { id: string; title: string; type?: string; images: string[] } }) {
   const [urls, setUrls] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   useEffect(() => { if (l.images?.length) getSignedUrls(l.images).then(setUrls); }, [l.images]);
@@ -661,6 +661,317 @@ function PendingTitle({ l }: { l: { id: string; title: string; type: string; ima
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Helper components ─────────────────────────────────────────
+
+const TINTS: Record<string, string> = {
+  blue: "from-blue-500/15 to-blue-500/5 text-blue-600 dark:text-blue-400",
+  green: "from-emerald-500/15 to-emerald-500/5 text-emerald-600 dark:text-emerald-400",
+  amber: "from-amber-500/15 to-amber-500/5 text-amber-600 dark:text-amber-400",
+  purple: "from-purple-500/15 to-purple-500/5 text-purple-600 dark:text-purple-400",
+  cyan: "from-cyan-500/15 to-cyan-500/5 text-cyan-600 dark:text-cyan-400",
+  rose: "from-rose-500/15 to-rose-500/5 text-rose-600 dark:text-rose-400",
+};
+
+function MiniStat({ label, value, sub, icon: Icon, tint = "blue" }: { label: string; value: string | number; sub?: string; icon: React.ComponentType<{ className?: string }>; tint?: string }) {
+  return (
+    <Card className={`p-4 bg-gradient-to-br ${TINTS[tint] ?? TINTS.blue} border-border/50`}>
+      <div className="flex items-start justify-between">
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-wide font-bold text-muted-foreground">{label}</p>
+          <p className="text-xl font-extrabold mt-1 text-foreground truncate">{value}</p>
+          {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+        </div>
+        <Icon className="h-5 w-5 opacity-70" />
+      </div>
+    </Card>
+  );
+}
+
+function QueueCard({ label, count, icon: Icon, onClick }: { label: string; count: number | string; icon: React.ComponentType<{ className?: string }>; onClick?: () => void }) {
+  const isEmpty = count === 0 || count === "₦0";
+  return (
+    <button onClick={onClick} className={`text-left rounded-lg border p-4 transition-colors hover:border-primary/50 ${isEmpty ? "bg-card" : "bg-primary/5 border-primary/40"}`}>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase font-bold"><Icon className="h-3.5 w-3.5" />{label}</div>
+      <p className="text-2xl font-extrabold mt-2">{count}</p>
+      {!isEmpty && <p className="text-[10px] text-primary mt-1 font-semibold">Needs attention →</p>}
+    </button>
+  );
+}
+
+function ActivityDot({ kind }: { kind: string }) {
+  const map: Record<string, string> = {
+    signup: "bg-blue-500", listing: "bg-emerald-500", payment: "bg-amber-500", report: "bg-rose-500",
+  };
+  return <span className={`h-2 w-2 rounded-full ${map[kind] ?? "bg-muted-foreground"}`} />;
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function RiskCell({ score, reasons }: { score: number; reasons: string[] }) {
+  const color = score >= 70 ? "bg-red-500" : score >= 40 ? "bg-amber-500" : "bg-emerald-500";
+  const label = score >= 70 ? "HIGH" : score >= 40 ? "MED" : "LOW";
+  return (
+    <div className="min-w-[140px]">
+      <div className="flex items-center gap-2">
+        <span className={`h-2 w-2 rounded-full ${color}`} />
+        <span className="text-sm font-bold">{score}</span>
+        <Badge variant="outline" className="text-[10px] py-0 h-4">{label}</Badge>
+      </div>
+      {reasons.length > 0 && (
+        <div className="mt-1 space-y-0.5">
+          {reasons.slice(0, 2).map((r, i) => (
+            <div key={i} className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <AlertTriangle className="h-2.5 w-2.5" />{r}
+            </div>
+          ))}
+          {reasons.length > 2 && <div className="text-[10px] text-muted-foreground">+{reasons.length - 2} more</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReportActions({ report, onDone }: { report: { id: string; entity_type: string; status: string }; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [action, setAction] = useState<string>("dismiss");
+  const [note, setNote] = useState("");
+  const resolve = async () => {
+    if (!confirm(`Apply "${action}" to this report?`)) return;
+    const { error } = await supabase.rpc("admin_resolve_report", { _report_id: report.id, _action: action, _note: note || null });
+    if (error) return toast.error(error.message);
+    toast.success("Report resolved");
+    setOpen(false);
+    onDone();
+  };
+  if (report.status !== "open") return <Badge variant="outline" className="capitalize">{report.status}</Badge>;
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button size="sm" variant="outline">Resolve</Button></DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Resolve report</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Action</Label>
+            <Select value={action} onValueChange={setAction}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="dismiss">Dismiss</SelectItem>
+                {report.entity_type === "user" && <SelectItem value="warn">Warn user</SelectItem>}
+                {report.entity_type === "listing" && <SelectItem value="remove_listing">Remove listing</SelectItem>}
+                {report.entity_type === "user" && <SelectItem value="suspend_user">Suspend user</SelectItem>}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Internal note (optional)</Label>
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Context for audit log…" />
+          </div>
+        </div>
+        <DialogFooter><Button onClick={resolve}>Apply</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BroadcastPanel() {
+  const [audience, setAudience] = useState("all");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [link, setLink] = useState("");
+  const [sending, setSending] = useState(false);
+  const send = async () => {
+    if (title.length < 2 || body.length < 2) return toast.error("Title and body required");
+    if (!confirm(`Send broadcast to "${audience}" audience?`)) return;
+    setSending(true);
+    const { data, error } = await supabase.rpc("admin_broadcast", { _audience: audience, _title: title, _body: body, _link: link || null });
+    setSending(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Sent to ${data} users`);
+    setTitle(""); setBody(""); setLink("");
+  };
+  return (
+    <Card className="p-6 max-w-2xl">
+      <div className="flex items-center gap-2 mb-4"><Megaphone className="h-5 w-5 text-primary" /><h3 className="font-semibold text-lg">Compose broadcast</h3></div>
+      <div className="space-y-4">
+        <div>
+          <Label>Audience</Label>
+          <Select value={audience} onValueChange={setAudience}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Everyone</SelectItem>
+              <SelectItem value="verified">Verified users</SelectItem>
+              <SelectItem value="vip">VIP subscribers</SelectItem>
+              <SelectItem value="pro">Pro subscribers</SelectItem>
+              <SelectItem value="lite">Lite subscribers</SelectItem>
+              <SelectItem value="shops">Shop owners</SelectItem>
+              <SelectItem value="artisans">Artisans</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short, catchy headline" maxLength={80} /></div>
+        <div><Label>Body</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="What do you want users to know?" maxLength={500} /></div>
+        <div><Label>Link (optional)</Label><Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/dashboard" /></div>
+        <Button onClick={send} disabled={sending} className="w-full"><Bell className="h-4 w-4 mr-2" />{sending ? "Sending…" : "Send broadcast"}</Button>
+      </div>
+    </Card>
+  );
+}
+
+function PlatformSettings({ initial, onSaved }: { initial: { maintenance_mode: boolean; disable_registration: boolean; disable_posting: boolean; disable_payments: boolean; disable_withdrawals: boolean; disable_messaging: boolean; emergency_banner: string | null } | null | undefined; onSaved: () => void }) {
+  const [s, setS] = useState({
+    maintenance_mode: initial?.maintenance_mode ?? false,
+    disable_registration: initial?.disable_registration ?? false,
+    disable_posting: initial?.disable_posting ?? false,
+    disable_payments: initial?.disable_payments ?? false,
+    disable_withdrawals: initial?.disable_withdrawals ?? false,
+    disable_messaging: initial?.disable_messaging ?? false,
+    emergency_banner: initial?.emergency_banner ?? "",
+  });
+  useEffect(() => {
+    if (initial) setS({
+      maintenance_mode: initial.maintenance_mode, disable_registration: initial.disable_registration,
+      disable_posting: initial.disable_posting, disable_payments: initial.disable_payments,
+      disable_withdrawals: initial.disable_withdrawals, disable_messaging: initial.disable_messaging,
+      emergency_banner: initial.emergency_banner ?? "",
+    });
+  }, [initial]);
+  const save = async () => {
+    if (!confirm("Apply platform settings now?")) return;
+    const { error } = await supabase.rpc("admin_update_platform_settings", {
+      _maintenance: s.maintenance_mode, _disable_registration: s.disable_registration,
+      _disable_posting: s.disable_posting, _disable_payments: s.disable_payments,
+      _disable_withdrawals: s.disable_withdrawals, _disable_messaging: s.disable_messaging,
+      _banner: s.emergency_banner || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Platform settings updated");
+    onSaved();
+  };
+  const toggles: Array<[keyof typeof s, string, string]> = [
+    ["maintenance_mode", "Maintenance mode", "Freeze all public actions and show a banner"],
+    ["disable_registration", "Disable new signups", "Block new account creation"],
+    ["disable_posting", "Disable new listings", "Block ad posting temporarily"],
+    ["disable_payments", "Disable payments", "Block subscription and boost payments"],
+    ["disable_withdrawals", "Freeze withdrawals", "Halt payouts pending review"],
+    ["disable_messaging", "Disable messaging", "Freeze buyer↔seller chats"],
+  ];
+  return (
+    <div className="space-y-4 max-w-3xl">
+      <Card className="p-6 border-destructive/40">
+        <div className="flex items-center gap-2 mb-4"><Settings2 className="h-5 w-5 text-destructive" /><h3 className="font-semibold text-lg">Emergency controls</h3></div>
+        <p className="text-sm text-muted-foreground mb-4">Changes apply platform-wide immediately. Every change is audit-logged.</p>
+        <div className="space-y-3">
+          {toggles.map(([key, label, desc]) => (
+            <div key={key} className="flex items-center justify-between gap-4 rounded-lg border p-3">
+              <div><p className="font-medium text-sm">{label}</p><p className="text-xs text-muted-foreground">{desc}</p></div>
+              <Switch checked={s[key] as boolean} onCheckedChange={(v) => setS((prev) => ({ ...prev, [key]: v }))} />
+            </div>
+          ))}
+          <div className="rounded-lg border p-3">
+            <Label>Emergency banner (shown site-wide when non-empty)</Label>
+            <Textarea value={s.emergency_banner} onChange={(e) => setS((prev) => ({ ...prev, emergency_banner: e.target.value }))} rows={2} placeholder="e.g. Scheduled maintenance from 2am–3am WAT" className="mt-1" />
+          </div>
+          <Button onClick={save} className="w-full bg-destructive hover:bg-destructive/90"><ShieldAlert className="h-4 w-4 mr-2" />Apply settings</Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function UserInspector({ id, onClose }: { id: string | null; onClose: () => void }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-user-inspector", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("admin_user_inspector", { _uid: id! });
+      return (Array.isArray(data) ? data[0] : data) as null | {
+        id: string; full_name: string | null; email: string | null; phone: string | null; state: string | null;
+        created_at: string; is_verified: boolean; kyc_status: string; subscription_tier: string;
+        subscription_until: string | null; wallet_balance: number; shop_slug: string | null; is_artisan: boolean;
+        listings_count: number; active_listings: number; chats_count: number; reports_against: number;
+        wallet_txns: number; trust_score: number;
+      };
+    },
+  });
+  return (
+    <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2"><UserSearch className="h-4 w-4" /> User inspector</SheetTitle>
+          <SheetDescription>Deep dive into any user's activity</SheetDescription>
+        </SheetHeader>
+        {isLoading && <div className="py-16 text-center text-muted-foreground">Loading…</div>}
+        {data && (
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/70 grid place-items-center text-white text-xl font-bold">
+                {(data.full_name ?? "?").slice(0, 1).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-bold">{data.full_name ?? "Anonymous"}</p>
+                <p className="text-xs text-muted-foreground">{data.email ?? "—"}</p>
+                <div className="flex gap-1 mt-1">
+                  <Badge className="capitalize">{data.subscription_tier}</Badge>
+                  {data.is_verified && <Badge className="bg-emerald-500 text-white gap-1"><BadgeCheck className="h-3 w-3" />Verified</Badge>}
+                </div>
+              </div>
+            </div>
+
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs uppercase font-bold text-muted-foreground">Trust score</p>
+                <p className="text-lg font-extrabold">{data.trust_score}/100</p>
+              </div>
+              <Progress value={data.trust_score} className="h-2" />
+            </Card>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <InspectStat label="Listings" value={`${data.active_listings}/${data.listings_count}`} />
+              <InspectStat label="Chats" value={data.chats_count} />
+              <InspectStat label="Reports against" value={data.reports_against} danger={data.reports_against > 0} />
+              <InspectStat label="Wallet" value={formatNaira(data.wallet_balance)} />
+              <InspectStat label="Wallet txns" value={data.wallet_txns} />
+              <InspectStat label="KYC" value={data.kyc_status} />
+              <InspectStat label="Phone" value={data.phone ?? "—"} />
+              <InspectStat label="State" value={data.state ?? "—"} />
+              <InspectStat label="Shop" value={data.shop_slug ?? "—"} />
+              <InspectStat label="Artisan" value={data.is_artisan ? "Yes" : "No"} />
+              <InspectStat label="Joined" value={timeAgo(data.created_at)} />
+              <InspectStat label="Sub. until" value={data.subscription_until ? new Date(data.subscription_until).toLocaleDateString() : "—"} />
+            </div>
+
+            <div className="pt-2 border-t space-y-2">
+              <p className="text-xs font-bold uppercase text-muted-foreground">Quick actions</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" asChild><a href={`mailto:${data.email}`}><LifeBuoy className="h-3.5 w-3.5 mr-1" />Email</a></Button>
+                {data.shop_slug && <Button size="sm" variant="outline" asChild><a href={`/shop/${data.shop_slug}`} target="_blank" rel="noreferrer">View shop</a></Button>}
+              </div>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function InspectStat({ label, value, danger }: { label: string; value: string | number; danger?: boolean }) {
+  return (
+    <div className={`rounded-lg border p-2.5 ${danger ? "border-destructive/50 bg-destructive/5" : ""}`}>
+      <p className="text-[10px] uppercase font-bold text-muted-foreground">{label}</p>
+      <p className={`text-sm font-semibold mt-0.5 ${danger ? "text-destructive" : ""}`}>{value}</p>
     </div>
   );
 }
