@@ -750,7 +750,7 @@ function ReportActions({ report, onDone }: { report: { id: string; entity_type: 
   const [note, setNote] = useState("");
   const resolve = async () => {
     if (!confirm(`Apply "${action}" to this report?`)) return;
-    const { error } = await supabase.rpc("admin_resolve_report", { _report_id: report.id, _action: action, _note: note || null });
+    const { error } = await supabase.rpc("admin_resolve_report", { _report_id: report.id, _action: action, _note: note || undefined });
     if (error) return toast.error(error.message);
     toast.success("Report resolved");
     setOpen(false);
@@ -796,7 +796,7 @@ function BroadcastPanel() {
     if (title.length < 2 || body.length < 2) return toast.error("Title and body required");
     if (!confirm(`Send broadcast to "${audience}" audience?`)) return;
     setSending(true);
-    const { data, error } = await supabase.rpc("admin_broadcast", { _audience: audience, _title: title, _body: body, _link: link || null });
+    const { data, error } = await supabase.rpc("admin_broadcast", { _audience: audience, _title: title, _body: body, _link: link || undefined });
     setSending(false);
     if (error) return toast.error(error.message);
     toast.success(`Sent to ${data} users`);
@@ -854,7 +854,7 @@ function PlatformSettings({ initial, onSaved }: { initial: { maintenance_mode: b
       _maintenance: s.maintenance_mode, _disable_registration: s.disable_registration,
       _disable_posting: s.disable_posting, _disable_payments: s.disable_payments,
       _disable_withdrawals: s.disable_withdrawals, _disable_messaging: s.disable_messaging,
-      _banner: s.emergency_banner || null,
+      _banner: s.emergency_banner,
     });
     if (error) return toast.error(error.message);
     toast.success("Platform settings updated");
