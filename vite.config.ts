@@ -12,8 +12,21 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  
   // Dynamically switch presets:
   // If Vercel is building the app, compile for Vercel. 
-  // Otherwise, use 'false' or leave it undefined so Lovable defaults to Cloudflare in its sandbox.
+  // Otherwise, leave it false so Lovable defaults to Cloudflare in its sandbox.
   nitro: process.env.VERCEL ? { preset: "vercel" } : false,
+
+  // Force Vite to bundle Supabase and its sub-modules directly into the SSR chunk
+  // This prevents the "Cannot find package 'tslib'" error on Vercel
+  vite: {
+    ssr: {
+      noExternal: [
+        "@supabase/supabase-js",
+        "@supabase/functions-js",
+        "tslib"
+      ],
+    },
+  },
 });
