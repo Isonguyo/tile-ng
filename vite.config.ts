@@ -12,12 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  // Force Nitro on with the Vercel preset so `npm run build` (outside the
-  // Lovable sandbox, e.g. on Vercel CI) produces a Vercel-compatible
-  // SSR bundle: static assets and an SSR function under `.vercel/output/`.
-  // Without this override the package defaults to Cloudflare and Vercel gets
-  // a `dist/server/server.js` it doesn't know how to serve, producing 404s.
-  nitro: {
-    preset: "vercel",
-  },
+  // Dynamically switch presets:
+  // If Vercel is building the app, compile for Vercel. 
+  // Otherwise, use 'false' or leave it undefined so Lovable defaults to Cloudflare in its sandbox.
+  nitro: process.env.VERCEL ? { preset: "vercel" } : false,
 });
