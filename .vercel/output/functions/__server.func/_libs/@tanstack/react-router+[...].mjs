@@ -1339,6 +1339,22 @@ function encodePathParam(value, decoder) {
 }
 //#endregion
 //#region node_modules/@tanstack/router-core/dist/esm/not-found.js
+/**
+* Create a not-found error object recognized by TanStack Router.
+*
+* Throw this from loaders/actions to trigger the nearest `notFoundComponent`.
+* Use `routeId` to target a specific route's not-found boundary. If `throw`
+* is true, the error is thrown instead of returned.
+*
+* @param options Optional settings including `routeId`, `headers`, and `throw`.
+* @returns A not-found error object that can be thrown or returned.
+* @link https://tanstack.com/router/latest/docs/router/framework/react/api/router/notFoundFunction
+*/
+function notFound(options = {}) {
+	options.isNotFound = true;
+	if (options.throw) throw options;
+	return options;
+}
 /** Determine if a value is a TanStack Router not-found error. */
 function isNotFound(obj) {
 	return obj?.isNotFound === true;
@@ -14513,4 +14529,4 @@ var renderRouterToStream = async ({ request, router, responseHeaders, children }
 	throw new Error("No renderToReadableStream or renderToPipeableStream found in react-dom/server. Ensure you are using a version of react-dom that supports streaming.");
 };
 //#endregion
-export { redirect as A, getScriptPreloadAttrs as C, executeRewriteInput as D, resolveManifestCssLink as E, decodePath as F, isNotFound as M, createLRUCache as N, isRedirect as O, invariant as P, createInlineCssStyleAsset as S, resolveManifestAssetLink as T, useNavigate as _, replaceSsrResponse as a, TSR_SCRIPT_BARRIER_ID as b, HeadContent as c, createRouter as d, Outlet as f, Link as g, createRootRouteWithContext as h, normalizeSsrResponse as i, rootRouteId as j, isResolvedRedirect as k, useRouterState as l, createFileRoute as m, defineHandlerCallback as n, stripSsrResponseBody as o, lazyRouteComponent as p, isSsrResponse as r, Scripts as s, renderRouterToStream as t, RouterProvider as u, useRouter as v, getStylesheetHref as w, createInlineCssPlaceholderAsset as x, GLOBAL_TSR as y };
+export { redirect as A, getScriptPreloadAttrs as C, executeRewriteInput as D, resolveManifestCssLink as E, invariant as F, decodePath as I, isNotFound as M, notFound as N, isRedirect as O, createLRUCache as P, createInlineCssStyleAsset as S, resolveManifestAssetLink as T, useNavigate as _, replaceSsrResponse as a, TSR_SCRIPT_BARRIER_ID as b, HeadContent as c, createRouter as d, Outlet as f, Link as g, createRootRouteWithContext as h, normalizeSsrResponse as i, rootRouteId as j, isResolvedRedirect as k, useRouterState as l, createFileRoute as m, defineHandlerCallback as n, stripSsrResponseBody as o, lazyRouteComponent as p, isSsrResponse as r, Scripts as s, renderRouterToStream as t, RouterProvider as u, useRouter as v, getStylesheetHref as w, createInlineCssPlaceholderAsset as x, GLOBAL_TSR as y };

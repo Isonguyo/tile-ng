@@ -1,0 +1,1 @@
+import{o as e}from"./useStore-Bziq3ZTA.js";import{J as t}from"./button-DqGbqk3m.js";var n=e();function r({label:e=`Loading…`}){return(0,n.jsxs)(`div`,{className:`flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground`,children:[(0,n.jsx)(t,{className:`h-8 w-8 animate-spin text-accent`}),(0,n.jsx)(`p`,{className:`text-sm`,children:e})]})}export{r as t};
