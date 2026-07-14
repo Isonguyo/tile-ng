@@ -386,7 +386,8 @@ const PLANS: { tier: "lite" | "pro" | "vip"; price: number; perks: string[] }[] 
       "Multiple Staff Accounts",
       "Advanced Analytics",
       "Google Business Integration",
-      "Automated Social Posting"
+      "Automated Social Posting",
+      "AI Sales Assistant"
     ]
   }
 ];
