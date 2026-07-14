@@ -697,7 +697,7 @@ function QueueCard({ label, count, icon: Icon, onClick }: { label: string; count
     <button onClick={onClick} className={`text-left rounded-lg border p-4 transition-colors hover:border-primary/50 ${isEmpty ? "bg-card" : "bg-primary/5 border-primary/40"}`}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase font-bold"><Icon className="h-3.5 w-3.5" />{label}</div>
       <p className="text-2xl font-extrabold mt-2">{count}</p>
-      {!isEmpty && <p className="text-[10px] text-primary mt-1 font-semibold">Needs attention →</p>}
+      {!isEmpty && <p className="text-[10px] text-primary mt-1 font-semibold">Needs urgent attention →</p>}
     </button>
   );
 }
