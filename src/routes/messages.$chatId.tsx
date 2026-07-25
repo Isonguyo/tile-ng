@@ -13,7 +13,15 @@ import { toast } from "sonner";
 import { usePlan, hasCapability } from "@/hooks/use-plan";
 
 export const Route = createFileRoute("/messages/$chatId")({
-  head: () => ({ meta: [{ title: "Chat — Tile" }] }),
+  head: () => ({
+    meta: [{ title: "Chat — Tile" }],
+    links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+  }),
   component: ChatPage,
 });
 

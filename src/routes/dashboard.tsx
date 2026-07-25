@@ -6,14 +6,53 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira, LOCATIONS } from "@/lib/categories";
-import { Heart, Package, Wallet, Plus, MessageSquare, ShieldCheck, Sparkles, Store, Share2, KeyRound, Crown, AlertTriangle, RefreshCw, Pencil, Trash2, Eye, MousePointerClick, Copy as CopyIcon } from "lucide-react";
+import {
+  Heart,
+  Package,
+  Wallet,
+  Plus,
+  MessageSquare,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  Share2,
+  KeyRound,
+  Crown,
+  AlertTriangle,
+  RefreshCw,
+  Pencil,
+  Trash2,
+  Eye,
+  MousePointerClick,
+  Copy as CopyIcon,
+  Image,
+  ExternalLink,
+  Save,
+  Hammer,
+  Briefcase,
+  Star,
+  ArrowRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
@@ -21,7 +60,15 @@ import { TierBadge } from "@/components/tier-badge";
 import { QRCodeSVG } from "qrcode.react";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Tile" }] }),
+  head: () => ({
+    meta: [{ title: "Dashboard — Tile" }],
+    links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+  }),
   component: Dashboard,
 });
 
@@ -38,6 +85,36 @@ function Dashboard() {
       return data ?? [];
     },
   });
+
+  const { data: artisanProfile } = useQuery({
+    queryKey: ["artisan-profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(`
+        id,
+        full_name,
+        profession,
+        is_artisan,
+        is_verified,
+        subscription_tier,
+        avg_rating,
+        review_count,
+        years_experience,
+        starting_price,
+        profile_photo
+      `)
+        .eq("id", user!.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return data;
+    },
+  });
+
+  const isArtisan = artisanProfile?.is_artisan === true;
 
   const { data: favorites = [] } = useQuery({
     queryKey: ["favs", user?.id],
@@ -74,8 +151,28 @@ function Dashboard() {
 
         <Tabs defaultValue="buyer">
           <TabsList className="bg-primary text-primary-foreground">
-            <TabsTrigger value="buyer" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">Buyer Hub</TabsTrigger>
-            <TabsTrigger value="merchant" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">Merchant Hub</TabsTrigger>
+            <TabsTrigger
+              value="buyer"
+              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+            >
+              Buyer Hub
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="merchant"
+              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+            >
+              Merchant Hub
+            </TabsTrigger>
+
+            {profile.is_artisan && (
+              <TabsTrigger
+                value="artisan"
+                className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+              >
+                Artisan Hub
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="buyer" className="space-y-6 mt-4">
@@ -123,9 +220,109 @@ function Dashboard() {
               </Card>
               <WalletCard balance={profile.wallet_balance} onTopup={() => { refreshProfile(); qc.invalidateQueries(); }} />
             </div>
-            <BillingCard tier={profile.subscription_tier ?? "free"} until={profile.subscription_until} onChange={refreshProfile} />
+
+            <BillingCard
+              tier={profile.subscription_tier ?? "free"}
+              until={profile.subscription_until}
+              onChange={refreshProfile}
+            />
+
+            {profile.is_artisan && (
+              <ArtisanProfileCard
+                profile={profile}
+                onChange={refreshProfile}
+              />
+            )}
+
             <KycCard status={profile.kyc_status} onUpload={refreshProfile} />
+
             <AdminCodeCard onRedeemed={refreshProfile} />
+          </TabsContent>
+
+          <TabsContent value="artisan" className="space-y-6 mt-4">
+
+            <Card className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    Artisan Dashboard
+                  </h2>
+
+                  <p className="text-muted-foreground">
+                    Manage your artisan profile and portfolio.
+                  </p>
+                </div>
+
+                <Button asChild>
+                  <Link to={`/artisans/${profile.id}`}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Public Profile
+                  </Link>
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg">
+                  Artisan Profile
+                </h3>
+
+                <Button asChild>
+                  <Link to="/artisan/edit">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit Profile
+                  </Link>
+                </Button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Profession
+                  </p>
+
+                  <p className="font-medium">
+                    {profile.profession || "Not set"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Experience
+                  </p>
+
+                  <p className="font-medium">
+                    {profile.years_experience ?? 0} Years
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Starting Price
+                  </p>
+
+                  <p className="font-medium">
+                    {profile.starting_price
+                      ? formatNaira(profile.starting_price)
+                      : "Not set"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Rating
+                  </p>
+
+                  <p className="font-medium">
+                    ⭐ {(profile.avg_rating ?? 0).toFixed(1)}
+                  </p>
+                </div>
+
+              </div>
+            </Card>
+
           </TabsContent>
         </Tabs>
       </div>
@@ -197,8 +394,8 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
                     <Row label="Amount" value={`${formatNaira(Number(amount))}`} copyable />
                   </div>
                   <div className="bg-amber-50 border border-amber-300 text-amber-900 rounded p-3 text-xs">
-                    Ensure you send the amount indicated only once.<br/>
-                    This account will expire in <b>{mins} minutes {secs.toString().padStart(2,"0")} seconds</b>. Do not save for future use.
+                    Ensure you send the amount indicated only once.<br />
+                    This account will expire in <b>{mins} minutes {secs.toString().padStart(2, "0")} seconds</b>. Do not save for future use.
                   </div>
                   <Button onClick={submit} disabled={loading || expiry === 0} className="w-full bg-primary text-primary-foreground">
                     {confirming ? "Verifying transfer…" : "I've sent the transfer — confirm"}
@@ -468,7 +665,7 @@ function ListingRow({ l, onChange }: {
   const [stats, setStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
-  
+
   useEffect(() => {
     let cancel = false;
     supabase.rpc("owner_listing_stats", { _id: l.id }).then(({ data }) => {
@@ -593,5 +790,75 @@ function ListingRow({ l, onChange }: {
         </DialogContent>
       </Dialog>
     </li>
+  );
+}
+function ArtisanProfileCard({
+  profile,
+  onChange,
+}: {
+  profile: any;
+  onChange: () => void;
+}) {
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-accent" />
+            Artisan Profile
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your public artisan profile.
+          </p>
+        </div>
+
+        <Button asChild>
+          <Link to="/become-artisan">
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Profession</p>
+          <p className="font-medium">
+            {profile.profession || "Not set"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-muted-foreground">Experience</p>
+          <p className="font-medium">
+            {profile.years_experience ?? 0} years
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-muted-foreground">Starting Price</p>
+          <p className="font-medium">
+            {profile.starting_price
+              ? formatNaira(profile.starting_price)
+              : "Not set"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-muted-foreground">Rating</p>
+          <p className="font-medium">
+            ⭐ {profile.avg_rating ?? 0}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex gap-2">
+        <Button asChild variant="outline">
+          <Link to="/artisans/$id" params={{ id: profile.id }}>
+            View Public Profile
+          </Link>
+        </Button>
+      </div>
+    </Card>
   );
 }

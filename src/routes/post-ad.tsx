@@ -34,7 +34,14 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/post-ad")({
-  head: () => ({ meta: [{ title: "Post an Ad — Tile" }] }),
+  head: () => ({ meta: [{ title: "Post an Ad — Tile" }],
+  links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+   }),
   component: PostAd,
 });
 

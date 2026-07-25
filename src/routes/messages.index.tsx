@@ -13,7 +13,14 @@ import { usePlan, hasCapability } from "@/hooks/use-plan";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/messages/")({
-  head: () => ({ meta: [{ title: "Inbox — Tile" }] }),
+  head: () => ({ meta: [{ title: "Inbox — Tile" }],
+  links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+   }),
   component: InboxPage,
 });
 

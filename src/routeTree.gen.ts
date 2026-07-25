@@ -26,6 +26,7 @@ import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
 import { Route as ListingIdRouteImport } from './routes/listing.$id'
 import { Route as ArtisansIdRouteImport } from './routes/artisans.$id'
+import { Route as ArtisanEditRouteImport } from './routes/artisan/edit'
 import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -113,6 +114,11 @@ const ArtisansIdRoute = ArtisansIdRouteImport.update({
   path: '/artisans/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtisanEditRoute = ArtisanEditRouteImport.update({
+  id: '/artisan/edit',
+  path: '/artisan/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ArtisanCreateRoute = ArtisanCreateRouteImport.update({
   id: '/artisan/create',
   path: '/artisan/create',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/artisan/create': typeof ArtisanCreateRoute
+  '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/artisan/create': typeof ArtisanCreateRoute
+  '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/artisan/create': typeof ArtisanCreateRoute
+  '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/artisan/create'
+    | '/artisan/edit'
     | '/artisans/$id'
     | '/listing/$id'
     | '/messages/$chatId'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/artisan/create'
+    | '/artisan/edit'
     | '/artisans/$id'
     | '/listing/$id'
     | '/messages/$chatId'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/artisan/create'
+    | '/artisan/edit'
     | '/artisans/$id'
     | '/listing/$id'
     | '/messages/$chatId'
@@ -254,6 +266,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   ArtisanCreateRoute: typeof ArtisanCreateRoute
+  ArtisanEditRoute: typeof ArtisanEditRoute
   ArtisansIdRoute: typeof ArtisansIdRoute
   ListingIdRoute: typeof ListingIdRoute
   ShopSlugRoute: typeof ShopSlugRoute
@@ -381,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtisansIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/artisan/edit': {
+      id: '/artisan/edit'
+      path: '/artisan/edit'
+      fullPath: '/artisan/edit'
+      preLoaderRoute: typeof ArtisanEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/artisan/create': {
       id: '/artisan/create'
       path: '/artisan/create'
@@ -418,6 +438,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   ArtisanCreateRoute: ArtisanCreateRoute,
+  ArtisanEditRoute: ArtisanEditRoute,
   ArtisansIdRoute: ArtisansIdRoute,
   ListingIdRoute: ListingIdRoute,
   ShopSlugRoute: ShopSlugRoute,

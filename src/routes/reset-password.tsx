@@ -17,7 +17,14 @@ import { Loader2, Lock, Eye, EyeOff } from "lucide-react";
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Set a new password — Tile" }] }),
+  head: () => ({ meta: [{ title: "Set a new password — Tile" }],
+  links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+   }),
   component: ResetPage,
 });
 

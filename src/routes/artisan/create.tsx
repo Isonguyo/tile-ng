@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -72,8 +72,24 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 function ArtisanCreatePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
   const navigate = useNavigate();
+
+  const { data: existingArtisan } = useQuery({
+    queryKey: ["existing-artisan", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user!.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return data;
+    },
+  });
 
   const [step, setStep] = useState(1);
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
@@ -85,23 +101,59 @@ function ArtisanCreatePage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      full_name: "",
-      profession: "",
-      bio: "",
-      phone: "",
-      whatsapp: "",
-      state: "",
-      lga: "",
-      years_experience: 0,
-      is_available: true,
-      starting_price: undefined,
-      offers_home_service: true,
-      offers_emergency_service: false,
-      available_weekends: false,
-    },
+    values: existingArtisan
+      ? {
+        full_name: existingArtisan.full_name ?? "",
+        profession: existingArtisan.profession ?? "",
+        bio: existingArtisan.bio ?? "",
+        phone: existingArtisan.phone ?? "",
+        whatsapp: existingArtisan.whatsapp ?? "",
+        state: existingArtisan.state ?? "",
+        lga: existingArtisan.lga ?? "",
+        years_experience: existingArtisan.years_experience ?? 0,
+        is_available: existingArtisan.is_available ?? true,
+        starting_price: existingArtisan.starting_price ?? undefined,
+        offers_home_service: existingArtisan.offers_home_service ?? true,
+        offers_emergency_service:
+          existingArtisan.offers_emergency_service ?? false,
+        available_weekends:
+          existingArtisan.available_weekends ?? false,
+      }
+      : {
+        full_name: "",
+        profession: "",
+        bio: "",
+        phone: "",
+        whatsapp: "",
+        state: "",
+        lga: "",
+        years_experience: 0,
+        is_available: true,
+        starting_price: undefined,
+        offers_home_service: true,
+        offers_emergency_service: false,
+        available_weekends: false,
+      },
   });
+  useEffect(() => {
+    if (!profile?.is_artisan) return;
 
+    form.reset({
+      full_name: profile.full_name ?? "",
+      profession: profile.profession ?? "",
+      bio: profile.bio ?? "",
+      phone: profile.phone ?? "",
+      whatsapp: profile.whatsapp ?? "",
+      state: profile.state ?? "",
+      lga: profile.lga ?? "",
+      years_experience: profile.years_experience ?? 0,
+      starting_price: profile.starting_price ?? undefined,
+      is_available: profile.is_available ?? true,
+      offers_home_service: profile.offers_home_service ?? true,
+      offers_emergency_service: profile.offers_emergency_service ?? false,
+      available_weekends: profile.available_weekends ?? false,
+    });
+  }, [profile, form]);
   const watch = form.watch();
 
   const { data: states = [] } = useQuery({
@@ -180,15 +232,15 @@ function ArtisanCreatePage() {
 
       if (profilePhoto) {
         const fileExt = profilePhoto.name.split(".").pop();
-        
+
         // ❌ OLD: `artisans/${user.id}/avatar-${Date.now()}.${fileExt}`
         // ✅ NEW: Start directly with user.id
         const filePath = `${user.id}/artisan-avatar-${Date.now()}.${fileExt}`;
-        
+
         const { error: avatarErr } = await supabase.storage
           .from("listings")
           .upload(filePath, profilePhoto, { cacheControl: "3600", upsert: true });
-        
+
         if (avatarErr) throw avatarErr;
 
         const { data: { publicUrl } } = supabase.storage
@@ -201,11 +253,11 @@ function ArtisanCreatePage() {
       if (portfolioImages.length > 0) {
         for (const file of portfolioImages) {
           const fileExt = file.name.split(".").pop();
-          
+
           // ❌ OLD: `artisans/${user.id}/portfolio-${crypto.randomUUID()}.${fileExt}`
           // ✅ NEW: Start directly with user.id
           const filePath = `${user.id}/artisan-portfolio-${crypto.randomUUID()}.${fileExt}`;
-          
+
           const { error: portErr } = await supabase.storage
             .from("listings")
             .upload(filePath, file);
@@ -237,15 +289,30 @@ function ArtisanCreatePage() {
           offers_home_service: values.offers_home_service,
           offers_emergency_service: values.offers_emergency_service,
           available_weekends: values.available_weekends,
-          avatar_url: avatarUrl || undefined,        // Use || undefined so it doesn't overwrite with empty string
-          profile_photo: avatarUrl || undefined,     // Use || undefined
-          portfolio_images: portfolioUrls.length > 0 ? portfolioUrls : undefined, 
+          avatar_url:
+            avatarUrl ||
+            existingArtisan?.avatar_url ||
+            existingArtisan?.profile_photo,
+
+          profile_photo:
+            avatarUrl ||
+            existingArtisan?.profile_photo ||
+            existingArtisan?.avatar_url,
+
+          portfolio_images:
+            portfolioUrls.length > 0
+              ? portfolioUrls
+              : existingArtisan?.portfolio_images,
         })
         .eq("id", user.id);
 
       if (error) throw error;
 
-      toast.success("Welcome to Tile Pro! Your specialized profile is officially live.");
+      toast.success(
+        existingArtisan?.is_artisan
+          ? "Artisan profile updated successfully."
+          : "Welcome to Tile Pro! Your specialized profile is officially live."
+      );
       navigate({ to: "/" });
     } catch (err: any) {
       console.error(err);
@@ -435,11 +502,10 @@ function ArtisanCreatePage() {
                   <div className="flex justify-between items-center">
                     <Label>Professional Bio</Label>
                     <span
-                      className={`text-xs ${
-                        (watch.bio?.length ?? 0) >= 30
-                          ? "text-green-600 font-medium"
-                          : "text-muted-foreground"
-                      }`}
+                      className={`text-xs ${(watch.bio?.length ?? 0) >= 30
+                        ? "text-green-600 font-medium"
+                        : "text-muted-foreground"
+                        }`}
                     >
                       {watch.bio?.length ?? 0}/500 characters
                     </span>
@@ -451,11 +517,10 @@ function ArtisanCreatePage() {
                     {...form.register("bio")}
                   />
                   <p
-                    className={`text-xs ${
-                      (watch.bio?.length ?? 0) >= 30
-                        ? "text-green-600"
-                        : "text-orange-600 font-medium"
-                    }`}
+                    className={`text-xs ${(watch.bio?.length ?? 0) >= 30
+                      ? "text-green-600"
+                      : "text-orange-600 font-medium"
+                      }`}
                   >
                     Minimum 30 characters required. Tell customers what makes you stand out.
                   </p>
@@ -496,7 +561,7 @@ function ArtisanCreatePage() {
                   <p className="text-xs text-muted-foreground text-center mt-1 max-w-xs">
                     Upload a clear, welcoming, and professional photo of yourself.
                   </p>
-                  
+
                   <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-xs">
                     {profilePhoto && (
                       <div className="h-16 w-16 border rounded-full overflow-hidden shadow-inner">
@@ -597,7 +662,7 @@ function ArtisanCreatePage() {
                   <Label className="font-semibold text-sm block border-b pb-2">
                     Service Terms & Availability Settings
                   </Label>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Available for Work */}
                     <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
@@ -715,7 +780,7 @@ function ArtisanCreatePage() {
                       {watch.full_name || "John Doe"}
                     </h3>
                     <p className="text-sm font-medium text-primary mt-0.5">{watch.profession || "Verified Installer"}</p>
-                    
+
                     <div className="flex items-center gap-0.5 mt-2">
                       {[...Array(5)].map((_, i) => (
                         <Star key={i} className={`h-4 w-4 ${i < 4 ? "text-amber-500 fill-amber-500" : "text-muted border-muted"}`} />

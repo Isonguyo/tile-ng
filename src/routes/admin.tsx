@@ -31,7 +31,14 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin Cabin — Tile" }] }),
+  head: () => ({ meta: [{ title: "Admin Cabin — Tile" }],
+   links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ]
+   }),
   component: Admin,
 });
 

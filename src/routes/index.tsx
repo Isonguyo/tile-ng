@@ -438,14 +438,67 @@ function Index() {
                 <div className="pt-4">
                   <HeroSearch initialQ={q ?? ""} initialLoc={loc ?? "all"} />
                 </div>
-                <div className="flex flex-wrap justify-center gap-3 pt-2">
-                  <Button asChild size="sm" variant="secondary" className="font-bold">
-                    <Link to="/dashboard">Open Your Shop</Link>
-                  </Button>
-                  <Button asChild size="sm" variant="ghost" className="font-bold text-primary-foreground hover:bg-white/10">
-                    <Link to="/artisans">Hire an Artisan</Link>
-                  </Button>
+                <p className="mt-8 mb-4 text-xs uppercase tracking-[0.2em] text-primary-foreground/70 font-semibold">
+                  Choose Your Experience
+                </p>
+                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+
+                  {/* Marketplace Card */}
+                  <Link
+                    to="/#market"
+                    className="group rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-5 hover:bg-white/15 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                        <Icons.Store className="h-6 w-6 text-white" />
+                      </div>
+
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">
+                          Marketplace
+                        </h3>
+
+                        <p className="text-sm text-primary-foreground/80 mt-1">
+                          Buy & sell products from trusted shops across Nigeria.
+                        </p>
+
+                        <div className="mt-4 flex items-center text-sm font-semibold">
+                          Explore Marketplace
+                          <Icons.ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Services Card */}
+                  <Link
+                    to="/artisans"
+                    className="group rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-5 hover:bg-white/15 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                        <Icons.Hammer className="h-6 w-6 text-white" />
+                      </div>
+
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">
+                          Hire Professionals
+                        </h3>
+
+                        <p className="text-sm text-primary-foreground/80 mt-1">
+                          Find verified artisans and skilled professionals near you.
+                        </p>
+
+                        <div className="mt-4 flex items-center text-sm font-semibold">
+                          Browse Artisans
+                          <Icons.ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
                 </div>
+                
 
                 <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
                   <div className="flex items-center gap-2">
@@ -718,11 +771,10 @@ function Index() {
                     key={c.slug}
                     variant="ghost"
                     onClick={() => handleCategoryFilter(c.slug)}
-                    className={`h-auto flex flex-col items-center justify-center text-center rounded-2xl border p-5 transition-all group normal-case whitespace-normal ${
-                      active 
-                        ? "border-accent bg-accent/10 ring-2 ring-accent hover:bg-accent/10" 
-                        : "bg-background hover:border-primary hover:shadow-md hover:bg-background"
-                    }`}
+                    className={`h-auto flex flex-col items-center justify-center text-center rounded-2xl border p-5 transition-all group normal-case whitespace-normal ${active
+                      ? "border-accent bg-accent/10 ring-2 ring-accent hover:bg-accent/10"
+                      : "bg-background hover:border-primary hover:shadow-md hover:bg-background"
+                      }`}
                   >
                     <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
                       <Ic className="h-6 w-6 text-primary" />
@@ -822,7 +874,7 @@ function Index() {
           </aside>
 
           {/* MAIN LISTINGS GRID FEED */}
-          <main className="lg:col-span-3 space-y-6">
+          <main id="market" className="lg:col-span-3 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
               <div>
                 <h2 className="text-xl font-black tracking-tight">

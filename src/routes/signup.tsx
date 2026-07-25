@@ -32,6 +32,12 @@ export const Route = createFileRoute("/signup")({
       { title: "Create your Tile account" },
       { name: "description", content: "Join Nigeria's marketplace. Buy, sell goods, or offer services in minutes." },
     ],
+    links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
   }),
   component: SignupPage,
 });

@@ -16,7 +16,14 @@ import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "Reset your password — Tile" }] }),
+  head: () => ({ meta: [{ title: "Reset your password — Tile" }],
+  links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+   }),
   component: ForgotPage,
 });
 

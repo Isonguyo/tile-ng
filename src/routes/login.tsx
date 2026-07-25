@@ -23,6 +23,12 @@ export const Route = createFileRoute("/login")({
       { title: "Sign in — Tile" },
       { name: "description", content: "Sign in to your Tile account to manage your shop, listings and messages." },
     ],
+    links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
   }),
   component: LoginPage,
 });

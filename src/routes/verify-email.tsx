@@ -9,7 +9,14 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { MailCheck, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/verify-email")({
-  head: () => ({ meta: [{ title: "Verify your email — Tile" }] }),
+  head: () => ({ meta: [{ title: "Verify your email — Tile" }],
+  links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+   }),
   component: VerifyEmailPage,
 });
 

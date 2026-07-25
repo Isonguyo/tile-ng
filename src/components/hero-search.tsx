@@ -48,7 +48,7 @@ export function HeroSearch({ initialQ = "", initialLoc = "all" }: { initialQ?: s
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const term = q.trim();
-    if (term) supabase.rpc("log_search", { _q: term } as never).then(() => {});
+    if (term) supabase.rpc("log_search", { _q: term } as never).then(() => { });
     nav({
       to: "/",
       search: {
@@ -66,7 +66,7 @@ export function HeroSearch({ initialQ = "", initialLoc = "all" }: { initialQ?: s
         // and sort listings by their state going forward.
         setLoc((prev) => (prev === "all" ? "Lagos" : prev));
       },
-      () => {},
+      () => { },
       { timeout: 4000 },
     );
   };
@@ -93,25 +93,39 @@ export function HeroSearch({ initialQ = "", initialLoc = "all" }: { initialQ?: s
         </div>
         <div className="flex gap-2">
           <Select value={loc} onValueChange={setLoc}>
-            <SelectTrigger className="w-[150px] h-10 rounded-xl">
-              <SelectValue />
+            <SelectTrigger className="w-[150px] h-10 rounded-xl text-white [&>span]:text-white">
+              <SelectValue placeholder="All Nigeria" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Nigeria</SelectItem>
+
+            <SelectContent className="bg-background text-white">
+              <SelectItem
+                value="all"
+                className="text-white focus:text-white data-[highlighted]:text-white"
+              >
+                All Nigeria
+              </SelectItem>
+
               {LOCATIONS.map((l) => (
-                <SelectItem key={l} value={l}>{l}</SelectItem>
+                <SelectItem
+                  key={l}
+                  value={l}
+                  className="text-white focus:text-white data-[highlighted]:text-white"
+                >
+                  {l}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
+
           <Button
             type="button"
             variant="outline"
             size="icon"
             onClick={useNearMe}
-            className="h-10 w-10 rounded-xl shrink-0"
+            className="h-10 w-10 rounded-xl shrink-0 text-white border-white hover:text-white hover:border-white"
             title="Use my location"
           >
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-4 w-4 text-white" />
           </Button>
           <Button type="submit" className="h-10 rounded-xl font-bold bg-accent hover:bg-accent/90 text-accent-foreground px-6">
             Search

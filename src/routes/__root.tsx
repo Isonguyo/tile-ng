@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 function NotFoundComponent() {
   return (
@@ -79,18 +80,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
+      { title: "Tile" },
       { name: "description", content: "Tile is a dual-sided marketplace for buying and selling goods, and hiring services." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { name: "author", content: "Tile" },
+      { property: "og:title", content: "Tile" },
       { property: "og:description", content: "Tile is a dual-sided marketplace for buying and selling goods, and hiring services." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:site", content: "@Tile" },
+      { name: "twitter:title", content: "Tile" },
       { name: "twitter:description", content: "Tile is a dual-sided marketplace for buying and selling goods, and hiring services." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8e28c15f-e7fc-4628-bec3-69ea2035aec8/id-preview-99a33a6e--3605a032-1474-409c-a42f-c09c419bdd79.lovable.app-1781287396188.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8e28c15f-e7fc-4628-bec3-69ea2035aec8/id-preview-99a33a6e--3605a032-1474-409c-a42f-c09c419bdd79.lovable.app-1781287396188.png" },
+      { property: "og:image", content: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
+      { name: "twitter:image", content: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
     ],
     links: [
       {
@@ -125,7 +126,14 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Outlet />
+        {/* Add bottom padding so content isn't hidden behind the fixed nav */}
+        <main className="pb-20 md:pb-0">
+          <Outlet />
+        </main>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav />
+
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>

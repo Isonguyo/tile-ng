@@ -22,7 +22,14 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/shop/$slug")({
-  head: () => ({ meta: [{ title: "Shop — Tile" }] }),
+  head: () => ({ meta: [{ title: "Shop — Tile" }],
+  links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+    ],
+   }),
   component: ShopPage,
 });
 
