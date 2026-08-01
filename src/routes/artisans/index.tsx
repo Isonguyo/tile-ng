@@ -87,7 +87,8 @@ function ArtisanDirectoryPage() {
       is_artisan,
       subscription_tier,
       years_experience,
-      starting_price
+      starting_price,
+      avg_rating
     `)
         .eq("is_artisan", true)
         .order("full_name");
