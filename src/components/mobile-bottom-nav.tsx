@@ -9,6 +9,7 @@ import {
   Store,
   Briefcase,
 } from "lucide-react";
+import type { ReactNode } from "react";
 
 import {
   Sheet,
@@ -26,20 +27,23 @@ function NavItem({
 }: {
   to: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   active: boolean;
 }) {
   return (
     <Link
       to={to}
-      className={`flex flex-col items-center justify-center gap-1 transition-colors ${
+      className={`flex min-w-0 w-full flex-col items-center justify-center gap-1 overflow-hidden transition-colors ${
         active
           ? "text-primary"
           : "text-muted-foreground hover:text-primary"
       }`}
     >
       {icon}
-      <span className="text-[10px] font-medium">{label}</span>
+
+      <span className="max-w-full truncate text-[10px] font-medium">
+        {label}
+      </span>
     </Link>
   );
 }
@@ -51,16 +55,14 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
-
-        <div className="relative flex h-16 items-center justify-around">
-
+      <nav className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+        <div className="grid h-16 w-full grid-cols-5 items-center">
           {/* Home */}
           <NavItem
             to="/"
             label="Home"
             active={pathname === "/"}
-            icon={<Home className="h-5 w-5" />}
+            icon={<Home className="h-5 w-5 shrink-0" />}
           />
 
           {/* Services */}
@@ -68,81 +70,97 @@ export function MobileBottomNav() {
             to="/artisans"
             label="Services"
             active={pathname.startsWith("/artisans")}
-            icon={<Wrench className="h-5 w-5" />}
+            icon={<Wrench className="h-5 w-5 shrink-0" />}
           />
 
-          {/* Floating Sell Button */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <button
-                className="absolute left-1/2 -translate-x-1/2 -top-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition hover:scale-105"
+          {/* Center Create Button */}
+          <div className="relative flex h-full w-full items-center justify-center">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Create"
+                  className="absolute -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-105 active:scale-95"
+                >
+                  <Plus className="h-7 w-7" />
+                </button>
+              </SheetTrigger>
+
+              <SheetContent
+                side="bottom"
+                className="rounded-t-3xl"
               >
-                <Plus className="h-7 w-7" />
-              </button>
-            </SheetTrigger>
+                <SheetHeader>
+                  <SheetTitle>
+                    What would you like to do?
+                  </SheetTitle>
+                </SheetHeader>
 
-            <SheetContent side="bottom" className="rounded-t-3xl">
-              <SheetHeader>
-                <SheetTitle>What would you like to do?</SheetTitle>
-              </SheetHeader>
+                <div className="mt-6 grid gap-3">
+                  {/* Sell Product */}
+                  <Link
+                    to="/post-ad"
+                    className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
+                  >
+                    <Package className="h-6 w-6 shrink-0 text-primary" />
 
-              <div className="mt-6 grid gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold">
+                        Sell a Product
+                      </h3>
 
-                <Link
-                  to="/post-ad"
-                  className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
-                >
-                  <Package className="h-6 w-6 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">
-                      Sell a Product
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Create a marketplace listing.
-                    </p>
-                  </div>
-                </Link>
+                      <p className="text-sm text-muted-foreground">
+                        Create a marketplace listing.
+                      </p>
+                    </div>
+                  </Link>
 
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
-                >
-                  <Store className="h-6 w-6 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">
-                      Open Your Shop
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Manage your business storefront.
-                    </p>
-                  </div>
-                </Link>
+                  {/* Open Shop */}
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
+                  >
+                    <Store className="h-6 w-6 shrink-0 text-primary" />
 
-                <Link
-                  to="/artisan/create"
-                  className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
-                >
-                  <Briefcase className="h-6 w-6 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">
-                      Become an Artisan
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Offer professional services.
-                    </p>
-                  </div>
-                </Link>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold">
+                        Open Your Shop
+                      </h3>
 
-              </div>
-            </SheetContent>
-          </Sheet>
+                      <p className="text-sm text-muted-foreground">
+                        Manage your business storefront.
+                      </p>
+                    </div>
+                  </Link>
+
+                  {/* Become Artisan */}
+                  <Link
+                    to="/artisan/create"
+                    className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
+                  >
+                    <Briefcase className="h-6 w-6 shrink-0 text-primary" />
+
+                    <div className="min-w-0">
+                      <h3 className="font-semibold">
+                        Become an Artisan
+                      </h3>
+
+                      <p className="text-sm text-muted-foreground">
+                        Offer professional services.
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
 
           {/* Inbox */}
           <NavItem
             to="/messages"
             label="Inbox"
             active={pathname.startsWith("/messages")}
-            icon={<MessageCircle className="h-5 w-5" />}
+            icon={<MessageCircle className="h-5 w-5 shrink-0" />}
           />
 
           {/* Profile */}
@@ -153,13 +171,12 @@ export function MobileBottomNav() {
               pathname.startsWith("/profile") ||
               pathname.startsWith("/dashboard")
             }
-            icon={<User className="h-5 w-5" />}
+            icon={<User className="h-5 w-5 shrink-0" />}
           />
-
         </div>
       </nav>
 
-      {/* Prevent content from hiding behind nav */}
+      {/* Prevent page content from hiding behind bottom nav */}
       <div className="h-16 md:hidden" />
     </>
   );
