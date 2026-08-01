@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Star, ImageIcon, Eye, MousePointerClick, BadgeCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSignedUrl } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
 
@@ -24,13 +25,77 @@ export type ListingCardData = {
 
 export function ListingCard({ l }: { l: ListingCardData }) {
   const [url, setUrl] = useState<string | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (l.images[0]) getSignedUrl(l.images[0]).then(setUrl);
   }, [l.images]);
 
+  useEffect(() => {
+    const card = cardRef.current;
+
+    if (!card) return;
+
+    let tracked = false;
+    let visibilityTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+
+        if (tracked) return;
+
+        const isVisibleEnough =
+          entry.isIntersecting && entry.intersectionRatio >= 0.5;
+
+        if (isVisibleEnough) {
+          if (visibilityTimer) return;
+
+          visibilityTimer = setTimeout(async () => {
+            if (tracked) return;
+
+            tracked = true;
+
+            const { error } = await supabase.rpc("track_listing_event", {
+              p_listing_id: l.id,
+              p_event_type: "impression",
+            });
+
+            if (error) {
+              console.error("Impression tracking error:", error);
+              tracked = false;
+            } else {
+              console.log("Impression tracked:", l.id);
+              observer.disconnect();
+            }
+
+            visibilityTimer = null;
+          }, 1000);
+        } else if (visibilityTimer) {
+          clearTimeout(visibilityTimer);
+          visibilityTimer = null;
+        }
+      },
+      {
+        threshold: [0, 0.5, 1],
+      }
+    );
+
+    observer.observe(card);
+
+    return () => {
+      if (visibilityTimer) {
+        clearTimeout(visibilityTimer);
+      }
+
+      observer.disconnect();
+    };
+  }, [l.id]);
   return (
     <Link to="/listing/$id" params={{ id: l.id }} className="block group">
-      <Card className="overflow-hidden border-border hover:shadow-lg transition-all hover:-translate-y-0.5 p-0">
+      <Card
+        ref={cardRef}
+        className="overflow-hidden border-border hover:shadow-lg transition-all hover:-translate-y-0.5 p-0"
+      >
         <div className="relative aspect-[4/3] bg-muted">
           {url ? (
             <img src={url} alt={l.title} className="w-full h-full object-cover" loading="lazy" />

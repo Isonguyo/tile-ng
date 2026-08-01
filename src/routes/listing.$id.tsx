@@ -58,12 +58,24 @@ function ListingDetail() {
     if (listing?.images?.length) getSignedUrls(listing.images).then(setImgUrls);
   }, [listing]);
 
-  // Track view once per mount
   useEffect(() => {
-    if (listing?.id) {
-      supabase.rpc("track_listing_view", { _id: listing.id });
+  if (!listing?.id) return;
+
+  const trackView = async () => {
+    const { error } = await supabase.rpc("track_listing_event", {
+      p_listing_id: listing.id,
+      p_event_type: "view",
+    });
+
+    if (error) {
+      console.error("View tracking error:", error);
+    } else {
+      console.log("View tracked successfully");
     }
-  }, [listing?.id]);
+  };
+
+  trackView();
+}, [listing?.id]);
 
   useEffect(() => {
     if (!user || !listing) return;
@@ -72,15 +84,34 @@ function ListingDetail() {
   }, [user, listing]);
 
   const toggleFav = async () => {
-    if (!user || !listing) return toast.error("Sign in to save");
-    if (favored) {
-      await supabase.from("favorites").delete().eq("user_id", user.id).eq("listing_id", listing.id);
-      setFavored(false);
-    } else {
-      await supabase.from("favorites").insert({ user_id: user.id, listing_id: listing.id });
-      setFavored(true);
+  if (!user || !listing) return toast.error("Sign in to save");
+
+  if (favored) {
+    await supabase
+      .from("favorites")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("listing_id", listing.id);
+
+    setFavored(false);
+  } else {
+    const { error } = await supabase
+      .from("favorites")
+      .insert({
+        user_id: user.id,
+        listing_id: listing.id,
+      });
+
+    if (!error) {
+      await supabase.rpc("track_listing_event", {
+        p_listing_id: listing.id,
+        p_event_type: "save",
+      });
     }
-  };
+
+    setFavored(true);
+  }
+};
 
   if (isLoading) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container mx-auto py-12">Loading…</div></div>;
   if (!listing) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container mx-auto py-12">Not found</div></div>;
@@ -176,7 +207,17 @@ function ListingDetail() {
                 </p>
               </div>
             </div>
-            <Button onClick={() => { setShowPhone(true); if (listing.id) supabase.rpc("track_listing_click", { _id: listing.id }); }} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button
+              onClick={() => {
+                setShowPhone(true);
+
+                if (listing.id) {
+                  supabase.rpc("track_listing_event", {
+                    p_listing_id: listing.id,
+                    p_event_type: "phone",
+                  });
+                }
+              }} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
               <Phone className="h-4 w-4 mr-2" />{showPhone ? listing.phone : "Reveal phone number"}
             </Button>
             {listing.profile?.shop_slug && (
@@ -215,15 +256,48 @@ function ChatWithVendorButton({ listingId, sellerId }: { listingId: string; sell
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
 
-  const start = async () => {
-    if (!user) { nav({ to: "/auth" }); return; }
-    if (user.id === sellerId) { toast.error("You cannot chat with yourself"); return; }
-    setBusy(true);
-    const { data, error } = await supabase.rpc("ensure_chat" as never, { _listing_id: listingId } as never);
+ const start = async () => {
+  if (!user) {
+    nav({ to: "/auth" });
+    return;
+  }
+
+  if (user.id === sellerId) {
+    toast.error("You cannot chat with yourself");
+    return;
+  }
+
+  setBusy(true);
+
+  const { data, error } = await supabase.rpc(
+    "ensure_chat" as never,
+    { _listing_id: listingId } as never
+  );
+
+  if (error || !data) {
     setBusy(false);
-    if (error || !data) return toast.error(error?.message ?? "Could not open chat");
-    nav({ to: "/messages/$chatId", params: { chatId: data as unknown as string } });
-  };
+    return toast.error(error?.message ?? "Could not open chat");
+  }
+
+  // ✅ Record chat analytics
+  const { error: trackError } = await supabase.rpc("track_listing_event", {
+    p_listing_id: listingId,
+    p_event_type: "chat",
+  });
+
+  if (trackError) {
+    console.error("Chat tracking failed:", trackError);
+  }
+
+  setBusy(false);
+
+  nav({
+    to: "/messages/$chatId",
+    params: {
+      chatId: data as unknown as string,
+    },
+  });
+};
 
   return (
     <Button variant="outline" className="w-full" onClick={start} disabled={busy}>

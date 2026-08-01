@@ -50,6 +50,7 @@ import {
   Save,
   Hammer,
   Briefcase,
+  MessageCircle,
   Star,
   ArrowRight,
 } from "lucide-react";
@@ -662,17 +663,37 @@ function ListingRow({ l, onChange }: {
 }) {
   const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
-  const [stats, setStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
+  const [stats, setStats] = useState<{
+    views: number;
+    saves: number;
+    chats: number;
+    impressions: number;
+    phone_clicks: number;
+  } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
 
   useEffect(() => {
     let cancel = false;
-    supabase.rpc("owner_listing_stats", { _id: l.id }).then(({ data }) => {
-      const r = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
-      if (!cancel && r) setStats({ views_count: r.views_count, clicks_count: r.clicks_count, favorites_count: Number(r.favorites_count) });
-    });
-    return () => { cancel = true; };
+
+    supabase
+      .rpc("owner_listing_stats_v2", {
+        p_listing_id: l.id,
+      })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        if (!cancel && data?.length) {
+          setStats(data[0]);
+        }
+      });
+
+    return () => {
+      cancel = true;
+    };
   }, [l.id]);
 
   const renew = async () => {
@@ -756,12 +777,103 @@ function ListingRow({ l, onChange }: {
         </div>
       </div>
       {stats && (
-        <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{stats.views_count} views</span>
-          <span className="flex items-center gap-1"><MousePointerClick className="h-3 w-3" />{stats.clicks_count} clicks</span>
-          <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{stats.favorites_count} saves</span>
+  <details className="mt-3 rounded-lg border bg-muted/20 group">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Listing Performance
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {stats.views} unique view{stats.views === 1 ? "" : "s"} · {stats.chats} chat{stats.chats === 1 ? "" : "s"}
+        </p>
+      </div>
+
+      <span className="text-sm text-muted-foreground transition-transform group-open:rotate-180">
+        ▼
+      </span>
+    </summary>
+
+    <div className="border-t p-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="rounded-md border bg-background p-3">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <MousePointerClick className="h-4 w-4" />
+            <span className="text-xs">Impressions</span>
+          </div>
+          <p className="mt-1 text-lg font-bold text-foreground">
+            {stats.impressions}
+          </p>
         </div>
-      )}
+
+        <div className="rounded-md border bg-background p-3">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Eye className="h-4 w-4" />
+            <span className="text-xs">Views</span>
+          </div>
+          <p className="mt-1 text-lg font-bold text-foreground">
+            {stats.views}
+          </p>
+        </div>
+
+        <div className="rounded-md border bg-background p-3">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Heart className="h-4 w-4" />
+            <span className="text-xs">Saves</span>
+          </div>
+          <p className="mt-1 text-lg font-bold text-foreground">
+            {stats.saves}
+          </p>
+        </div>
+
+        <div className="rounded-md border bg-background p-3">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-xs">Chats</span>
+          </div>
+          <p className="mt-1 text-lg font-bold text-foreground">
+            {stats.chats}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-md border bg-background p-3">
+          <p className="text-xs text-muted-foreground">
+            View Rate
+          </p>
+
+          <p className="mt-1 text-lg font-bold">
+            {stats.impressions > 0
+              ? `${((stats.views / stats.impressions) * 100).toFixed(1)}%`
+              : "0%"}
+          </p>
+
+          <p className="text-xs text-muted-foreground mt-1">
+            {stats.views} unique view{stats.views === 1 ? "" : "s"} from{" "}
+            {stats.impressions} impression{stats.impressions === 1 ? "" : "s"}
+          </p>
+        </div>
+
+        <div className="rounded-md border bg-background p-3">
+          <p className="text-xs text-muted-foreground">
+            Lead Engagement
+          </p>
+
+          <p className="mt-1 text-lg font-bold">
+            {stats.views > 0
+              ? `${(((stats.saves + stats.chats) / stats.views) * 100).toFixed(1)}%`
+              : "0%"}
+          </p>
+
+          <p className="text-xs text-muted-foreground mt-1">
+            {stats.saves + stats.chats} actions from{" "}
+            {stats.views} unique view{stats.views === 1 ? "" : "s"}
+          </p>
+        </div>
+      </div>
+    </div>
+  </details>
+)}
       {daysLeft !== null && l.status === "approved" && daysLeft <= 3 && daysLeft > 0 && (
         <div className="mt-2 flex items-center gap-2 text-xs bg-destructive/10 text-destructive p-2 rounded">
           <AlertTriangle className="h-3 w-3" /> Expires in {daysLeft} day{daysLeft === 1 ? "" : "s"}.
