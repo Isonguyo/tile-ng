@@ -26,16 +26,14 @@ export const Route = createFileRoute("/artisans/$id")({
   head: ({ loaderData }) => {
     const name = (loaderData as { full_name?: string | null } | undefined)?.full_name;
     return {
-      head: () => ({
-         meta: [{ title: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile" }],
-         links: [
-               {
-                 rel: "icon",
-                 href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
-               },
-             ],
-      }),
-     
+      meta: [
+        { title: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile" },
+        { name: "description", content: name ? `View ${name}'s artisan profile on Tile.` : "View this artisan profile on Tile." },
+        { property: "og:title", content: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile" },
+        { property: "og:description", content: "View services, experience and portfolio details on Tile." },
+        { property: "og:type", content: "profile" },
+        { name: "twitter:card", content: "summary" },
+      ],
     };
   },
   loader: async ({ params }) => {

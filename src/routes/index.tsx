@@ -62,7 +62,7 @@ export const Route = createFileRoute("/")({
 });
 
 type ProfileRow = {
-  id: string;
+  id: string | null;
   subscription_tier: string | null;
   is_verified: boolean | null;
   business_name: string | null;
@@ -74,16 +74,12 @@ type ProfileRow = {
 };
 
 type ArtisanRow = {
-  id: string;
+  id: string | null;
   full_name: string | null;
-  business_name: string | null;
   profession: string | null;
   avatar_url: string | null;
-  location: string | null;
-  shop_slug: string | null;
-  is_verified: boolean | null;
-  avg_rating: number | null;
-  active_listings: number | null;
+  state: string | null;
+  lga: string | null;
 };
 
 const POPULAR_SERVICES = [
@@ -164,7 +160,7 @@ function Index() {
       if (!userIds.length) return rows;
 
       const { data: profiles } = await supabase
-        .from("public_profiles")
+        .from("shops")
         .select(`id, subscription_tier, is_verified, business_name, avatar_url, shop_slug`)
         .in("id", userIds);
 
@@ -236,8 +232,8 @@ function Index() {
     enabled: !isFiltering,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("public_profiles")
-        .select("*")
+        .from("shops")
+        .select("id, subscription_tier, is_verified, business_name, full_name, avatar_url, shop_slug, location, created_at")
         .not("shop_slug", "is", null)
         .order("created_at", { ascending: false })
         .limit(6);
@@ -272,7 +268,7 @@ function Index() {
       if (!userIds.length) return rows;
 
       const { data: profiles } = await supabase
-        .from("public_profiles")
+        .from("shops")
         .select(`id, subscription_tier, is_verified, business_name, shop_slug`)
         .in("id", userIds);
 
@@ -300,19 +296,13 @@ function Index() {
         .select(`
           id,
           full_name,
-          business_name,
           profession,
           avatar_url,
-          location,
-          shop_slug,
-          is_verified,
-          avg_rating,
-          active_listings
+          state,
+          lga
         `)
         .not("profession", "is", null)
-        .not("shop_slug", "is", null)
-        .order("is_verified", { ascending: false })
-        .order("avg_rating", { ascending: false })
+        .order("full_name")
         .limit(8);
 
       if (error) throw error;
@@ -665,8 +655,8 @@ function Index() {
               {featuredArtisans.map((artisan) => (
                 <Link
                   key={artisan.id}
-                  to="/shop/$slug"
-                  params={{ slug: artisan.shop_slug! }}
+                  to="/artisans/$id"
+                  params={{ id: artisan.id ?? "" }}
                   className="group rounded-3xl border bg-card overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="h-28 bg-gradient-to-r from-primary/10 to-primary/5 flex items-center justify-center relative">
@@ -685,11 +675,8 @@ function Index() {
                   <div className="pt-8 p-5 text-center sm:text-left">
                     <div className="flex items-center justify-center sm:justify-start gap-1.5">
                       <h3 className="font-bold truncate text-base">
-                        {artisan.business_name || artisan.full_name}
+                        {artisan.full_name}
                       </h3>
-                      {artisan.is_verified && (
-                        <Icons.BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
-                      )}
                     </div>
 
                     <p className="text-sm font-medium text-primary mt-1">
@@ -697,15 +684,15 @@ function Index() {
                     </p>
 
                     <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center sm:justify-start gap-1">
-                      📍 {artisan.location || "Nigeria"}
+                      📍 {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "Nigeria"}
                     </p>
 
                     <div className="flex items-center justify-between mt-5 pt-3 border-t border-muted">
                       <Badge variant="secondary" className="font-bold text-xs">
-                        ⭐ {artisan.avg_rating ? Number(artisan.avg_rating).toFixed(1) : "New"}
+                        Professional
                       </Badge>
                       <span className="text-xs font-medium text-muted-foreground">
-                        {artisan.active_listings ?? 0} Jobs
+                        View profile
                       </span>
                     </div>
 

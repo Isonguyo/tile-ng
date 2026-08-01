@@ -16,8 +16,20 @@ type Profile = {
   subscription_tier?: string | null;
   subscription_until?: string | null;
   state?: string | null;
+  lga?: string | null;
   bio?: string | null;
   whatsapp?: string | null;
+  is_artisan?: boolean | null;
+  profession?: string | null;
+  profile_photo?: string | null;
+  portfolio_images?: string[] | null;
+  years_experience?: number | null;
+  starting_price?: number | null;
+  is_available?: boolean | null;
+  offers_home_service?: boolean | null;
+  offers_emergency_service?: boolean | null;
+  available_weekends?: boolean | null;
+  avg_rating?: number | null;
 };
 
 type AuthCtx = {

@@ -38,6 +38,52 @@ export type Database = {
         }
         Relationships: []
       }
+      artisan_events: {
+        Row: {
+          artisan_id: string
+          created_at: string | null
+          event_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          artisan_id: string
+          created_at?: string | null
+          event_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          artisan_id?: string
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artisan_events_artisan_id_fkey"
+            columns: ["artisan_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artisan_events_artisan_id_fkey"
+            columns: ["artisan_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artisan_events_artisan_id_fkey"
+            columns: ["artisan_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       artisan_portfolio: {
         Row: {
           artisan_id: string
@@ -369,6 +415,38 @@ export type Database = {
           },
         ]
       }
+      listing_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          listing_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          listing_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          listing_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_events_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           brand: string | null
@@ -384,7 +462,9 @@ export type Database = {
           location: string
           phone: string | null
           price: number | null
-          promoted_until: string | null
+          promotion_expires_at: string | null
+          promotion_started_at: string | null
+          promotion_type: string | null
           rejection_reason: string | null
           renewed_count: number
           service_mode: Database["public"]["Enums"]["service_mode"] | null
@@ -410,7 +490,9 @@ export type Database = {
           location: string
           phone?: string | null
           price?: number | null
-          promoted_until?: string | null
+          promotion_expires_at?: string | null
+          promotion_started_at?: string | null
+          promotion_type?: string | null
           rejection_reason?: string | null
           renewed_count?: number
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
@@ -436,7 +518,9 @@ export type Database = {
           location?: string
           phone?: string | null
           price?: number | null
-          promoted_until?: string | null
+          promotion_expires_at?: string | null
+          promotion_started_at?: string | null
+          promotion_type?: string | null
           rejection_reason?: string | null
           renewed_count?: number
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
@@ -586,6 +670,7 @@ export type Database = {
           promotion_credits: number
           response_minutes: number
           response_rate: number | null
+          review_count: number
           service_radius: number | null
           shop_slug: string | null
           starting_price: number | null
@@ -630,6 +715,7 @@ export type Database = {
           promotion_credits?: number
           response_minutes?: number
           response_rate?: number | null
+          review_count?: number
           service_radius?: number | null
           shop_slug?: string | null
           starting_price?: number | null
@@ -674,6 +760,7 @@ export type Database = {
           promotion_credits?: number
           response_minutes?: number
           response_rate?: number | null
+          review_count?: number
           service_radius?: number | null
           shop_slug?: string | null
           starting_price?: number | null
@@ -688,6 +775,117 @@ export type Database = {
           years_experience?: number | null
         }
         Relationships: []
+      }
+      promotion_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duration_days: number
+          id: string
+          is_active: boolean | null
+          name: string
+          price_ngn: number
+          promotion_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duration_days: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_ngn: number
+          promotion_type: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_ngn?: number
+          promotion_type?: string
+        }
+        Relationships: []
+      }
+      promotion_purchases: {
+        Row: {
+          activated_at: string | null
+          amount_paid: number
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          listing_id: string
+          payment_reference: string | null
+          payment_status: string
+          promotion_plan_id: string
+          purchased_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          amount_paid: number
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          listing_id: string
+          payment_reference?: string | null
+          payment_status?: string
+          promotion_plan_id: string
+          purchased_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          amount_paid?: number
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          listing_id?: string
+          payment_reference?: string | null
+          payment_status?: string
+          promotion_plan_id?: string
+          purchased_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_purchases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_purchases_promotion_plan_id_fkey"
+            columns: ["promotion_plan_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reports: {
         Row: {
@@ -1026,41 +1224,41 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
-          business_name: string | null
-          created_at: string | null
           full_name: string | null
           id: string | null
-          is_verified: boolean | null
-          location: string | null
-          shop_slug: string | null
+          is_artisan: boolean | null
+          lga: string | null
+          profession: string | null
+          profile_photo: string | null
+          starting_price: number | null
           state: string | null
-          subscription_tier: Database["public"]["Enums"]["sub_tier"] | null
+          years_experience: number | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
-          business_name?: string | null
-          created_at?: string | null
           full_name?: string | null
           id?: string | null
-          is_verified?: boolean | null
-          location?: string | null
-          shop_slug?: string | null
+          is_artisan?: boolean | null
+          lga?: string | null
+          profession?: string | null
+          profile_photo?: string | null
+          starting_price?: number | null
           state?: string | null
-          subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
+          years_experience?: number | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
-          business_name?: string | null
-          created_at?: string | null
           full_name?: string | null
           id?: string | null
-          is_verified?: boolean | null
-          location?: string | null
-          shop_slug?: string | null
+          is_artisan?: boolean | null
+          lga?: string | null
+          profession?: string | null
+          profile_photo?: string | null
+          starting_price?: number | null
           state?: string | null
-          subscription_tier?: Database["public"]["Enums"]["sub_tier"] | null
+          years_experience?: number | null
         }
         Relationships: []
       }
@@ -1156,6 +1354,7 @@ export type Database = {
           promotion_credits: number
           response_minutes: number
           response_rate: number | null
+          review_count: number
           service_radius: number | null
           shop_slug: string | null
           starting_price: number | null
@@ -1264,6 +1463,7 @@ export type Database = {
           promotion_credits: number
           response_minutes: number
           response_rate: number | null
+          review_count: number
           service_radius: number | null
           shop_slug: string | null
           starting_price: number | null
@@ -1474,6 +1674,7 @@ export type Database = {
           promotion_credits: number
           response_minutes: number
           response_rate: number | null
+          review_count: number
           service_radius: number | null
           shop_slug: string | null
           starting_price: number | null
@@ -1574,6 +1775,18 @@ export type Database = {
           views_count: number
         }[]
       }
+      owner_listing_stats_v2: {
+        Args: { p_listing_id: string }
+        Returns: {
+          chats: number
+          impressions: number
+          phone_clicks: number
+          saves: number
+          shares: number
+          views: number
+          whatsapp_clicks: number
+        }[]
+      }
       platform_stats: {
         Args: never
         Returns: {
@@ -1584,8 +1797,8 @@ export type Database = {
         }[]
       }
       promote_listing: {
-        Args: { _days?: number; _listing_id: string }
-        Returns: string
+        Args: { p_listing_id: string; p_user_id?: string }
+        Returns: boolean
       }
       redeem_admin_code: { Args: { _code: string }; Returns: boolean }
       renew_listing: { Args: { _listing_id: string }; Returns: string }
@@ -1620,7 +1833,15 @@ export type Database = {
         Args: { _amount: number; _reference: string }
         Returns: number
       }
+      track_artisan_event: {
+        Args: { p_artisan_id: string; p_event_type: string }
+        Returns: undefined
+      }
       track_listing_click: { Args: { _id: string }; Returns: undefined }
+      track_listing_event: {
+        Args: { p_event_type: string; p_listing_id: string }
+        Returns: undefined
+      }
       track_listing_view: { Args: { _id: string }; Returns: undefined }
       trending_searches: {
         Args: { _days?: number; _limit?: number }
