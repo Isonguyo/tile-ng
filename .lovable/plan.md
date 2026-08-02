@@ -1,97 +1,112 @@
-This is roughly 40+ files and 6 migrations. Shipping it in one turn will fail — a single bad hunk can cascade and blank the app for you. I'll deliver it in 4 tight, self-contained phases in this session. Each phase compiles and runs on its own, so if we stop between phases nothing is broken.
+# Tile: Supabase Project Migration — Audit & Plan
 
-## Phase 1 — Foundation (backend + shared UI)
+## Blocker before any execution
 
-Migration:
-- `subscription_plans` table (tier, price, max_goods, max_services, can_shop, can_promote, can_ai_desc, can_vanity_slug, boost_credits) + seed rows for free/lite/pro/vip.
-- `get_plan_limits(uid)` RPC returning the caller's effective limits + current usage counts.
-- `search_logs` table (query, location, category, user_id) + `log_search` RPC + `trending_searches(_days,_limit)` RPC.
-- `shop_follows` table + `toggle_follow_shop` RPC + `shop_follower_count` view.
-- `audit_logs` table + `log_admin_action` RPC, backfilled into existing admin_* functions.
-- `typing_indicators` (chat_id,user_id,updated_at) + realtime publication add for `listings`, `messages`, `typing_indicators`, `notifications`.
-- `chat_pins` table for pinned conversations.
-- Grants + RLS on every new table.
+Only ONE backend is connected to this project right now: the current Lovable Cloud–managed
+database (the source). No second/destination project is visible to my tools, and Lovable Cloud
+projects expose exactly one managed backend at a time. Nothing can be copied until we settle this.
 
-Shared UI:
-- `src/components/feature-gate.tsx` — reads plan limits via TanStack Query, renders children or upgrade CTA.
-- `src/components/usage-bar.tsx` — used/limit progress with color states.
-- `src/hooks/use-plan.ts`.
+I need one of these from you:
+- **Option A (recommended for a Lovable Cloud app):** stay on the managed backend. It is already
+  permanent and backed up; no migration needed. Zero risk.
+- **Option B:** you own the destination project (your own Supabase account). Then I need its
+  connection details as secrets: destination `DB URL` (direct, not pooler), `SERVICE_ROLE_KEY`,
+  `PROJECT_URL`, `PUBLISHABLE/ANON KEY`. I will use them only from server-side scripts.
+- **Option C:** switch the whole app to the Supabase Integration (BYO account). That replaces the
+  managed backend wiring and is itself a one-way step for this project.
 
-## Phase 2 — Homepage + Auth split
+No destructive operation, env change, or disconnect will happen until you pick.
 
-Homepage (`src/routes/index.tsx` refactor):
-- Rotating placeholder in hero search (8 rotating strings, 3s interval).
-- Sticky search bar (IntersectionObserver on hero).
-- Animated counters bound to `platform_stats` (rAF tween).
-- Trending chips from `trending_searches` RPC.
-- Live activity feed: realtime subscribe to `listings` INSERT + `profiles` INSERT (new shops), sliding 10-item list.
-- "Near you" sort using geolocation → nearest state fallback.
+## Audit of the source database
 
-Auth split (replace single `/auth`):
-- `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/verify-email` routes.
-- Zod schemas, react-hook-form, password strength meter (zxcvbn-lite scoring), account-type radio (buyer/merchant/artisan) stored in `profiles.account_type`.
-- Friendly Supabase error mapping helper.
-- Keep `/auth` as redirect to `/login` for existing links.
+### Schema
+- **30 public tables:** admin_invite_codes, artisan_events, artisan_portfolio, artisan_profiles,
+  artisan_reviews, artisan_skills, audit_logs, chat_pins, chats, cities, favorites, lgas,
+  listing_events, listings, messages, notifications, platform_settings, profiles, promotion_plans,
+  promotion_purchases, reports, reviews, search_logs, shop_follows, shop_reviews, states,
+  subscription_history, subscription_plans, typing_indicators, user_roles, wallet_transactions.
+- **7 enums:** app_role, listing_type, listing_status, item_condition, service_mode, kyc_status, sub_tier.
+- **57 indexes**, PK/FK constraints across all tables. Most user-owned tables FK to `auth.users.id`.
+- **60 functions/RPCs** (36 called directly from the frontend), incl. subscriptions
+  (activate_subscription, get_plan_limits), listings/quota (enforce_listing_quota, renew_listing,
+  promote_listing, expire_old_listings), chat (ensure_chat, my_chats, mark_chat_read), analytics
+  (track_listing_event, track_artisan_event, owner_listing_stats_v2, dashboard_stats,
+  merchant_health_score), wallet (topup_wallet), shops (top_vendors, shop_contact, gen_shop_slug),
+  and 18 admin/moderation functions.
+- **7 triggers:** on_auth_user_created (auth.users → profiles + default role), profiles_updated,
+  listings_updated, msg_notify, guard_listing_moderation, shop_reviews_touch,
+  trg_enforce_listing_quota.
+- **66 RLS policies** on public tables, **9 policies** on storage.objects.
+- **Extensions:** pgcrypto, uuid-ossp, pg_cron (scheduled listing expiry), pg_stat_statements,
+  supabase_vault.
 
-## Phase 3 — Post-ad, Dashboard, Shop
+### Data volume (source)
+users 17 · profiles 17 · user_roles 21 · listings 9 · chats 15 · messages 26 · favorites 5 ·
+notifications 61 · listing_events 65 · wallet_transactions 17 · search_logs 5 · shop_reviews 1 ·
+admin_invite_codes 6 · subscription_plans 4 · promotion_plans 6 · platform_settings 1 ·
+states 37 · lgas 773 · cities 0. Artisan tables, reports, audit_logs, subscription_history,
+promotion_purchases, typing_indicators, chat_pins: 0 rows.
 
-Post-ad wizard (`src/routes/post-ad.tsx`):
-- Step 0: choice cards (Sell a Good / Offer a Service / Open a Shop — shop card `<FeatureGate plan="lite">`).
-- Live quota banner (used/limit from `get_plan_limits`).
-- Drag-reorder images (`@dnd-kit/sortable`).
-- Preview step before submit.
-- "Generate description" button → Lovable AI Gateway (google/gemini-2.5-flash) server fn `src/lib/ai.functions.ts`.
+### Storage
+- `listings` (public): 88 objects, ~30 MB — listing images, shop banners, portfolio images.
+- `kyc` (private): 2 objects, ~377 kB — identity documents.
 
-Dashboard:
-- Plan card with usage bars for goods/services/boosts.
-- Wrap "Promote", "Open shop", "Vanity slug", "AI descriptions" in `<FeatureGate>`.
-- Smart upgrade prompt modal when a gated action is clicked.
+### Auth
+- 17 users, with identities rows (email/password + Google via the Lovable OAuth broker),
+  sessions, refresh tokens.
+- Frontend auth surface: `/login`, `/signup`, `/forgot-password`, `/reset-password`,
+  `/verify-email`, Google sign-in through `@lovable.dev/cloud-auth-js`.
 
-Shop page (`/shop/$slug`):
-- Follow/unfollow button + follower count.
-- Achievements strip (verified, 10+ sales, 4.5★, 90-day veteran) computed from profile.
-- Reviews: allow photo upload (existing `shop_reviews` + new `shop_review_photos` bucket).
-- Sort/filter (newest, price, rating) on listings tab.
-- Sticky mobile action bar (Call / WhatsApp / Chat / Follow).
+### Code references
+- No hardcoded project ref anywhere in `src/` — everything reads env vars in
+  `.env` / `src/integrations/supabase/*`. 29 modules import the generated client.
+- Auto-generated files that must be regenerated (not hand-edited) against the destination:
+  `src/integrations/supabase/{client.ts,client.server.ts,auth-middleware.ts,auth-attacher.ts,types.ts}`,
+  `supabase/config.toml`, `.env`.
 
-## Phase 4 — Messaging, Admin, Artisans
+## Risks found
+1. **Auth users do not migrate by copying rows.** `auth.users`/`auth.identities` are only movable
+   via the Auth Admin API with password-hash import, and that requires service-role access on both
+   sides. Google identities must keep the same `provider_id` (Google sub) or those users get new
+   UUIDs and lose every listing/chat/wallet link. This is the single highest-risk item.
+2. **Password hashes** may not be exportable on a managed project. If not, every email/password
+   user must go through a forced password reset. Needs your explicit sign-off.
+3. **UUID preservation** requires inserting `auth.users` FIRST, then public tables with FKs
+   disabled/deferred, then re-enabling triggers (`on_auth_user_created` must be disabled during
+   import or it will create duplicate profiles).
+4. **Storage paths** are user-id-scoped (`{userId}/{uuid}.ext`); they survive only if user UUIDs
+   survive. KYC files are sensitive — copy over a server-side script, never through the browser.
+5. **pg_cron jobs** do not travel with a schema dump; must be recreated on the destination.
+6. **Lovable Cloud managed Google OAuth** is tied to the managed project. On a BYO destination you
+   must supply your own Google OAuth client ID/secret and re-add redirect URLs.
+7. **Pre-existing bug, unrelated to migration:** the inbox pin button calls `toggle_chat_pin`,
+   which does not exist in the database, and `my_chats` does not return `pinned_at`. Worth fixing
+   before or after, not during, the migration.
+8. **Vercel deployment** carries its own env vars; it will keep pointing at the old project until
+   updated separately.
 
-Messaging (`/messages` + `/messages/$chatId`):
-- Tab filters (All / Buying / Selling / Unread) + search.
-- Pin via `chat_pins`.
-- Typing indicator (writes to `typing_indicators` every 2s while composing; realtime subscribe).
-- Read-receipt ticks (single / double / double-blue) from existing `read_at`.
-- Image + voice attachments to `messages` bucket (new bucket).
-- Share-listing card message type (`message_type` enum: text/image/voice/listing).
+## Migration checklist (execution order, once a destination exists)
+1. Freeze writes: enable maintenance mode via `admin_update_platform_settings`.
+2. Snapshot source: schema DDL + per-table CSV exports + row-count manifest.
+3. Destination schema: extensions → enums → tables → constraints → indexes → functions →
+   triggers → RLS policies → grants.
+4. Auth import first: users + identities with preserved UUIDs and Google `provider_id`
+   (**pause here for your confirmation — irreversible**).
+5. Data import in FK order with `on_auth_user_created` and quota/moderation triggers disabled,
+   sequences/defaults untouched, then re-enable triggers.
+6. Storage: recreate `listings` (public) and `kyc` (private) buckets + the 9 object policies,
+   then stream all 90 objects preserving exact paths.
+7. Recreate pg_cron schedule for `expire_old_listings`.
+8. Verify: row-count diff source vs destination for all 30 tables, object-count diff per bucket,
+   FK orphan check, RLS smoke tests as anon / authenticated / admin.
+9. Cutover: regenerate the client integration files + env for the destination; redeploy; update
+   Vercel env vars.
+10. Post-cutover verification: Google login, email/password login, email verification, password
+    reset, profile load, listing create/approve, listing images, artisan profile + portfolio,
+    chat + messages + realtime, favorites, subscription activation, wallet top-up, analytics
+    RPCs, admin dashboard, storage read/write.
+11. Keep the old project untouched and read-only for a rollback window (suggest 14 days).
 
-Admin operations center (`/admin` refactor):
-- Sidebar layout (`Sidebar` shadcn) with modules: Overview, Moderation, Users, Reports, Monetization, Audit, Codes, Sub-admins.
-- Live activity feed (realtime on `audit_logs`).
-- Audit log table with filters.
-- Role-based sub-admins: extend `app_role` enum with `moderator`, `finance`; per-module access via `has_role` gates. Owner-admin can grant roles.
-- Reports center (existing `notifications` + a new `reports` table for user-submitted reports).
-- AI risk score column on pending listings (placeholder heuristic: image count, price outlier, new-account age, keyword blacklist).
-
-Artisans (`/artisans` new route):
-- Real search + filters (profession, state, availability, price range).
-- Trust score derived from KYC, rating, response time, completed jobs.
-- Portfolio grid.
-- Availability toggle + weekly schedule.
-- Map view via Google Maps connector (I'll request connection when we reach it).
-
-## Technical notes
-
-- All RPCs `SECURITY DEFINER`, `search_path=public`, `GRANT EXECUTE TO authenticated`.
-- New tables: RLS on, policies scoped to `auth.uid()`, service_role grant.
-- Realtime: single `useEffect` subscription per feature, cleanup on unmount.
-- No hardcoded data anywhere — every list reads from a table or RPC.
-- Server fns under `src/lib/*.functions.ts`, admin ones import `client.server` inside the handler.
-- Type-safe navigation everywhere (no href interpolation).
-
-## What I need from you
-
-1. Approve this phased approach so I can start Phase 1 immediately.
-2. Confirm we can add `@dnd-kit/core @dnd-kit/sortable` and `zxcvbn-ts` as dependencies.
-3. Map view needs the Google Maps connector — okay to prompt you to connect it when we hit Phase 4?
-
-Say "go" and I'll ship Phase 1 (migration + shared components) in the next turn, then roll straight into Phase 2, 3, 4 as separate turns.
+## What I will NOT do
+No changes to `.env`, no disconnect, no deletes on the source, no Auth writes — until you confirm
+the destination and explicitly approve step 4.
