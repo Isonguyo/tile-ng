@@ -79,15 +79,11 @@ function ArtisanCreatePage() {
     queryKey: ["existing-artisan", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user!.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_my_profile");
 
       if (error) throw error;
 
-      return data;
+      return (data as unknown as Array<Record<string, unknown>>)?.[0] ?? null;
     },
   });
 
