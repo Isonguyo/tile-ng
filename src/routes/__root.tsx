@@ -147,18 +147,20 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isWaitlist = pathname.startsWith("/wait-list");
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <PreLaunchMobileGate />
         {/* Add bottom padding so content isn't hidden behind the fixed nav */}
-        <main className="pb-20 md:pb-0">
+        <main className={isWaitlist ? undefined : "pb-20 md:pb-0"}>
           <Outlet />
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <MobileBottomNav />
+        {!isWaitlist && <MobileBottomNav />}
 
         <Toaster richColors position="top-right" />
       </AuthProvider>
