@@ -79,8 +79,6 @@ function ArtisanDirectoryPage() {
       state,
       lga,
       bio,
-      phone,
-      whatsapp,
       avatar_url,
       profile_photo,
       is_verified,
@@ -894,10 +892,10 @@ function ArtisanDirectoryPage() {
                           className="rounded-xl"
                           asChild
                         >
-                          <a href={`tel:${artisan.phone || "#"}`}>
+                          <Link to="/artisans/$id" params={{ id: artisan.id }}>
                             <Phone className="mr-1 h-4 w-4" />
                             Call
-                          </a>
+                          </Link>
                         </Button>
 
                         <Button
@@ -906,18 +904,10 @@ function ArtisanDirectoryPage() {
                           className="rounded-xl border-emerald-500 text-emerald-700 hover:bg-emerald-50"
                           asChild
                         >
-                          <a
-                            href={
-                              artisan.whatsapp
-                                ? `https://wa.me/${artisan.whatsapp.replace(/\D/g, "")}`
-                                : "#"
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
+                          <Link to="/artisans/$id" params={{ id: artisan.id }}>
                             <MessageSquare className="mr-1 h-4 w-4" />
                             Chat
-                          </a>
+                          </Link>
                         </Button>
 
                         <Button
