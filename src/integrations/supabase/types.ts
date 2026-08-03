@@ -1188,6 +1188,63 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist: {
+        Row: {
+          city: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          referral_code: string | null
+          source: string | null
+          state: string | null
+          user_type: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          referral_code?: string | null
+          source?: string | null
+          state?: string | null
+          user_type?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          referral_code?: string | null
+          source?: string | null
+          state?: string | null
+          user_type?: string
+        }
+        Relationships: []
+      }
+      waitlist_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -1601,6 +1658,35 @@ export type Database = {
           wallet_txns: number
         }[]
       }
+      admin_waitlist_growth: {
+        Args: { _days?: number }
+        Returns: {
+          day: string
+          signups: number
+        }[]
+      }
+      admin_waitlist_stats: {
+        Args: never
+        Returns: {
+          all_types: number
+          artisans: number
+          buyers: number
+          join_clicks: number
+          sellers: number
+          signups: number
+          today: number
+          total: number
+          visits: number
+          week: number
+        }[]
+      }
+      artisan_contact: {
+        Args: { _id: string }
+        Returns: {
+          phone: string
+          whatsapp: string
+        }[]
+      }
       category_counts: {
         Args: never
         Returns: {
@@ -1723,6 +1809,19 @@ export type Database = {
       }
       is_following_shop: { Args: { _shop_id: string }; Returns: boolean }
       is_staff: { Args: { _uid: string }; Returns: boolean }
+      join_waitlist: {
+        Args: {
+          _city?: string
+          _email: string
+          _full_name: string
+          _phone?: string
+          _referral_code?: string
+          _source?: string
+          _state?: string
+          _user_type?: string
+        }
+        Returns: string
+      }
       log_admin_action: {
         Args: {
           _action: string
@@ -1843,6 +1942,10 @@ export type Database = {
         Returns: undefined
       }
       track_listing_view: { Args: { _id: string }; Returns: undefined }
+      track_waitlist_event: {
+        Args: { _event_type: string }
+        Returns: undefined
+      }
       trending_searches: {
         Args: { _days?: number; _limit?: number }
         Returns: {
@@ -1851,6 +1954,7 @@ export type Database = {
         }[]
       }
       user_trust_score: { Args: { _uid: string }; Returns: number }
+      waitlist_count: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user" | "moderator" | "support"

@@ -40,7 +40,7 @@ export const Route = createFileRoute("/artisans/$id")({
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, avatar_url, profile_photo, bio, profession, state, lga, years_experience, starting_price, portfolio_images, phone, whatsapp, is_verified, is_artisan, subscription_tier, avg_rating, total_sales"
+        "id, full_name, avatar_url, profile_photo, bio, profession, state, lga, years_experience, starting_price, portfolio_images, is_verified, is_artisan, subscription_tier, avg_rating, total_sales"
       )
       .eq("id", params.id)
       .maybeSingle();
@@ -93,8 +93,16 @@ function ArtisanDetailPage() {
 
   console.log("Avatar URL:", avatar);
   const gallery: string[] = ((artisan.portfolio_images ?? []) as string[]).filter(Boolean);
-  const waPhone = sanitizePhone(artisan.whatsapp || artisan.phone);
-  const telPhone = artisan.phone?.replace(/\s+/g, "") || null;
+  const { data: contact } = useQuery({
+    queryKey: ["artisan-contact", artisan.id, currentUser?.id],
+    enabled: !!currentUser,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("artisan_contact", { _id: artisan.id });
+      return (data as unknown as Array<{ phone: string | null; whatsapp: string | null }>)?.[0] ?? null;
+    },
+  });
+  const waPhone = sanitizePhone(contact?.whatsapp || contact?.phone);
+  const telPhone = contact?.phone?.replace(/\s+/g, "") || null;
 
   const tier = (artisan.subscription_tier ?? "free").toString().toLowerCase();
   const isPremium = tier === "pro" || tier === "vip";

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WaitListRouteImport } from './routes/wait-list'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -28,7 +29,13 @@ import { Route as ListingIdRouteImport } from './routes/listing.$id'
 import { Route as ArtisansIdRouteImport } from './routes/artisans.$id'
 import { Route as ArtisanEditRouteImport } from './routes/artisan/edit'
 import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
+import { Route as AdminWaitlistRouteImport } from './routes/admin_.waitlist'
 
+const WaitListRoute = WaitListRouteImport.update({
+  id: '/wait-list',
+  path: '/wait-list',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
@@ -124,6 +131,11 @@ const ArtisanCreateRoute = ArtisanCreateRouteImport.update({
   path: '/artisan/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminWaitlistRoute = AdminWaitlistRouteImport.update({
+  id: '/admin_/waitlist',
+  path: '/admin/waitlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,6 +149,8 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wait-list': typeof WaitListRoute
+  '/admin/waitlist': typeof AdminWaitlistRoute
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
@@ -157,6 +171,8 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wait-list': typeof WaitListRoute
+  '/admin/waitlist': typeof AdminWaitlistRoute
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
@@ -179,6 +195,8 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wait-list': typeof WaitListRoute
+  '/admin_/waitlist': typeof AdminWaitlistRoute
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
@@ -202,6 +220,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/verify-email'
+    | '/wait-list'
+    | '/admin/waitlist'
     | '/artisan/create'
     | '/artisan/edit'
     | '/artisans/$id'
@@ -222,6 +242,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/verify-email'
+    | '/wait-list'
+    | '/admin/waitlist'
     | '/artisan/create'
     | '/artisan/edit'
     | '/artisans/$id'
@@ -243,6 +265,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/verify-email'
+    | '/wait-list'
+    | '/admin_/waitlist'
     | '/artisan/create'
     | '/artisan/edit'
     | '/artisans/$id'
@@ -265,6 +289,8 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  WaitListRoute: typeof WaitListRoute
+  AdminWaitlistRoute: typeof AdminWaitlistRoute
   ArtisanCreateRoute: typeof ArtisanCreateRoute
   ArtisanEditRoute: typeof ArtisanEditRoute
   ArtisansIdRoute: typeof ArtisansIdRoute
@@ -275,6 +301,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wait-list': {
+      id: '/wait-list'
+      path: '/wait-list'
+      fullPath: '/wait-list'
+      preLoaderRoute: typeof WaitListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify-email': {
       id: '/verify-email'
       path: '/verify-email'
@@ -408,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtisanCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/waitlist': {
+      id: '/admin_/waitlist'
+      path: '/admin/waitlist'
+      fullPath: '/admin/waitlist'
+      preLoaderRoute: typeof AdminWaitlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -437,6 +477,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  WaitListRoute: WaitListRoute,
+  AdminWaitlistRoute: AdminWaitlistRoute,
   ArtisanCreateRoute: ArtisanCreateRoute,
   ArtisanEditRoute: ArtisanEditRoute,
   ArtisansIdRoute: ArtisansIdRoute,
@@ -447,13 +489,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

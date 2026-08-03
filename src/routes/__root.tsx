@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -14,6 +15,30 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import {
+  LAUNCHED,
+  REDIRECT_MOBILE_TO_WAITLIST,
+  WAITLIST_EXEMPT_PREFIXES,
+} from "@/lib/launch-config";
+
+/**
+ * Pre-launch gate: on mobile, public pages redirect to /wait-list until launch.
+ * Flip LAUNCHED in src/lib/launch-config.ts to disable without changing links.
+ */
+function PreLaunchMobileGate() {
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (LAUNCHED || !REDIRECT_MOBILE_TO_WAITLIST) return;
+    if (typeof window === "undefined") return;
+    if (window.innerWidth >= 768) return;
+    if (WAITLIST_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))) return;
+    void router.navigate({ to: "/wait-list", replace: true });
+  }, [pathname, router]);
+
+  return null;
+}
 
 function NotFoundComponent() {
   return (
@@ -122,17 +147,20 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isWaitlist = pathname.startsWith("/wait-list");
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <PreLaunchMobileGate />
         {/* Add bottom padding so content isn't hidden behind the fixed nav */}
-        <main className="pb-20 md:pb-0">
+        <main className={isWaitlist ? undefined : "pb-20 md:pb-0"}>
           <Outlet />
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <MobileBottomNav />
+        {!isWaitlist && <MobileBottomNav />}
 
         <Toaster richColors position="top-right" />
       </AuthProvider>

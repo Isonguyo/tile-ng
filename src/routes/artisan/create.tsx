@@ -79,15 +79,19 @@ function ArtisanCreatePage() {
     queryKey: ["existing-artisan", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user!.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_my_profile");
 
       if (error) throw error;
 
-      return data;
+      type MyProfile = {
+        full_name: string | null; profession: string | null; bio: string | null;
+        phone: string | null; whatsapp: string | null; state: string | null; lga: string | null;
+        years_experience: number | null; is_available: boolean | null; starting_price: number | null;
+        offers_home_service: boolean | null; offers_emergency_service: boolean | null;
+        available_weekends: boolean | null; is_artisan: boolean | null;
+        profile_photo: string | null; avatar_url: string | null; portfolio_images: string[] | null;
+      };
+      return ((data as unknown as MyProfile[])?.[0] ?? null) as MyProfile | null;
     },
   });
 
@@ -302,7 +306,7 @@ function ArtisanCreatePage() {
           portfolio_images:
             portfolioUrls.length > 0
               ? portfolioUrls
-              : existingArtisan?.portfolio_images,
+              : (existingArtisan?.portfolio_images ?? undefined),
         })
         .eq("id", user.id);
 
