@@ -83,7 +83,15 @@ function ArtisanCreatePage() {
 
       if (error) throw error;
 
-      return (data as unknown as Array<Record<string, unknown>>)?.[0] ?? null;
+      type MyProfile = {
+        full_name: string | null; profession: string | null; bio: string | null;
+        phone: string | null; whatsapp: string | null; state: string | null; lga: string | null;
+        years_experience: number | null; is_available: boolean | null; starting_price: number | null;
+        offers_home_service: boolean | null; offers_emergency_service: boolean | null;
+        available_weekends: boolean | null; is_artisan: boolean | null;
+        profile_photo: string | null; avatar_url: string | null; portfolio_images: string[] | null;
+      };
+      return ((data as unknown as MyProfile[])?.[0] ?? null) as MyProfile | null;
     },
   });
 
