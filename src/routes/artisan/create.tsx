@@ -306,7 +306,7 @@ function ArtisanCreatePage() {
           portfolio_images:
             portfolioUrls.length > 0
               ? portfolioUrls
-              : existingArtisan?.portfolio_images,
+              : (existingArtisan?.portfolio_images ?? undefined),
         })
         .eq("id", user.id);
 
