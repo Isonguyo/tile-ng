@@ -45,7 +45,16 @@ export const Route = createFileRoute("/wait-list")({
       { name: "twitter:description", content: DESCRIPTION },
       { name: "twitter:image", content: IMAGE },
     ],
-    links: [{ rel: "canonical", href: URL }],
+    links: [
+      {
+        rel: "icon",
+        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+      },
+      {
+        rel: "canonical",
+        href: URL,
+      },
+    ],
   }),
   component: WaitListPage,
 });
@@ -186,7 +195,14 @@ function WaitListPage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-lg font-black text-primary-foreground">T</div>
+            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg transition-transform duration-300 group-hover:scale-105">
+            <img
+              src="https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg"
+              alt="Tile Logo"
+              className="h-full w-full object-cover"
+              loading="eager"
+            />
+          </div>
             <span className="text-lg font-black tracking-tight">Tile</span>
           </div>
           <Button size="sm" onClick={scrollToForm}>Join the Waitlist</Button>
@@ -303,11 +319,10 @@ function WaitListPage() {
                     { v: "all", l: "All of the above" },
                   ].map((o) => (
                     <button key={o.v} type="button" onClick={() => set("user_type")(o.v)}
-                      className={`rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
-                        form.user_type === o.v
+                      className={`rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${form.user_type === o.v
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border hover:bg-muted"
-                      }`}>
+                        }`}>
                       {o.l}
                     </button>
                   ))}
