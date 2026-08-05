@@ -1863,6 +1863,7 @@ export type Database = {
           listing_title: string
           other_id: string
           other_name: string
+          pinned_at: string
           unread_count: number
         }[]
       }
