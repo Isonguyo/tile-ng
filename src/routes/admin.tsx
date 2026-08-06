@@ -553,39 +553,7 @@ function Admin() {
           </TabsContent>
 
           <TabsContent value="codes" className="mt-4 space-y-4">
-            <Card className="p-4 flex items-center justify-between gap-3 flex-wrap">
-              <div>
-                <p className="font-semibold flex items-center gap-2"><KeyRound className="h-4 w-4" />One-Time Admin Authorization</p>
-                <p className="text-sm text-muted-foreground">Generates an 8-char code (e.g. TILE-ADMIN-XXXXXXXX). Single-use, expires 30 minutes after creation.</p>
-              </div>
-              <Button onClick={generateCode} className="bg-accent text-accent-foreground"><KeyRound className="h-4 w-4 mr-1" />Generate code</Button>
-            </Card>
-            <Card className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Created</TableHead><TableHead>Expires</TableHead><TableHead>Used At</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {codes.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No codes yet</TableCell></TableRow>}
-                  {codes.map((c) => (
-                    <TableRow key={c.code}>
-                      <TableCell className="font-mono text-xs">{c.code}</TableCell>
-                      <TableCell className="text-xs">{new Date(c.created_at).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs">{new Date(c.expires_at).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs">{c.used_at ? new Date(c.used_at).toLocaleString() : "—"}</TableCell>
-                      <TableCell>
-                        <Badge className={c.status === "active" ? "bg-emerald-600 text-white" : c.status === "used" ? "bg-muted text-muted-foreground" : "bg-destructive text-destructive-foreground"}>{c.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {c.status === "active" && (
-                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Code copied"); }}>
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+            <RolesPanel />
           </TabsContent>
         </Tabs>
 
