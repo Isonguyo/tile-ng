@@ -36,7 +36,6 @@ import {
   Sparkles,
   Store,
   Share2,
-  KeyRound,
   Crown,
   AlertTriangle,
   RefreshCw,
