@@ -188,21 +188,6 @@ function Admin() {
     },
   });
 
-  const { data: codes = [] } = useQuery({
-    queryKey: ["admin-codes"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const { data } = await supabase.rpc("admin_list_invite_codes");
-      return (data ?? []) as Array<{ code: string; created_at: string; expires_at: string; used_by: string | null; used_at: string | null; status: string }>;
-    },
-  });
-
-  const generateCode = async () => {
-    const { data, error } = await supabase.rpc("admin_generate_invite_code");
-    if (error) return toast.error(error.message);
-    toast.success(`New admin code: ${data}`);
-    qc.invalidateQueries({ queryKey: ["admin-codes"] });
-  };
 
   if (!loading && !isAdmin) { nav({ to: "/" }); return null; }
 
