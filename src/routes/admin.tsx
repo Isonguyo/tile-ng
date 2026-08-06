@@ -321,7 +321,7 @@ function Admin() {
       <TabsTrigger id="tab-users" value="users" className="whitespace-nowrap">👥 Users</TabsTrigger>
       <TabsTrigger value="broadcast" className="whitespace-nowrap">📣 Broadcast</TabsTrigger>
       <TabsTrigger value="settings" className="whitespace-nowrap">⚙ Platform</TabsTrigger>
-      <TabsTrigger value="codes" className="whitespace-nowrap">🎟 Admin Codes</TabsTrigger>
+      <TabsTrigger value="codes" className="whitespace-nowrap">🛡 Roles & Access</TabsTrigger>
     </TabsList>
   </div>
 
@@ -933,5 +933,115 @@ function InspectStat({ label, value, danger }: { label: string; value: string | 
       <p className="text-[10px] uppercase font-bold text-muted-foreground">{label}</p>
       <p className={`text-sm font-semibold mt-0.5 ${danger ? "text-destructive" : ""}`}>{value}</p>
     </div>
+  );
+}
+
+// ═══ ROLE MANAGEMENT ═════════════════════════════════════════════
+type StaffRow = { user_id: string; full_name: string | null; email: string | null; roles: string[] };
+
+function RolesPanel() {
+  const qc = useQueryClient();
+  const [q, setQ] = useState("");
+  const [term, setTerm] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const { data: staff = [] } = useQuery({
+    queryKey: ["admin-staff"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_list_staff");
+      if (error) throw error;
+      return (data ?? []) as StaffRow[];
+    },
+  });
+
+  const { data: results = [], isFetching } = useQuery({
+    queryKey: ["admin-user-search", term],
+    enabled: term.trim().length >= 2,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_search_users", { _q: term.trim() });
+      if (error) throw error;
+      return (data ?? []) as StaffRow[];
+    },
+  });
+
+  const setRole = async (userId: string, role: "admin" | "moderator" | "support", grant: boolean) => {
+    setBusy(userId + role);
+    const { error } = await supabase.rpc("admin_set_user_role", { _user_id: userId, _role: role, _grant: grant });
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success(grant ? `${role} role granted` : `${role} role removed`);
+    qc.invalidateQueries({ queryKey: ["admin-staff"] });
+    qc.invalidateQueries({ queryKey: ["admin-user-search"] });
+  };
+
+  const RoleButtons = ({ row }: { row: StaffRow }) => (
+    <div className="flex flex-wrap gap-1.5 justify-end">
+      {(["admin", "moderator", "support"] as const).map((r) => {
+        const has = row.roles?.includes(r);
+        return (
+          <Button
+            key={r}
+            size="sm"
+            variant={has ? "destructive" : "outline"}
+            disabled={busy === row.user_id + r}
+            onClick={() => setRole(row.user_id, r, !has)}
+          >
+            {has ? `Remove ${r}` : `Make ${r}`}
+          </Button>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <>
+      <Card className="p-4 space-y-3">
+        <div>
+          <p className="font-semibold flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Grant platform roles</p>
+          <p className="text-sm text-muted-foreground">Search any registered user by name or email and grant or remove admin, moderator or support access.</p>
+        </div>
+        <form
+          className="flex gap-2"
+          onSubmit={(e) => { e.preventDefault(); setTerm(q); }}
+        >
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or email…" />
+          <Button type="submit" className="bg-accent text-accent-foreground"><Search className="h-4 w-4 mr-1" />Search</Button>
+        </form>
+        {term.trim().length >= 2 && (
+          <div className="rounded-lg border divide-y">
+            {isFetching && <p className="p-3 text-sm text-muted-foreground">Searching…</p>}
+            {!isFetching && results.length === 0 && <p className="p-3 text-sm text-muted-foreground">No users match “{term}”.</p>}
+            {results.map((r) => (
+              <div key={r.user_id} className="p-3 flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="font-medium text-sm">{r.full_name ?? "Unnamed user"}</p>
+                  <p className="text-xs text-muted-foreground">{r.email ?? "—"}</p>
+                </div>
+                <RoleButtons row={r} />
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-0 overflow-x-auto">
+        <Table>
+          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Roles</TableHead><TableHead className="text-right">Manage</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {staff.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No staff accounts yet</TableCell></TableRow>}
+            {staff.map((s) => (
+              <TableRow key={s.user_id}>
+                <TableCell className="font-medium">{s.full_name ?? "—"}</TableCell>
+                <TableCell className="text-xs">{s.email ?? "—"}</TableCell>
+                <TableCell className="space-x-1">
+                  {(s.roles ?? []).map((r) => <Badge key={r} className="capitalize">{r}</Badge>)}
+                </TableCell>
+                <TableCell className="text-right"><RoleButtons row={s} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </>
   );
 }
