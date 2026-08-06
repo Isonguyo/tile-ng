@@ -14,30 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      admin_invite_codes: {
-        Row: {
-          code: string
-          created_at: string
-          expires_at: string
-          used_at: string | null
-          used_by: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          expires_at?: string
-          used_at?: string | null
-          used_by?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          expires_at?: string
-          used_at?: string | null
-          used_by?: string | null
-        }
-        Relationships: []
-      }
       artisan_events: {
         Row: {
           artisan_id: string
@@ -1475,18 +1451,6 @@ export type Database = {
         }[]
       }
       admin_flag_seller: { Args: { _listing_id: string }; Returns: undefined }
-      admin_generate_invite_code: { Args: never; Returns: string }
-      admin_list_invite_codes: {
-        Args: never
-        Returns: {
-          code: string
-          created_at: string
-          expires_at: string
-          status: string
-          used_at: string
-          used_by: string
-        }[]
-      }
       admin_list_pending_kyc: {
         Args: never
         Returns: {
@@ -1555,6 +1519,16 @@ export type Database = {
           status: string
         }[]
       }
+      admin_list_staff: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          roles: string[]
+          user_id: string
+        }[]
+      }
       admin_list_users: {
         Args: never
         Returns: {
@@ -1621,6 +1595,23 @@ export type Database = {
           vip_active: number
           yearly_revenue: number
         }[]
+      }
+      admin_search_users: {
+        Args: { _q: string }
+        Returns: {
+          email: string
+          full_name: string
+          roles: string[]
+          user_id: string
+        }[]
+      }
+      admin_set_user_role: {
+        Args: {
+          _grant: boolean
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
       }
       admin_update_platform_settings: {
         Args: {
@@ -1900,7 +1891,6 @@ export type Database = {
         Args: { p_listing_id: string; p_user_id?: string }
         Returns: boolean
       }
-      redeem_admin_code: { Args: { _code: string }; Returns: boolean }
       renew_listing: { Args: { _listing_id: string }; Returns: string }
       set_vanity_slug: { Args: { _slug: string }; Returns: string }
       shop_contact: {
