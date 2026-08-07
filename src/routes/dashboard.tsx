@@ -36,7 +36,6 @@ import {
   Sparkles,
   Store,
   Share2,
-  KeyRound,
   Crown,
   AlertTriangle,
   RefreshCw,
@@ -237,7 +236,6 @@ function Dashboard() {
 
             <KycCard status={profile.kyc_status} onUpload={refreshProfile} />
 
-            <AdminCodeCard onRedeemed={refreshProfile} />
           </TabsContent>
 
           <TabsContent value="artisan" className="space-y-6 mt-4">
@@ -620,32 +618,6 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
         ))}
       </div>
       <p className="text-xs text-muted-foreground mt-3">Paid from your Tile wallet. Top up first if balance is low.</p>
-    </Card>
-  );
-}
-
-function AdminCodeCard({ onRedeemed }: { onRedeemed: () => void }) {
-  const { isAdmin } = useAuth();
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  if (isAdmin) return null;
-  const submit = async () => {
-    if (!code) return;
-    setBusy(true);
-    const { data, error } = await supabase.rpc("redeem_admin_code", { _code: code.trim() });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    if (data) { toast.success("Admin access granted"); onRedeemed(); }
-    else toast.error("Invalid or used code");
-  };
-  return (
-    <Card className="p-5">
-      <h3 className="font-semibold flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent" /> Admin invite code</h3>
-      <p className="text-sm text-muted-foreground mt-1">Have a one-time admin code? Redeem it here to unlock the Admin Cabin.</p>
-      <div className="flex gap-2 mt-3">
-        <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="TILE-ADMIN-XXXXXX" />
-        <Button disabled={busy} onClick={submit} className="bg-accent text-accent-foreground">Redeem</Button>
-      </div>
     </Card>
   );
 }
