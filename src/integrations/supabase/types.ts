@@ -1791,6 +1791,7 @@ export type Database = {
           used_services: number
         }[]
       }
+      get_waitlist_page_data: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1812,6 +1813,19 @@ export type Database = {
           _user_type?: string
         }
         Returns: string
+      }
+      join_waitlist_with_profile: {
+        Args: {
+          _city?: string
+          _email: string
+          _full_name: string
+          _phone?: string
+          _referral_code?: string
+          _source?: string
+          _state?: string
+          _user_type?: string
+        }
+        Returns: Json
       }
       log_admin_action: {
         Args: {

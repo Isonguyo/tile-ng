@@ -75,6 +75,24 @@ function ArtisanCreatePage() {
   const { user, loading, profile } = useAuth();
   const navigate = useNavigate();
 
+  const { data: platformSettings } = useQuery({
+    queryKey: ["artisan-create-platform-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("launch_mode, disable_posting")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as { launch_mode?: "prelaunch" | "launched"; disable_posting?: boolean } | null;
+    },
+    staleTime: 30_000,
+  });
+
+  const isPrelaunch = platformSettings?.launch_mode !== "launched";
+  const postingDisabled = platformSettings?.disable_posting === true;
+
   const { data: existingArtisan } = useQuery({
     queryKey: ["existing-artisan", user?.id],
     enabled: !!user,
@@ -289,6 +307,8 @@ function ArtisanCreatePage() {
           years_experience: values.years_experience,
           is_available: values.is_available,
           is_artisan: true,
+          is_prelaunch: isPrelaunch,
+          artisan_status: isPrelaunch ? "pending" : "approved",
           starting_price: values.starting_price || null,
           offers_home_service: values.offers_home_service,
           offers_emergency_service: values.offers_emergency_service,
@@ -313,11 +333,13 @@ function ArtisanCreatePage() {
       if (error) throw error;
 
       toast.success(
-        existingArtisan?.is_artisan
-          ? "Artisan profile updated successfully."
-          : "Welcome to Tile Pro! Your specialized profile is officially live."
+        isPrelaunch
+          ? "Profile submitted for Admin review. It will remain private until Tile launches."
+          : existingArtisan?.is_artisan
+            ? "Artisan profile updated successfully."
+            : "Your artisan profile is now available on Tile."
       );
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Could not synchronize profile settings.");
@@ -347,6 +369,24 @@ function ArtisanCreatePage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <div className="container mx-auto max-w-3xl px-4 py-10">
+        {isPrelaunch && (
+          <div className="mb-6 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <p className="font-semibold text-primary">Tile is currently in pre-launch.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              You can complete your artisan profile now. It will be reviewed by Admin and remain private until the marketplace launches.
+            </p>
+          </div>
+        )}
+
+        {postingDisabled && (
+          <div className="mb-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+            <p className="font-semibold text-destructive">New marketplace submissions are temporarily disabled.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Submitting new artisan profile changes is currently paused.
+            </p>
+          </div>
+        )}
+
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold tracking-tight">Become a Tile Pro</h1>
           <p className="mt-3 text-muted-foreground">
@@ -404,7 +444,7 @@ function ArtisanCreatePage() {
                   </div>
                 </div>
 
-                <Button className="w-full mt-10" size="lg" type="button" onClick={() => setStep(2)}>
+                <Button className="w-full mt-10" size="lg" type="button" onClick={() => setStep(2)} disabled={postingDisabled}>
                   Create My Profile
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -757,7 +797,9 @@ function ArtisanCreatePage() {
                 <div>
                   <h2 className="text-2xl font-bold">Review Profile Card</h2>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    This is how your professional public profile card appears to customers. Check everything before launching.
+                    {isPrelaunch
+                      ? "Review the information you are submitting to Admin. Your profile will remain private until launch."
+                      : "Review your professional profile before publishing it publicly."}
                   </p>
                 </div>
 
@@ -845,8 +887,12 @@ function ArtisanCreatePage() {
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? "Publishing Profile..." : "Publish Profile Now"}
+                  <Button type="submit" disabled={submitting || postingDisabled}>
+                    {submitting
+                      ? "Submitting Profile..."
+                      : isPrelaunch
+                        ? "Submit Profile for Admin Review"
+                        : "Publish Profile Now"}
                   </Button>
                 </div>
               </div>

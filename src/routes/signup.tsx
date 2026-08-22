@@ -20,6 +20,12 @@ import { useAuth } from "@/lib/auth-context";
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
+type WaitlistContext = {
+  email?: string;
+  user_type?: "buyer" | "seller" | "artisan" | "all";
+  account_type?: AccountType;
+};
+
 const typeIcons: Record<AccountType, typeof ShoppingBag> = {
   buyer: ShoppingBag,
   merchant: Store,
@@ -50,6 +56,8 @@ function SignupPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [waitlistContext, setWaitlistContext] = useState<WaitlistContext | null>(null);
+  const [fromWaitlist, setFromWaitlist] = useState(false);
 
   const {
     register,
@@ -76,6 +84,43 @@ function SignupPage() {
   const accountType = watch("account_type");
 
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const isWaitlistSignup = params.get("from") === "waitlist";
+
+      const raw = window.sessionStorage.getItem("tile_waitlist_context");
+      if (!raw) {
+        setFromWaitlist(isWaitlistSignup);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as WaitlistContext;
+      setWaitlistContext(parsed);
+      setFromWaitlist(isWaitlistSignup || Boolean(raw));
+
+      if (parsed.email) {
+        setValue("email", parsed.email, { shouldValidate: true });
+      }
+
+      const mappedType: AccountType | undefined =
+        parsed.account_type ??
+        (parsed.user_type === "seller"
+          ? "merchant"
+          : parsed.user_type === "artisan"
+            ? "artisan"
+            : parsed.user_type === "buyer"
+              ? "buyer"
+              : undefined);
+
+      if (mappedType) {
+        setValue("account_type", mappedType, { shouldValidate: true });
+      }
+    } catch (error) {
+      console.warn("Unable to restore wait-list signup context:", error);
+    }
+  }, [setValue]);
+
+  useEffect(() => {
     if (!loading && user) nav({ to: "/dashboard" });
   }, [loading, nav, user]);
 
@@ -84,6 +129,22 @@ function SignupPage() {
     const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
     return () => window.clearTimeout(timer);
   }, [cooldown]);
+
+  const linkWaitlistIfNeeded = async () => {
+    if (!fromWaitlist) return;
+
+    const { error } = await supabase.rpc("link_my_waitlist_account");
+    if (error) {
+      console.error("Unable to link wait-list account:", error);
+      return;
+    }
+
+    try {
+      window.sessionStorage.removeItem("tile_waitlist_context");
+    } catch {
+      // Ignore cleanup failures.
+    }
+  };
 
   const onSubmit = async (values: SignupFormValues) => {
     if (busy) return;
@@ -105,6 +166,8 @@ function SignupPage() {
           account_type: values.account_type,
           phone_number: values.phone_number || null,
           business_name: values.business_name || null,
+          from_waitlist: fromWaitlist,
+          waitlist_user_type: waitlistContext?.user_type ?? null,
         },
       },
     });
@@ -117,7 +180,12 @@ function SignupPage() {
     }
 
     if (data.session) {
-      toast.success("Account created. You’re ready to explore Tile.");
+      await linkWaitlistIfNeeded();
+      toast.success(
+        fromWaitlist
+          ? "Account created. Your early-access setup is ready."
+          : "Account created. You’re ready to explore Tile.",
+      );
       nav({ to: "/dashboard" });
       return;
     }
@@ -151,7 +219,16 @@ function SignupPage() {
       ) : (
         <>
           <div className="mb-6 text-center">
-            <p className="text-sm text-muted-foreground">Build your profile and start trading with confidence</p>
+            <p className="text-sm text-muted-foreground">
+              {fromWaitlist
+                ? "Create your Tile account now and prepare privately for launch."
+                : "Build your profile and start trading with confidence"}
+            </p>
+            {fromWaitlist && (
+              <p className="mt-2 text-xs text-primary font-medium">
+                Your account is being created as part of Tile's early-access program.
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>

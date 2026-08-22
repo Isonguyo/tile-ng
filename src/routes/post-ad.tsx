@@ -118,6 +118,24 @@ function PostAd() {
   });
 
   const { data: plan } = usePlan();
+
+  const { data: platformSettings } = useQuery({
+    queryKey: ["post-ad-platform-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("launch_mode, disable_posting")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as { launch_mode?: "prelaunch" | "launched"; disable_posting?: boolean } | null;
+    },
+    staleTime: 30_000,
+  });
+  const isPrelaunch = platformSettings?.launch_mode !== "launched";
+  const postingDisabled = platformSettings?.disable_posting === true;
+
   const tier = (plan?.tier ?? profile?.subscription_tier ?? "free").toLowerCase();
   const canOpenShop = hasCapability(plan, "shop") || tier !== "free";
   const canPromote = hasCapability(plan, "promote");
@@ -291,6 +309,11 @@ function PostAd() {
 
   const onSubmit = async (vals: FormVals) => {
     if (!user) return;
+
+    if (postingDisabled) {
+      toast.error("Posting is temporarily disabled by Tile.");
+      return;
+    }
     setSubmitting(true);
     setSubmittingStage("Checking plan limits");
     try {
@@ -423,14 +446,26 @@ function PostAd() {
               </div>
 
               <div className="grid gap-4">
-                <Button type="button" variant="outline" className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal" onClick={() => { setMode("sell"); setStep(1); }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={postingDisabled}
+                  className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal"
+                  onClick={() => { setMode("sell"); setStep(1); }}
+                >
                   <div className="text-left">
                     <h3 className="font-bold text-lg">🛒 Sell Something</h3>
                     <p className="text-sm text-muted-foreground mt-1">Quick listings, photos and built-in buyer messaging.</p>
                   </div>
                 </Button>
 
-                <Button type="button" variant="outline" className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal" onClick={() => nav({ to: "/artisan/create" })}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={postingDisabled}
+                  className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal"
+                  onClick={() => nav({ to: "/artisan/create" })}
+                >
                   <div className="text-left">
                     <h3 className="font-bold text-lg">🛠 Offer a Service</h3>
                     <p className="text-sm text-muted-foreground mt-1">Create an artisan profile with portfolios and bookings.</p>
@@ -463,8 +498,15 @@ function PostAd() {
         ) : submitted ? (
           <Card className="p-8 text-center space-y-4">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent"><Check className="h-7 w-7" /></div>
-            <h2 className="text-2xl font-bold">Congratulations — your listing is live for review.</h2>
-            <p className="text-muted-foreground">Your listing is now pending review and will be visible once approved. Share it while you wait.</p>
+            <h2 className="text-2xl font-bold">
+              Listing submitted successfully.
+            </h2>
+            <p className="text-muted-foreground">
+              Your listing is now pending Admin review.
+              {isPrelaunch
+                ? " Because Tile is still in pre-launch, it will remain private even after approval until Admin launches the marketplace."
+                : " Once approved, it can become publicly visible."}
+            </p>
             <div className="flex justify-center gap-3">
               <Button asChild variant="outline"><Link to="/dashboard">View dashboard</Link></Button>
               <Button className="bg-accent text-accent-foreground" onClick={() => setMode("home")}>Create another</Button>
@@ -474,13 +516,36 @@ function PostAd() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="font-semibold">Boost visibility</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Give this listing a stronger push with a promotion that can help it reach more buyers.</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Promotion is available after Admin approval{isPrelaunch ? " and marketplace launch" : ""}.
+                    </p>
                   </div>
-                  <Button type="button" className="bg-accent text-accent-foreground" onClick={handlePromoteListing} disabled={promoting || promotionState === "promoted" || !canPromote}>
-                    <Sparkles className="mr-2 h-4 w-4" />{promoting ? "Promoting..." : promotionState === "promoted" ? "Promoted" : "Promote listing"}
+                  <Button
+                    type="button"
+                    className="bg-accent text-accent-foreground"
+                    onClick={handlePromoteListing}
+                    disabled={
+                      promoting ||
+                      promotionState === "promoted" ||
+                      !canPromote ||
+                      true
+                    }
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {promoting ? "Promoting..." : promotionState === "promoted" ? "Promoted" : "Promote after approval"}
                   </Button>
                 </div>
-                {!canPromote && <p className="mt-3 text-sm text-muted-foreground">Upgrade to Lite or above to unlock promotions and stronger visibility.</p>}
+                {!canPromote && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Upgrade to Lite or above to unlock promotions and stronger visibility.
+                  </p>
+                )}
+                {canPromote && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    This listing is awaiting moderation, so promotion is locked until it is approved
+                    {isPrelaunch ? " and the marketplace is launched" : ""}.
+                  </p>
+                )}
                 {promotionStats && (
                   <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm text-muted-foreground">
                     <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.views_count}</p><p>views</p></div>
@@ -494,6 +559,25 @@ function PostAd() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
             <Card className="p-6">
+              {isPrelaunch && (
+                <div className="mb-5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                  <p className="font-semibold text-primary">Tile is currently in pre-launch.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    You can prepare and submit your listing now. It will be reviewed by Admin,
+                    but it will not be visible to the public until the marketplace launches.
+                  </p>
+                </div>
+              )}
+
+              {postingDisabled && (
+                <div className="mb-5 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+                  <p className="font-semibold text-destructive">Posting is temporarily disabled.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Tile has temporarily paused new listings. Your saved draft is preserved.
+                  </p>
+                </div>
+              )}
+
               <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="rounded-full bg-accent/10 px-2 py-1 text-accent">{draftStatus}</span>
                 <span>•</span>
@@ -695,8 +779,13 @@ function PostAd() {
                     </div>
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-                      <Button type="submit" disabled={submitting} className="bg-accent text-accent-foreground">
-                        <Check className="mr-2 h-4 w-4" />{submitting ? submittingStage : "Publish listing"}
+                      <Button type="submit" disabled={submitting || postingDisabled} className="bg-accent text-accent-foreground">
+                        <Check className="mr-2 h-4 w-4" />
+                        {submitting
+                          ? submittingStage
+                          : isPrelaunch
+                            ? "Submit for Admin Review"
+                            : "Publish listing"}
                       </Button>
                     </div>
                   </>

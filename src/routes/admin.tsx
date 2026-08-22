@@ -20,7 +20,7 @@ import { formatNaira } from "@/lib/categories";
 import {
   Users, Tag, Banknote, ShieldAlert, Check, X, Flag, BadgeCheck, KeyRound, AlertTriangle, Copy,
   Activity, Bell, Search, Megaphone, Settings2, Gauge, TrendingUp, FileWarning, Sparkles,
-  UserSearch, LifeBuoy, ShieldCheck,
+  UserSearch, LifeBuoy, ShieldCheck, Rocket, Eye, LockKeyhole, RefreshCw, Loader2, Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -41,6 +41,55 @@ export const Route = createFileRoute("/admin")({
    }),
   component: Admin,
 });
+
+type AdminUserRow = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  subscription_tier: string;
+  is_verified: boolean;
+  active_ads: number;
+  created_at: string;
+  kyc_status?: string;
+  signupSource: string;
+};
+
+type WaitlistMatchRow = {
+  id?: string;
+  full_name?: string | null;
+  email: string | null;
+  phone: string | null;
+  state?: string | null;
+  city?: string | null;
+  user_type?: string | null;
+  source: string | null;
+  created_at?: string;
+  auth_user_id?: string | null;
+  account_created_at?: string | null;
+  queue_position?: number | null;
+};
+
+function normalizeLookupValue(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function getSignupSourceLabel(source: string | null | undefined) {
+  const raw = (source ?? "").trim();
+  if (!raw) return "Waitlist";
+
+  const normalized = raw.toLowerCase().replace(/[_\s-]+/g, " ").trim();
+  const mapping: Record<string, string> = {
+    facebook: "Facebook",
+    whatsapp: "WhatsApp",
+    instagram: "Instagram",
+    "qr code": "QR Code",
+    qr: "QR Code",
+    referral: "Referral",
+  };
+
+  const mapped = mapping[normalized];
+  return mapped ? `Waitlist (${mapped})` : "Waitlist";
+}
 
 function Admin() {
   const { isAdmin, loading } = useAuth();
@@ -102,14 +151,58 @@ function Admin() {
     },
   });
 
+  
+
   // ─── AI Moderation queue (risk-scored) ─────────────────────────
   const { data: modQueue = [] } = useQuery({
     queryKey: ["admin-mod-queue"],
     enabled: isAdmin,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data } = await supabase.rpc("admin_moderation_queue");
-      return (data ?? []) as Array<{
+      const { data, error } = await supabase
+        .from("listings")
+        .select("id, title, price, category, images, created_at, user_id, status")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const pendingRows = data ?? [];
+      const sellerIds = pendingRows.map((row) => row.user_id).filter(Boolean);
+      let profilesById = new Map<string, { full_name: string | null; phone: string | null; created_at: string | null }>();
+
+      if (sellerIds.length) {
+        const { data: sellerProfiles, error: sellerError } = await supabase
+          .from("profiles")
+          .select("id, full_name, phone, created_at")
+          .in("id", sellerIds);
+
+        if (sellerError) throw sellerError;
+
+        profilesById = new Map((sellerProfiles ?? []).map((profile) => [profile.id, profile]));
+      }
+
+      return pendingRows.map((listing) => {
+        const seller = profilesById.get(listing.user_id);
+        const accountAgeDays = seller?.created_at
+          ? Math.max(0, Math.floor((Date.now() - new Date(seller.created_at).getTime()) / 86_400_000))
+          : 0;
+
+        return {
+          id: listing.id,
+          title: listing.title,
+          price: listing.price,
+          category: listing.category,
+          images: (listing.images ?? []) as string[],
+          created_at: listing.created_at,
+          seller_id: listing.user_id,
+          seller_name: seller?.full_name ?? null,
+          seller_phone: seller?.phone ?? null,
+          account_age_days: accountAgeDays,
+          risk_score: 0,
+          risk_reasons: [] as string[],
+        };
+      }) as Array<{
         id: string; title: string; price: number | null; category: string; images: string[];
         created_at: string; seller_id: string; seller_name: string | null; seller_phone: string | null;
         account_age_days: number; risk_score: number; risk_reasons: string[];
@@ -179,38 +272,179 @@ function Admin() {
     },
   });
 
-  const { data: users = [] } = useQuery({
+  const { data: usersRpc = [] } = useQuery({
     queryKey: ["admin-users"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data } = await supabase.rpc("admin_list_users");
-      return (data ?? []) as Array<{ id: string; full_name: string | null; email: string | null; subscription_tier: string; is_verified: boolean; active_ads: number; created_at: string }>;
+      const { data, error } = await supabase.rpc("admin_list_users");
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; full_name: string | null; email: string | null; subscription_tier: string; is_verified: boolean; active_ads: number; created_at: string; kyc_status: string }>;
     },
   });
 
+  const { data: userProfiles = [] } = useQuery({
+    queryKey: ["admin-user-profiles"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id,full_name,phone,created_at").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; email: string | null; phone: string | null }>;
+    },
+  });
+
+  const { data: waitlistEntries = [] } = useQuery({
+    queryKey: ["admin-waitlist-signups"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("waitlist")
+        .select("id,full_name,email,phone,state,city,user_type,source,created_at,auth_user_id,account_created_at,queue_position")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+      return (data ?? []) as WaitlistMatchRow[];
+    },
+  });
+
+  // ─── Approved listings still waiting for public launch ─────────
+  const { data: prelaunchListings = [], isFetching: prelaunchFetching } = useQuery({
+    queryKey: ["admin-prelaunch-approved-listings"],
+    enabled: isAdmin,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("id,title,price,category,created_at,user_id,is_prelaunch,status")
+        .eq("status", "approved")
+        .eq("is_prelaunch", true)
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+
+      const rows = data ?? [];
+      const ids = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
+      let profileMap = new Map<string, { full_name: string | null }>();
+
+      if (ids.length) {
+        const { data: profiles, error: profileError } = await supabase
+          .from("profiles")
+          .select("id,full_name")
+          .in("id", ids);
+
+        if (profileError) throw profileError;
+
+        profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+      }
+
+      return rows.map((row) => ({
+        ...row,
+        seller_name: profileMap.get(row.user_id)?.full_name ?? "Unknown seller",
+      }));
+    },
+  });
+
+
+  // ─── Pending artisan profiles ─────────────────────────────────
+  const { data: pendingArtisans = [], isFetching: artisansFetching } = useQuery({
+    queryKey: ["admin-pending-artisans"],
+    enabled: isAdmin,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_list_pending_artisans");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        full_name: string | null;
+        profession: string | null;
+        bio: string | null;
+        phone: string | null;
+        whatsapp: string | null;
+        email: string | null;
+        state: string | null;
+        lga: string | null;
+        years_experience: number | null;
+        profile_photo: string | null;
+        is_available: boolean | null;
+        is_prelaunch: boolean;
+        artisan_status: string;
+        created_at: string;
+        user_id: string;
+      }>;
+    },
+  });
+
+  const users = useMemo<AdminUserRow[]>(() => {
+    const profileLookup = new Map(userProfiles.map((profile) => [profile.id, profile]));
+    const waitlistLookup = new Map<string, WaitlistMatchRow>();
+
+    for (const entry of waitlistEntries) {
+      const email = normalizeLookupValue(entry.email);
+      const phone = normalizeLookupValue(entry.phone);
+      if (email) waitlistLookup.set(`email:${email}`, entry);
+      if (phone) waitlistLookup.set(`phone:${phone}`, entry);
+    }
+
+    return usersRpc.map((user) => {
+      const profile = profileLookup.get(user.id);
+      const email = normalizeLookupValue(user.email);
+      const phone = normalizeLookupValue(profile?.phone);
+      const matchedByEmail = email ? waitlistLookup.get(`email:${email}`) : undefined;
+      const matchedByPhone = phone ? waitlistLookup.get(`phone:${phone}`) : undefined;
+      const matched = matchedByEmail ?? matchedByPhone;
+
+      return {
+        ...user,
+        signupSource: matched ? getSignupSourceLabel(matched.source) : "Direct Signup",
+      };
+    });
+  }, [userProfiles, usersRpc, waitlistEntries]);
+
+  const signupStats = useMemo(() => {
+    const waitlistUsers = users.filter((user) => user.signupSource !== "Direct Signup").length;
+    const totalWaitlistEntries = waitlistEntries.length;
+    const conversionPercent = totalWaitlistEntries > 0 ? (waitlistUsers / totalWaitlistEntries) * 100 : 0;
+
+    return {
+      registeredUsers: userProfiles.length,
+      waitlistUsers,
+      directSignups: userProfiles.length - waitlistUsers,
+      conversionPercent: Number(conversionPercent.toFixed(1)),
+    };
+  }, [userProfiles.length, users, waitlistEntries]);
 
   if (!loading && !isAdmin) { nav({ to: "/" }); return null; }
 
   const approve = async (id: string) => {
     const { error } = await supabase.rpc("admin_approve_listing", { _id: id });
     if (error) return toast.error(error.message);
-    toast.success("Approved"); qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
+    toast.success("Approved"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] }); void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
   };
   const reject = async (id: string, reason: string) => {
     const { error } = await supabase.rpc("admin_reject_listing", { _id: id, _reason: reason });
     if (error) return toast.error(error.message);
-    toast.success("Rejected"); qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
+    toast.success("Rejected"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
   };
   const flag = async (id: string) => {
     const { error } = await supabase.rpc("admin_flag_seller", { _listing_id: id });
     if (error) return toast.error(error.message);
     toast.success("Seller flagged & listing removed");
-    qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
+    void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
+    void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+    void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
   };
   const grantVerified = async (id: string) => {
-    await supabase.from("profiles").update({ kyc_status: "verified", is_verified: true }).eq("id", id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ kyc_status: "verified", is_verified: true })
+      .eq("id", id);
+
+    if (error) return toast.error(error.message);
+
     toast.success("Verified badge granted");
-    qc.invalidateQueries({ queryKey: ["kyc-pending"] });
+    void qc.invalidateQueries({ queryKey: ["kyc-pending"] });
+    void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
   };
 
   // Bulk moderation
@@ -290,6 +524,25 @@ function Admin() {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-6">
+          <Card className="p-3">
+            <p className="text-[10px] uppercase text-muted-foreground font-bold">Registered Users</p>
+            <p className="text-xl font-extrabold mt-1">{signupStats.registeredUsers}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-[10px] uppercase text-muted-foreground font-bold">Waitlist Users</p>
+            <p className="text-xl font-extrabold mt-1">{signupStats.waitlistUsers}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-[10px] uppercase text-muted-foreground font-bold">Direct Signups</p>
+            <p className="text-xl font-extrabold mt-1">{signupStats.directSignups}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-[10px] uppercase text-muted-foreground font-bold">Waitlist Conversion %</p>
+            <p className="text-xl font-extrabold mt-1">{signupStats.conversionPercent.toFixed(1)}%</p>
+          </Card>
+        </div>
+
         {/* Mission control tiles */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 my-6">
           <MiniStat label="Users" value={dash?.users_total ?? stats?.users ?? 0} sub={`+${dash?.users_today ?? 0} today`} icon={Users} tint="blue" />
@@ -303,6 +556,7 @@ function Admin() {
         {/* Pending work queue */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <QueueCard label="Pending listings" count={dash?.listings_pending ?? 0} icon={Tag} onClick={() => document.getElementById("tab-moderation")?.click()} />
+          <QueueCard label="Pending artisans" count={pendingArtisans.length} icon={Wrench} onClick={() => document.getElementById("tab-artisans")?.click()} />
           <QueueCard label="Pending KYC" count={dash?.kyc_pending ?? 0} icon={ShieldCheck} onClick={() => document.getElementById("tab-kyc")?.click()} />
           <QueueCard label="Open reports" count={dash?.reports_open ?? 0} icon={FileWarning} onClick={() => document.getElementById("tab-reports")?.click()} />
           <QueueCard label="Monthly revenue" count={formatNaira(dash?.revenue_month ?? 0)} icon={TrendingUp} onClick={() => document.getElementById("tab-money")?.click()} />
@@ -315,11 +569,14 @@ function Admin() {
     <TabsList className="inline-flex w-max min-w-full md:min-w-0 gap-2">
       <TabsTrigger id="tab-overview" value="overview" className="whitespace-nowrap">📊 Overview</TabsTrigger>
       <TabsTrigger id="tab-moderation" value="moderation" className="whitespace-nowrap">🛡 Moderation</TabsTrigger>
+      <TabsTrigger id="tab-artisans" value="artisans" className="whitespace-nowrap">🧰 Artisans</TabsTrigger>
       <TabsTrigger id="tab-reports" value="reports" className="whitespace-nowrap">🚩 Reports</TabsTrigger>
       <TabsTrigger id="tab-kyc" value="kyc" className="whitespace-nowrap">📄 KYC</TabsTrigger>
       <TabsTrigger id="tab-money" value="money" className="whitespace-nowrap">💳 Revenue</TabsTrigger>
       <TabsTrigger id="tab-users" value="users" className="whitespace-nowrap">👥 Users</TabsTrigger>
       <TabsTrigger value="broadcast" className="whitespace-nowrap">📣 Broadcast</TabsTrigger>
+      <TabsTrigger value="waitlist" className="whitespace-nowrap">🚀 Waitlist</TabsTrigger>
+      <TabsTrigger value="launch" className="whitespace-nowrap">🌐 Launch Review</TabsTrigger>
       <TabsTrigger value="settings" className="whitespace-nowrap">⚙ Platform</TabsTrigger>
       <TabsTrigger value="codes" className="whitespace-nowrap">🛡 Roles & Access</TabsTrigger>
     </TabsList>
@@ -437,6 +694,144 @@ function Admin() {
             </Card>
           </TabsContent>
 
+          {/* ═══ ARTISAN MODERATION ══════════════════════════════ */}
+          <TabsContent value="artisans" className="mt-4 space-y-4">
+            <Card className="p-5 border-primary/30 bg-primary/5">
+              <div className="flex items-start gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <Wrench className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Pending artisan profiles</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Review pre-launch artisan profiles before they can become eligible for public visibility.
+                  </p>
+                </div>
+                <Badge variant="outline" className="ml-auto">
+                  {artisansFetching ? "Loading…" : `${pendingArtisans.length} pending`}
+                </Badge>
+              </div>
+            </Card>
+
+            <Card className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Artisan</TableHead>
+                    <TableHead>Profession</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Experience</TableHead>
+                    <TableHead>Availability</TableHead>
+                    <TableHead>Pre-launch</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {artisansFetching && pendingArtisans.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        Loading artisan review queue…
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!artisansFetching && pendingArtisans.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        🎉 No pending artisan profiles
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {pendingArtisans.map((artisan) => (
+                    <TableRow key={artisan.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3 min-w-[220px]">
+                          {artisan.profile_photo ? (
+                            <img src={artisan.profile_photo} alt="" className="h-10 w-10 rounded-full object-cover border" />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-primary/10 grid place-items-center text-primary">
+                              <Wrench className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setInspectId(artisan.user_id)}
+                              className="font-semibold hover:text-primary hover:underline text-left"
+                            >
+                              {artisan.full_name ?? "Unnamed artisan"}
+                            </button>
+                            <p className="text-xs text-muted-foreground">
+                              {artisan.email ?? artisan.phone ?? "No contact"}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{artisan.profession ?? "—"}</TableCell>
+                      <TableCell className="text-xs">
+                        {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">{artisan.years_experience ?? 0} yrs</TableCell>
+                      <TableCell>
+                        <Badge variant={artisan.is_available ? "default" : "secondary"}>
+                          {artisan.is_available ? "Available" : "Unavailable"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{artisan.is_prelaunch ? "Private" : "Public eligible"}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => setInspectId(artisan.user_id)}>
+                            <Eye className="h-3.5 w-3.5 mr-1" />Inspect
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={async () => {
+                              const { error } = await supabase.rpc("admin_approve_artisan", { _user_id: artisan.user_id });
+                              if (error) return toast.error(error.message);
+                              toast.success("Artisan approved");
+                              void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
+                              void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+                            }}
+                          >
+                            <Check className="h-3.5 w-3.5 mr-1" />Approve
+                          </Button>
+
+                          <RejectArtisanModal
+                            onConfirm={async (reason) => {
+                              const { error } = await supabase.rpc("admin_reject_artisan", {
+                                _user_id: artisan.user_id,
+                                _reason: reason,
+                              });
+                              if (error) return toast.error(error.message);
+                              toast.success("Artisan sent back for changes");
+                              void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
+                            }}
+                          />
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              if (!confirm(`Flag ${artisan.full_name ?? "this artisan"}?`)) return;
+                              const { error } = await supabase.rpc("admin_flag_artisan", { _user_id: artisan.user_id });
+                              if (error) return toast.error(error.message);
+                              toast.success("Artisan flagged");
+                              void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
+                            }}
+                          >
+                            <Flag className="h-3.5 w-3.5 mr-1" />Flag
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
           {/* ═══ REPORTS ═════════════════════════════════════════ */}
           <TabsContent value="reports" className="mt-4">
             <div className="flex items-center gap-2 mb-3">
@@ -520,9 +915,9 @@ function Admin() {
             </div>
             <Card className="p-0 overflow-x-auto">
               <Table>
-                <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Tier</TableHead><TableHead>KYC</TableHead><TableHead className="text-right">Active Ads</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Tier</TableHead><TableHead>Signup Source</TableHead><TableHead>KYC</TableHead><TableHead className="text-right">Active Ads</TableHead></TableRow></TableHeader>
                 <TableBody>
-                  {filteredUsers.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users match</TableCell></TableRow>}
+                  {filteredUsers.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No users match</TableCell></TableRow>}
                   {filteredUsers.slice(0, 100).map((u) => (
                     <TableRow key={u.id}>
                       <TableCell className="font-medium">
@@ -532,6 +927,11 @@ function Admin() {
                       </TableCell>
                       <TableCell className="text-xs">{u.email ?? "—"}</TableCell>
                       <TableCell><Badge className="capitalize">{u.subscription_tier}</Badge>{u.is_verified && <BadgeCheck className="inline h-4 w-4 text-accent ml-1" />}</TableCell>
+                      <TableCell>
+                        <Badge className={u.signupSource === "Direct Signup" ? "border-blue-200 bg-blue-100 text-blue-700" : "border-green-200 bg-green-100 text-green-700"}>
+                          {u.signupSource}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-xs capitalize">{(u as { kyc_status?: string }).kyc_status ?? "—"}</TableCell>
                       <TableCell className="text-right font-mono">{u.active_ads}</TableCell>
                     </TableRow>
@@ -547,9 +947,168 @@ function Admin() {
             <BroadcastPanel />
           </TabsContent>
 
+          {/* ═══ WAITLIST OVERSIGHT ═══════════════════════════════ */}
+          <TabsContent value="waitlist" className="mt-4 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card className="p-4">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Total</p>
+                <p className="text-2xl font-extrabold mt-1">{waitlistEntries.length}</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Accounts linked</p>
+                <p className="text-2xl font-extrabold mt-1">
+                  {waitlistEntries.filter((w) => Boolean(w.auth_user_id)).length}
+                </p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Seller / artisan</p>
+                <p className="text-2xl font-extrabold mt-1">
+                  {waitlistEntries.filter((w) => w.user_type === "seller" || w.user_type === "artisan" || w.user_type === "all").length}
+                </p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Pre-launch approved ads</p>
+                <p className="text-2xl font-extrabold mt-1">{prelaunchListings.length}</p>
+              </Card>
+            </div>
+
+            <Card className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Queue</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Account</TableHead>
+                    <TableHead>Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {waitlistEntries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        No wait-list members yet
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {waitlistEntries.map((entry) => (
+                    <TableRow key={entry.id ?? `${entry.email}-${entry.created_at}`}>
+                      <TableCell className="font-mono">#{entry.queue_position ?? "—"}</TableCell>
+                      <TableCell className="font-medium">{entry.full_name ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{entry.email ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">{entry.user_type ?? "buyer"}</Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {[entry.city, entry.state].filter(Boolean).join(", ") || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {entry.auth_user_id ? (
+                          <Badge className="bg-emerald-600 text-white gap-1">
+                            <BadgeCheck className="h-3 w-3" /> Linked
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Waitlist only</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {entry.created_at ? timeAgo(entry.created_at) : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {waitlistEntries.length >= 500 && (
+                <div className="p-3 text-xs text-muted-foreground text-center border-t">
+                  Showing the latest 500 wait-list entries.
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* ═══ PRE-LAUNCH APPROVED LISTINGS ═════════════════════ */}
+          <TabsContent value="launch" className="mt-4 space-y-4">
+            <Card className="p-5 border-primary/30 bg-primary/5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Rocket className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold">Pre-launch approved listings</h3>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    These ads passed moderation but remain hidden from the public marketplace until launch.
+                  </p>
+                </div>
+                <Badge variant="outline" className="w-fit">
+                  {platform?.launch_mode === "launched" ? "Marketplace launched" : "Pre-launch mode"}
+                </Badge>
+              </div>
+            </Card>
+
+            <Card className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Listing</TableHead>
+                    <TableHead>Seller</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Inspect</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {prelaunchFetching && prelaunchListings.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        Loading pre-launch listings…
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!prelaunchFetching && prelaunchListings.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No approved pre-launch listings.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {prelaunchListings.map((listing) => (
+                    <TableRow key={listing.id}>
+                      <TableCell className="font-medium">{listing.title}</TableCell>
+                      <TableCell className="text-sm">{listing.seller_name}</TableCell>
+                      <TableCell className="text-xs">{listing.category}</TableCell>
+                      <TableCell>{formatNaira(listing.price)}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{timeAgo(listing.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={`/listing/${listing.id}`} target="_blank" rel="noreferrer">
+                            <Eye className="h-3.5 w-3.5 mr-1" /> Inspect
+                          </a>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
           {/* ═══ PLATFORM SETTINGS / EMERGENCY ═══════════════════ */}
           <TabsContent value="settings" className="mt-4">
-            <PlatformSettings initial={platform} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-platform-settings"] })} />
+            <PlatformSettings
+              initial={platform}
+              prelaunchListingCount={prelaunchListings.length}
+              prelaunchListingLoading={prelaunchFetching}
+              onLaunchChanged={() => {
+                void qc.invalidateQueries({ queryKey: ["admin-platform-settings"] });
+                void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
+                void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+                void qc.invalidateQueries({ queryKey: ["admin-stats"] });
+              }}
+              onSaved={() => void qc.invalidateQueries({ queryKey: ["admin-platform-settings"] })}
+            />
           </TabsContent>
 
           <TabsContent value="codes" className="mt-4 space-y-4">
@@ -575,6 +1134,41 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string |
         <Icon className="h-10 w-10 opacity-60" />
       </div>
     </Card>
+  );
+}
+
+function RejectArtisanModal({ onConfirm }: { onConfirm: (reason: string) => void | Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const submit = async () => {
+    await onConfirm(reason);
+    setOpen(false);
+    setReason("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <X className="h-3.5 w-3.5 mr-1" />Reject
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Request artisan profile changes</DialogTitle></DialogHeader>
+        <Textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Explain what the artisan needs to change…"
+          rows={4}
+        />
+        <DialogFooter>
+          <Button variant="destructive" onClick={submit} disabled={!reason.trim()}>
+            Confirm
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -790,7 +1384,31 @@ function BroadcastPanel() {
   );
 }
 
-function PlatformSettings({ initial, onSaved }: { initial: { maintenance_mode: boolean; disable_registration: boolean; disable_posting: boolean; disable_payments: boolean; disable_withdrawals: boolean; disable_messaging: boolean; emergency_banner: string | null } | null | undefined; onSaved: () => void }) {
+function PlatformSettings({
+  initial,
+  prelaunchListingCount,
+  prelaunchListingLoading,
+  onLaunchChanged,
+  onSaved,
+}: {
+  initial:
+    | {
+        maintenance_mode: boolean;
+        disable_registration: boolean;
+        disable_posting: boolean;
+        disable_payments: boolean;
+        disable_withdrawals: boolean;
+        disable_messaging: boolean;
+        emergency_banner: string | null;
+        launch_mode?: "prelaunch" | "launched" | null;
+      }
+    | null
+    | undefined;
+  prelaunchListingCount: number;
+  prelaunchListingLoading: boolean;
+  onLaunchChanged: () => void;
+  onSaved: () => void;
+}) {
   const [s, setS] = useState({
     maintenance_mode: initial?.maintenance_mode ?? false,
     disable_registration: initial?.disable_registration ?? false,
@@ -800,26 +1418,61 @@ function PlatformSettings({ initial, onSaved }: { initial: { maintenance_mode: b
     disable_messaging: initial?.disable_messaging ?? false,
     emergency_banner: initial?.emergency_banner ?? "",
   });
+  const [launching, setLaunching] = useState(false);
+
   useEffect(() => {
-    if (initial) setS({
-      maintenance_mode: initial.maintenance_mode, disable_registration: initial.disable_registration,
-      disable_posting: initial.disable_posting, disable_payments: initial.disable_payments,
-      disable_withdrawals: initial.disable_withdrawals, disable_messaging: initial.disable_messaging,
-      emergency_banner: initial.emergency_banner ?? "",
-    });
+    if (initial) {
+      setS({
+        maintenance_mode: initial.maintenance_mode,
+        disable_registration: initial.disable_registration,
+        disable_posting: initial.disable_posting,
+        disable_payments: initial.disable_payments,
+        disable_withdrawals: initial.disable_withdrawals,
+        disable_messaging: initial.disable_messaging,
+        emergency_banner: initial.emergency_banner ?? "",
+      });
+    }
   }, [initial]);
+
   const save = async () => {
     if (!confirm("Apply platform settings now?")) return;
+
     const { error } = await supabase.rpc("admin_update_platform_settings", {
-      _maintenance: s.maintenance_mode, _disable_registration: s.disable_registration,
-      _disable_posting: s.disable_posting, _disable_payments: s.disable_payments,
-      _disable_withdrawals: s.disable_withdrawals, _disable_messaging: s.disable_messaging,
+      _maintenance: s.maintenance_mode,
+      _disable_registration: s.disable_registration,
+      _disable_posting: s.disable_posting,
+      _disable_payments: s.disable_payments,
+      _disable_withdrawals: s.disable_withdrawals,
+      _disable_messaging: s.disable_messaging,
       _banner: s.emergency_banner,
     });
+
     if (error) return toast.error(error.message);
+
     toast.success("Platform settings updated");
     onSaved();
   };
+
+  const launchMarketplace = async () => {
+    if (initial?.launch_mode === "launched") return;
+
+    const approvedCount = prelaunchListingCount;
+    if (!confirm(
+      `Launch Tile Marketplace now?\n\nThis will make ${approvedCount} approved pre-launch listing${approvedCount === 1 ? "" : "s"} publicly visible.\n\nThis should only be used when you are ready for public launch.`,
+    )) {
+      return;
+    }
+
+    setLaunching(true);
+    const { error } = await supabase.rpc("admin_set_launch_mode", { _launch_mode: "launched" });
+    setLaunching(false);
+
+    if (error) return toast.error(error.message);
+
+    toast.success("Tile Marketplace has been launched.");
+    onLaunchChanged();
+  };
+
   const toggles: Array<[keyof typeof s, string, string]> = [
     ["maintenance_mode", "Maintenance mode", "Freeze all public actions and show a banner"],
     ["disable_registration", "Disable new signups", "Block new account creation"],
@@ -828,8 +1481,64 @@ function PlatformSettings({ initial, onSaved }: { initial: { maintenance_mode: b
     ["disable_withdrawals", "Freeze withdrawals", "Halt payouts pending review"],
     ["disable_messaging", "Disable messaging", "Freeze buyer↔seller chats"],
   ];
+
+  const launched = initial?.launch_mode === "launched";
+
   return (
     <div className="space-y-4 max-w-3xl">
+      <Card className="p-6 border-primary/30 bg-primary/5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Rocket className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Marketplace launch control</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Approved wait-list listings remain private until the marketplace is launched.
+            </p>
+          </div>
+
+          <Badge className={launched ? "bg-emerald-600 text-white" : "bg-amber-100 text-amber-800 border-amber-200"}>
+            {launched ? "LIVE" : "PRE-LAUNCH"}
+          </Badge>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border bg-background p-4">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground">Approved & waiting</p>
+            <p className="mt-1 text-2xl font-black">{prelaunchListingLoading ? "…" : prelaunchListingCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Listings currently approved but not public.</p>
+          </div>
+
+          <div className="rounded-xl border bg-background p-4">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground">Public state</p>
+            <p className="mt-1 text-lg font-black flex items-center gap-2">
+              {launched ? <><Eye className="h-4 w-4 text-emerald-600" /> Public marketplace</> : <><LockKeyhole className="h-4 w-4 text-amber-600" /> Hidden until launch</>}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Controlled by the database, not just the frontend.</p>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          {launched ? (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+              <p className="font-semibold text-emerald-700">Marketplace is live.</p>
+              <p className="text-sm text-muted-foreground mt-1">New listings will follow the live marketplace visibility rules.</p>
+            </div>
+          ) : (
+            <Button onClick={launchMarketplace} disabled={launching} className="w-full h-11 bg-primary text-primary-foreground">
+              {launching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
+              {launching ? "Launching marketplace…" : "Launch Marketplace"}
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <RefreshCw className="h-3.5 w-3.5" />
+          Launch status and approved pre-launch count refresh automatically.
+        </div>
+      </Card>
+
       <Card className="p-6 border-destructive/40">
         <div className="flex items-center gap-2 mb-4"><Settings2 className="h-5 w-5 text-destructive" /><h3 className="font-semibold text-lg">Emergency controls</h3></div>
         <p className="text-sm text-muted-foreground mb-4">Changes apply platform-wide immediately. Every change is audit-logged.</p>
