@@ -82,7 +82,7 @@ function WaitListPage() {
     user_type: "buyer", referral_code: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [referralStatus, setReferralStatus] = useState<{ valid: boolean; value: string }>({ valid: false, value: "" });
+  const [referralCheck, setReferralCheck] = useState<ReferralCheck>({ code: "", state: "idle" });
   const [joinedProfile, setJoinedProfile] = useState<WaitlistStatus | null>(null);
   const [statusHydrated, setStatusHydrated] = useState(false);
   const [profileTab, setProfileTab] = useState<ProfileTab>("overview");
@@ -115,7 +115,10 @@ function WaitListPage() {
   const countdown = useCountdown(launchContent.deadline);
 
   useEffect(() => {
-    void supabase.rpc("track_waitlist_event", { _event_type: "visit" });
+    // React Strict Mode runs effects twice in development; track a visit once.
+    if (visitTracked) return;
+    visitTracked = true;
+    void waitlistRpc("track_waitlist_event", { _event_type: "visit" }).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -126,7 +129,11 @@ function WaitListPage() {
     if (rememberedRef) {
       rememberReferralCode(rememberedRef);
       setForm((current) => ({ ...current, referral_code: rememberedRef }));
-      setReferralStatus({ valid: true, value: rememberedRef });
+      // Validity is confirmed by the database, never by the mere presence of ?ref.
+      setReferralCheck({ code: rememberedRef, state: "checking" });
+      if (ref) {
+        void waitlistRpc("track_waitlist_event", { _event_type: "referral_click" }).catch(() => undefined);
+      }
     }
 
     try {
