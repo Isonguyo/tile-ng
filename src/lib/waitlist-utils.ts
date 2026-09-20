@@ -5,6 +5,7 @@ import {
   Youtube, Music2, Twitter, MessageCircle, Crown, type LucideIcon,
 } from "lucide-react";
 import { LOCATIONS } from "@/lib/categories";
+import { siteUrl } from "@/lib/site-url";
 
 export const WAITLIST_ASSETS = {
   logo: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
@@ -501,6 +502,17 @@ export function scrollElementIntoView(
 export function buildReferralSharePath(token: string) {
   return `?ref=${encodeURIComponent(token)}`;
 }
+
+/** Full, production-safe invite link for a member's canonical referral token. */
+export function buildReferralShareUrl(token: string) {
+  return `${siteUrl("/wait-list")}${buildReferralSharePath(token)}`;
+}
+
+export type ReferralCheck = {
+  code: string;
+  state: "idle" | "checking" | "valid" | "invalid";
+  referrerName?: string;
+};
 
 export function fieldErrorsFromZod(error: z.ZodError): Record<string, string> {
   const next: Record<string, string> = {};
