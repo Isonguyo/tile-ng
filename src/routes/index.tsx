@@ -435,7 +435,8 @@ function Index() {
 
                   {/* Marketplace Card */}
                   <Link
-                    to="/#market"
+                    to="/"
+                    hash="market"
                     className="group rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-5 hover:bg-white/15 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
                     <div className="flex items-start gap-4">
@@ -551,7 +552,7 @@ function Index() {
                 </p>
               </div>
               <Button asChild variant="outline">
-                <Link to="/shops">View All</Link>
+                <Link to="/">View All</Link>
               </Button>
             </div>
 
@@ -599,7 +600,7 @@ function Index() {
                 </p>
               </div>
               <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 font-bold shrink-0">
-                <Link to="/shops">Find Verified Sellers</Link>
+                <Link to="/">Find Verified Sellers</Link>
               </Button>
             </div>
           </section>

@@ -472,7 +472,7 @@ function PostAd() {
                   </div>
                 </Button>
 
-                <Button type="button" variant="outline" className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal" onClick={() => (canOpenShop ? nav({ to: "/open-shop" }) : toast.info("Opening a shop requires Lite, Pro or VIP."))}>
+                <Button type="button" variant="outline" className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal" onClick={() => (canOpenShop ? nav({ to: "/dashboard" }) : toast.info("Opening a shop requires Lite, Pro or VIP."))}>
                   <div className="text-left">
                     <h3 className="font-bold text-lg">🏪 Open Your Own Shop</h3>
                     <p className="text-sm text-muted-foreground mt-1">Create a branded storefront, share a custom URL and unlock analytics.</p>
