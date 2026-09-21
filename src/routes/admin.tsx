@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { SiteHeader } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -351,7 +352,7 @@ function Admin() {
     enabled: isAdmin,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_list_pending_artisans");
+      const { data, error } = await rpcUntyped("admin_list_pending_artisans");
       if (error) throw error;
       return (data ?? []) as Array<{
         id: string;
@@ -787,7 +788,7 @@ function Admin() {
                             size="sm"
                             className="bg-emerald-600 hover:bg-emerald-700 text-white"
                             onClick={async () => {
-                              const { error } = await supabase.rpc("admin_approve_artisan", { _user_id: artisan.user_id });
+                              const { error } = await rpcUntyped("admin_approve_artisan", { _user_id: artisan.user_id });
                               if (error) return toast.error(error.message);
                               toast.success("Artisan approved");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
@@ -799,7 +800,7 @@ function Admin() {
 
                           <RejectArtisanModal
                             onConfirm={async (reason) => {
-                              const { error } = await supabase.rpc("admin_reject_artisan", {
+                              const { error } = await rpcUntyped("admin_reject_artisan", {
                                 _user_id: artisan.user_id,
                                 _reason: reason,
                               });
@@ -814,7 +815,7 @@ function Admin() {
                             variant="destructive"
                             onClick={async () => {
                               if (!confirm(`Flag ${artisan.full_name ?? "this artisan"}?`)) return;
-                              const { error } = await supabase.rpc("admin_flag_artisan", { _user_id: artisan.user_id });
+                              const { error } = await rpcUntyped("admin_flag_artisan", { _user_id: artisan.user_id });
                               if (error) return toast.error(error.message);
                               toast.success("Artisan flagged");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
@@ -1463,7 +1464,7 @@ function PlatformSettings({
     }
 
     setLaunching(true);
-    const { error } = await supabase.rpc("admin_set_launch_mode", { _launch_mode: "launched" });
+    const { error } = await rpcUntyped("admin_set_launch_mode", { _launch_mode: "launched" });
     setLaunching(false);
 
     if (error) return toast.error(error.message);

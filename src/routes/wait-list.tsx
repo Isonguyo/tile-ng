@@ -43,7 +43,7 @@ import {
   type WaitlistFormValues,
   type WaitlistStatus,
 } from "@/lib/waitlist-utils";
-import { waitlistRpc } from "@/lib/waitlist-rpc";
+import { waitlistRpc, rpcUntyped } from "@/lib/waitlist-rpc";
 
 // Module-level so React Strict Mode's double effect run cannot double-count a visit.
 let visitTracked = false;
@@ -95,7 +95,7 @@ function WaitListPage() {
   const { data: pageData } = useQuery({
     queryKey: ["waitlist-page-data"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_waitlist_page_data");
+      const { data, error } = await rpcUntyped("get_waitlist_page_data");
       if (error) throw error;
       return parseWaitlistPageData(data);
     },

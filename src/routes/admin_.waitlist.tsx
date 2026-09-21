@@ -15,6 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/admin_/waitlist")({
@@ -54,7 +55,7 @@ function AdminWaitlistPage() {
     queryKey: ["waitlist-stats"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_waitlist_stats");
+      const { data, error } = await rpcUntyped("admin_waitlist_stats");
       if (error) throw error;
       return (data as unknown as Array<Record<string, number>>)?.[0] ?? null;
     },
@@ -64,7 +65,7 @@ function AdminWaitlistPage() {
     queryKey: ["waitlist-growth"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_waitlist_growth", { _days: 30 });
+      const { data, error } = await rpcUntyped("admin_waitlist_growth", { _days: 30 });
       if (error) throw error;
       return (data as unknown as Array<{ day: string; signups: number }>) ?? [];
     },
