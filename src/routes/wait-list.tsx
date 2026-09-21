@@ -39,9 +39,14 @@ import {
   scrollElementIntoView,
   waitlistContentSchemas,
   waitlistJoinSchema,
+  type ReferralCheck,
   type WaitlistFormValues,
   type WaitlistStatus,
 } from "@/lib/waitlist-utils";
+import { waitlistRpc } from "@/lib/waitlist-rpc";
+
+// Module-level so React Strict Mode's double effect run cannot double-count a visit.
+let visitTracked = false;
 
 export const Route = createFileRoute("/wait-list")({
   head: () => ({
