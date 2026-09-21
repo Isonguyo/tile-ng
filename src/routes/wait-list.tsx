@@ -542,7 +542,7 @@ function WaitListPage() {
             <WaitlistForm
               form={form}
               errors={errors}
-              referralReady={referralStatus.valid}
+              referral={referralCheck}
               formContent={formContent}
               pending={join.isPending}
               onChange={onFormChange}

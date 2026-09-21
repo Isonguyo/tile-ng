@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { LOCATIONS } from "@/lib/categories";
-import type { FormContent, WaitlistFormValues } from "@/lib/waitlist-utils";
+import type { FormContent, ReferralCheck, WaitlistFormValues } from "@/lib/waitlist-utils";
 
 const USER_TYPES = [
   { v: "buyer" as const, l: "Individual Buyer" },
@@ -19,7 +19,7 @@ const USER_TYPES = [
 type WaitlistFormProps = {
   form: WaitlistFormValues;
   errors: Record<string, string>;
-  referralReady: boolean;
+  referral: ReferralCheck;
   formContent: FormContent;
   pending: boolean;
   onChange: (key: keyof WaitlistFormValues, value: string) => void;
@@ -29,7 +29,7 @@ type WaitlistFormProps = {
 export function WaitlistForm({
   form,
   errors,
-  referralReady,
+  referral,
   formContent,
   pending,
   onChange,
