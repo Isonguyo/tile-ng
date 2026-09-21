@@ -314,8 +314,7 @@ function Admin() {
     enabled: isAdmin,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("listings")
+      const { data, error } = await fromUntyped("listings")
         .select("id,title,price,category,created_at,user_id,is_prelaunch,status")
         .eq("status", "approved")
         .eq("is_prelaunch", true)
@@ -324,7 +323,7 @@ function Admin() {
 
       if (error) throw error;
 
-      const rows = data ?? [];
+      const rows = (data ?? []) as Array<{ id: string; title: string; price: number | null; category: string; created_at: string; user_id: string; status: string }>;
       const ids = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
       let profileMap = new Map<string, { full_name: string | null }>();
 
@@ -355,7 +354,7 @@ function Admin() {
     queryFn: async () => {
       const { data, error } = await rpcUntyped("admin_list_pending_artisans");
       if (error) throw error;
-      return (data ?? []) as Array<{
+      return (data ?? []) as unknown as Array<{
         id: string;
         full_name: string | null;
         profession: string | null;
@@ -805,7 +804,7 @@ function Admin() {
                                 _user_id: artisan.user_id,
                                 _reason: reason,
                               });
-                              if (error) return toast.error(error.message);
+                              if (error) { toast.error(error.message); return; }
                               toast.success("Artisan sent back for changes");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
                             }}
@@ -1043,7 +1042,7 @@ function Admin() {
                   </p>
                 </div>
                 <Badge variant="outline" className="w-fit">
-                  {platform?.launch_mode === "launched" ? "Marketplace launched" : "Pre-launch mode"}
+                  {(platform as { launch_mode?: string } | undefined)?.launch_mode === "launched" ? "Marketplace launched" : "Pre-launch mode"}
                 </Badge>
               </div>
             </Card>
