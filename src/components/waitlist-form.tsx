@@ -101,9 +101,11 @@ export function WaitlistForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="referral">Referral code <span className="text-muted-foreground">(optional)</span></Label>
-            {form.referral_code && (
+            {referral.state === "valid" && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
-                Referral attribution is attached to this signup.
+                {referral.referrerName
+                  ? `${referral.referrerName} invited you. Your signup will be credited to them.`
+                  : "Referral confirmed. Your signup will be credited to the person who invited you."}
               </div>
             )}
             <Input
@@ -116,8 +118,13 @@ export function WaitlistForm({
               autoCorrect="off"
               spellCheck={false}
             />
-            {referralReady && (
-              <p className="text-xs font-medium text-primary">Referral link detected and ready to use</p>
+            {referral.state === "checking" && (
+              <p className="text-xs text-muted-foreground">Checking this referral code…</p>
+            )}
+            {referral.state === "invalid" && (
+              <p className="text-xs text-amber-600 dark:text-amber-500">
+                Referral code not recognized. You can still join the waitlist.
+              </p>
             )}
           </div>
         </div>
