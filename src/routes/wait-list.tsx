@@ -176,11 +176,7 @@ function WaitListPage() {
     setStatusLoading(true);
 
     try {
-      const { data, error } = await supabase.rpc("get_my_waitlist_status", {
-        _email: email,
-      });
-
-      if (error) throw error;
+      const data = await waitlistRpc("get_my_waitlist_status", { _email: email });
 
       const result = parseWaitlistStatus(data);
 
@@ -208,10 +204,10 @@ function WaitListPage() {
     }
   };
 
-  const currentPosition =
-    joinedProfile?.queue_position ??
-    statusData?.queue_position ??
-    count + 1;
+  // A member's own queue position from the database always wins; the
+  // count-based estimate is only ever shown to visitors who have not joined.
+  const memberPosition = joinedProfile?.queue_position ?? statusData?.queue_position;
+  const currentPosition = memberPosition ?? count + 1;
 
   const currentReward =
     joinedProfile?.reward ??
@@ -229,7 +225,7 @@ function WaitListPage() {
   };
 
   const scrollToForm = useCallback(() => {
-    void supabase.rpc("track_waitlist_event", { _event_type: "join_click" });
+    void waitlistRpc("track_waitlist_event", { _event_type: "join_click" }).catch(() => undefined);
     scrollElementIntoView(formRef.current, { block: "center" });
   }, []);
 
@@ -242,7 +238,7 @@ function WaitListPage() {
 
   const join = useMutation({
     mutationFn: async (values: WaitlistFormValues) => {
-      const { data, error } = await supabase.rpc("join_waitlist_with_profile", {
+      const data = await waitlistRpc("join_waitlist_with_profile", {
         _full_name: values.full_name,
         _email: values.email,
         _phone: values.phone || undefined,
@@ -252,7 +248,6 @@ function WaitListPage() {
         _referral_code: values.referral_code || undefined,
         _source: "wait-list",
       });
-      if (error) throw error;
       return parseWaitlistStatus(data);
     },
     onSuccess: (result) => {
@@ -303,11 +298,12 @@ function WaitListPage() {
   const onFormChange = (key: keyof WaitlistFormValues, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
     if (key === "referral_code") {
-      if (value.trim()) {
-        rememberReferralCode(value);
-        setReferralStatus({ valid: true, value });
+      const clean = value.trim().toUpperCase();
+      if (clean) {
+        rememberReferralCode(clean);
+        setReferralCheck({ code: clean, state: "checking" });
       } else {
-        setReferralStatus({ valid: false, value: "" });
+        setReferralCheck({ code: "", state: "idle" });
       }
     }
   };
