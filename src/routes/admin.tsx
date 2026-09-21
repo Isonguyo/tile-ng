@@ -288,7 +288,7 @@ function Admin() {
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles").select("id,full_name,phone,created_at").order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; email: string | null; phone: string | null }>;
+      return (data ?? []) as unknown as Array<{ id: string; email: string | null; phone: string | null }>;
     },
   });
 
@@ -296,8 +296,7 @@ function Admin() {
     queryKey: ["admin-waitlist-signups"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("waitlist")
+      const { data, error } = await fromUntyped("waitlist")
         .select("id,full_name,email,phone,state,city,user_type,source,created_at,auth_user_id,account_created_at,queue_position")
         .order("created_at", { ascending: false })
         .limit(500);
