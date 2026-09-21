@@ -164,6 +164,60 @@ function WaitListPage() {
     }
   }, []);
 
+  // Referral codes are only ever marked valid after the database resolves them.
+  useEffect(() => {
+    if (referralCheck.state !== "checking") return;
+    const code = referralCheck.code;
+    if (!code) return;
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const data = await waitlistRpc("resolve_waitlist_referral", { _code: code });
+        if (!active) return;
+        const result = (data ?? {}) as { valid?: boolean; referrer_name?: string | null };
+        setReferralCheck({
+          code,
+          state: result.valid ? "valid" : "invalid",
+          referrerName: result.referrer_name ?? undefined,
+        });
+      } catch {
+        if (active) setReferralCheck({ code, state: "idle" });
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [referralCheck.code, referralCheck.state]);
+
+  // Local storage is only a cache — refresh the member record from the database.
+  useEffect(() => {
+    if (!statusHydrated) return;
+    const email = joinedProfile?.email;
+    if (!email) return;
+
+    let active = true;
+    void (async () => {
+      try {
+        const data = await waitlistRpc("get_my_waitlist_status", { _email: email });
+        const result = parseWaitlistStatus(data);
+        if (!active || result?.status !== "found") return;
+        setJoinedProfile(result);
+        setStatusData(result);
+        persistWaitlistStatusLocal(result);
+      } catch {
+        // Keep the cached member view if the refresh fails.
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+    // Refresh once per hydration, keyed on the known member email.
+  }, [statusHydrated, joinedProfile?.email]);
+
   const persistWaitlistStatus = (status: WaitlistStatus) => {
     setJoinedProfile(status);
     persistWaitlistStatusLocal(status);
