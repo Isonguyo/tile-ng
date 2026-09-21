@@ -599,7 +599,7 @@ function Index() {
                 </p>
               </div>
               <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 font-bold shrink-0">
-                <Link to="/shops" search={{ verified: true }}>Find Verified Sellers</Link>
+                <Link to="/shops">Find Verified Sellers</Link>
               </Button>
             </div>
           </section>
@@ -613,7 +613,7 @@ function Index() {
                 <Icons.Flame className="h-6 w-6 text-orange-500 animate-pulse" />
                 <h2 className="text-2xl font-bold tracking-tight">Trending Products</h2>
               </div>
-              <Link to="/" search={{ sortBy: "popular" }} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link to="/" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
                 View All <Icons.ArrowRight className="h-4 w-4" />
               </Link>
             </div>

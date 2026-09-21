@@ -127,7 +127,8 @@ function VerifyEmailPage() {
         return;
       }
 
-      if (data?.status === "linked") {
+      const linkResult = (data ?? {}) as { status?: string };
+      if (linkResult.status === "linked") {
         setWaitlistLinked(true);
 
         try {
