@@ -22,6 +22,25 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
+type ArtisanProfile = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  profile_photo: string | null;
+  bio: string | null;
+  profession: string | null;
+  state: string | null;
+  lga: string | null;
+  years_experience: number | null;
+  starting_price: number | null;
+  portfolio_images: string[] | null;
+  is_verified: boolean;
+  is_artisan: boolean | null;
+  subscription_tier: string;
+  avg_rating: number;
+  total_sales: number;
+};
+
 export const Route = createFileRoute("/artisans/$id")({
   head: ({ loaderData }) => {
     const name = (loaderData as { full_name?: string | null } | undefined)?.full_name;
@@ -46,7 +65,7 @@ export const Route = createFileRoute("/artisans/$id")({
       .maybeSingle();
     if (error) throw error;
     if (!data || !data.is_artisan) throw notFound();
-    return data;
+    return data as ArtisanProfile;
   },
   notFoundComponent: () => (
     <div className="min-h-screen bg-background">
