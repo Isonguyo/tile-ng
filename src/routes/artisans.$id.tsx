@@ -101,7 +101,7 @@ function sanitizePhone(v?: string | null): string | null {
 
 function ArtisanDetailPage() {
   // The loader throws a not-found error when no artisan matches, so the record is present here.
-  const artisan = Route.useLoaderData()!;
+  const artisan = Route.useLoaderData() as unknown as ArtisanProfile;
 
   const [preview, setPreview] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
