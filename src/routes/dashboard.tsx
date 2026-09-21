@@ -253,7 +253,7 @@ function Dashboard() {
                 </div>
 
                 <Button asChild>
-                  <Link to={`/artisans/${profile.id}`}>
+                  <Link to="/artisans/$id" params={{ id: profile.id }}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Public Profile
                   </Link>
@@ -897,7 +897,7 @@ function ArtisanProfileCard({
         </div>
 
         <Button asChild>
-          <Link to="/become-artisan">
+          <Link to="/artisan/edit">
             <Pencil className="h-4 w-4 mr-2" />
             Edit Profile
           </Link>

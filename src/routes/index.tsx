@@ -435,7 +435,8 @@ function Index() {
 
                   {/* Marketplace Card */}
                   <Link
-                    to="/#market"
+                    to="/"
+                    hash="market"
                     className="group rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-5 hover:bg-white/15 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
                     <div className="flex items-start gap-4">
@@ -551,7 +552,7 @@ function Index() {
                 </p>
               </div>
               <Button asChild variant="outline">
-                <Link to="/shops">View All</Link>
+                <Link to="/">View All</Link>
               </Button>
             </div>
 
@@ -599,7 +600,7 @@ function Index() {
                 </p>
               </div>
               <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 font-bold shrink-0">
-                <Link to="/shops" search={{ verified: true }}>Find Verified Sellers</Link>
+                <Link to="/">Find Verified Sellers</Link>
               </Button>
             </div>
           </section>
@@ -613,7 +614,7 @@ function Index() {
                 <Icons.Flame className="h-6 w-6 text-orange-500 animate-pulse" />
                 <h2 className="text-2xl font-bold tracking-tight">Trending Products</h2>
               </div>
-              <Link to="/" search={{ sortBy: "popular" }} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link to="/" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
                 View All <Icons.ArrowRight className="h-4 w-4" />
               </Link>
             </div>

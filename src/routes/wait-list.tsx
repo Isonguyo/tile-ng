@@ -39,9 +39,14 @@ import {
   scrollElementIntoView,
   waitlistContentSchemas,
   waitlistJoinSchema,
+  type ReferralCheck,
   type WaitlistFormValues,
   type WaitlistStatus,
 } from "@/lib/waitlist-utils";
+import { waitlistRpc, rpcUntyped } from "@/lib/waitlist-rpc";
+
+// Module-level so React Strict Mode's double effect run cannot double-count a visit.
+let visitTracked = false;
 
 export const Route = createFileRoute("/wait-list")({
   head: () => ({
@@ -90,7 +95,7 @@ function WaitListPage() {
   const { data: pageData } = useQuery({
     queryKey: ["waitlist-page-data"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_waitlist_page_data");
+      const { data, error } = await rpcUntyped("get_waitlist_page_data");
       if (error) throw error;
       return parseWaitlistPageData(data);
     },
@@ -159,6 +164,60 @@ function WaitListPage() {
     }
   }, []);
 
+  // Referral codes are only ever marked valid after the database resolves them.
+  useEffect(() => {
+    if (referralCheck.state !== "checking") return;
+    const code = referralCheck.code;
+    if (!code) return;
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const data = await waitlistRpc("resolve_waitlist_referral", { _code: code });
+        if (!active) return;
+        const result = (data ?? {}) as { valid?: boolean; referrer_name?: string | null };
+        setReferralCheck({
+          code,
+          state: result.valid ? "valid" : "invalid",
+          referrerName: result.referrer_name ?? undefined,
+        });
+      } catch {
+        if (active) setReferralCheck({ code, state: "idle" });
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [referralCheck.code, referralCheck.state]);
+
+  // Local storage is only a cache — refresh the member record from the database.
+  useEffect(() => {
+    if (!statusHydrated) return;
+    const email = joinedProfile?.email;
+    if (!email) return;
+
+    let active = true;
+    void (async () => {
+      try {
+        const data = await waitlistRpc("get_my_waitlist_status", { _email: email });
+        const result = parseWaitlistStatus(data);
+        if (!active || result?.status !== "found") return;
+        setJoinedProfile(result);
+        setStatusData(result);
+        persistWaitlistStatusLocal(result);
+      } catch {
+        // Keep the cached member view if the refresh fails.
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+    // Refresh once per hydration, keyed on the known member email.
+  }, [statusHydrated, joinedProfile?.email]);
+
   const persistWaitlistStatus = (status: WaitlistStatus) => {
     setJoinedProfile(status);
     persistWaitlistStatusLocal(status);
@@ -176,11 +235,7 @@ function WaitListPage() {
     setStatusLoading(true);
 
     try {
-      const { data, error } = await supabase.rpc("get_my_waitlist_status", {
-        _email: email,
-      });
-
-      if (error) throw error;
+      const data = await waitlistRpc("get_my_waitlist_status", { _email: email });
 
       const result = parseWaitlistStatus(data);
 
@@ -208,10 +263,10 @@ function WaitListPage() {
     }
   };
 
-  const currentPosition =
-    joinedProfile?.queue_position ??
-    statusData?.queue_position ??
-    count + 1;
+  // A member's own queue position from the database always wins; the
+  // count-based estimate is only ever shown to visitors who have not joined.
+  const memberPosition = joinedProfile?.queue_position ?? statusData?.queue_position;
+  const currentPosition = memberPosition ?? count + 1;
 
   const currentReward =
     joinedProfile?.reward ??
@@ -229,7 +284,7 @@ function WaitListPage() {
   };
 
   const scrollToForm = useCallback(() => {
-    void supabase.rpc("track_waitlist_event", { _event_type: "join_click" });
+    void waitlistRpc("track_waitlist_event", { _event_type: "join_click" }).catch(() => undefined);
     scrollElementIntoView(formRef.current, { block: "center" });
   }, []);
 
@@ -242,7 +297,7 @@ function WaitListPage() {
 
   const join = useMutation({
     mutationFn: async (values: WaitlistFormValues) => {
-      const { data, error } = await supabase.rpc("join_waitlist_with_profile", {
+      const data = await waitlistRpc("join_waitlist_with_profile", {
         _full_name: values.full_name,
         _email: values.email,
         _phone: values.phone || undefined,
@@ -252,7 +307,6 @@ function WaitListPage() {
         _referral_code: values.referral_code || undefined,
         _source: "wait-list",
       });
-      if (error) throw error;
       return parseWaitlistStatus(data);
     },
     onSuccess: (result) => {
@@ -303,11 +357,12 @@ function WaitListPage() {
   const onFormChange = (key: keyof WaitlistFormValues, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
     if (key === "referral_code") {
-      if (value.trim()) {
-        rememberReferralCode(value);
-        setReferralStatus({ valid: true, value });
+      const clean = value.trim().toUpperCase();
+      if (clean) {
+        rememberReferralCode(clean);
+        setReferralCheck({ code: clean, state: "checking" });
       } else {
-        setReferralStatus({ valid: false, value: "" });
+        setReferralCheck({ code: "", state: "idle" });
       }
     }
   };
@@ -487,7 +542,7 @@ function WaitListPage() {
             <WaitlistForm
               form={form}
               errors={errors}
-              referralReady={referralStatus.valid}
+              referral={referralCheck}
               formContent={formContent}
               pending={join.isPending}
               onChange={onFormChange}

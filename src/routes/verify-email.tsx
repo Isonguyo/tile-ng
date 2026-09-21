@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -119,14 +120,15 @@ function VerifyEmailPage() {
     if (waitlistLinked) return;
 
     try {
-      const { data, error } = await supabase.rpc("link_my_waitlist_account");
+      const { data, error } = await rpcUntyped("link_my_waitlist_account");
 
       if (error) {
         console.error("Waitlist account link failed:", error);
         return;
       }
 
-      if (data?.status === "linked") {
+      const linkResult = (data ?? {}) as { status?: string };
+      if (linkResult.status === "linked") {
         setWaitlistLinked(true);
 
         try {

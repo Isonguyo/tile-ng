@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,7 +134,7 @@ function SignupPage() {
   const linkWaitlistIfNeeded = async () => {
     if (!fromWaitlist) return;
 
-    const { error } = await supabase.rpc("link_my_waitlist_account");
+    const { error } = await rpcUntyped("link_my_waitlist_account");
     if (error) {
       console.error("Unable to link wait-list account:", error);
       return;

@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
+import { fromUntyped } from "@/lib/db-untyped";
 import { SiteHeader } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -288,7 +290,7 @@ function Admin() {
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles").select("id,full_name,phone,created_at").order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; email: string | null; phone: string | null }>;
+      return (data ?? []) as unknown as Array<{ id: string; email: string | null; phone: string | null }>;
     },
   });
 
@@ -296,8 +298,7 @@ function Admin() {
     queryKey: ["admin-waitlist-signups"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("waitlist")
+      const { data, error } = await fromUntyped("waitlist")
         .select("id,full_name,email,phone,state,city,user_type,source,created_at,auth_user_id,account_created_at,queue_position")
         .order("created_at", { ascending: false })
         .limit(500);
@@ -313,8 +314,7 @@ function Admin() {
     enabled: isAdmin,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("listings")
+      const { data, error } = await fromUntyped("listings")
         .select("id,title,price,category,created_at,user_id,is_prelaunch,status")
         .eq("status", "approved")
         .eq("is_prelaunch", true)
@@ -323,7 +323,7 @@ function Admin() {
 
       if (error) throw error;
 
-      const rows = data ?? [];
+      const rows = (data ?? []) as Array<{ id: string; title: string; price: number | null; category: string; created_at: string; user_id: string; status: string }>;
       const ids = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
       let profileMap = new Map<string, { full_name: string | null }>();
 
@@ -352,9 +352,9 @@ function Admin() {
     enabled: isAdmin,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_list_pending_artisans");
+      const { data, error } = await rpcUntyped("admin_list_pending_artisans");
       if (error) throw error;
-      return (data ?? []) as Array<{
+      return (data ?? []) as unknown as Array<{
         id: string;
         full_name: string | null;
         profession: string | null;
@@ -788,7 +788,7 @@ function Admin() {
                             size="sm"
                             className="bg-emerald-600 hover:bg-emerald-700 text-white"
                             onClick={async () => {
-                              const { error } = await supabase.rpc("admin_approve_artisan", { _user_id: artisan.user_id });
+                              const { error } = await rpcUntyped("admin_approve_artisan", { _user_id: artisan.user_id });
                               if (error) return toast.error(error.message);
                               toast.success("Artisan approved");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
@@ -800,11 +800,11 @@ function Admin() {
 
                           <RejectArtisanModal
                             onConfirm={async (reason) => {
-                              const { error } = await supabase.rpc("admin_reject_artisan", {
+                              const { error } = await rpcUntyped("admin_reject_artisan", {
                                 _user_id: artisan.user_id,
                                 _reason: reason,
                               });
-                              if (error) return toast.error(error.message);
+                              if (error) { toast.error(error.message); return; }
                               toast.success("Artisan sent back for changes");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
                             }}
@@ -815,7 +815,7 @@ function Admin() {
                             variant="destructive"
                             onClick={async () => {
                               if (!confirm(`Flag ${artisan.full_name ?? "this artisan"}?`)) return;
-                              const { error } = await supabase.rpc("admin_flag_artisan", { _user_id: artisan.user_id });
+                              const { error } = await rpcUntyped("admin_flag_artisan", { _user_id: artisan.user_id });
                               if (error) return toast.error(error.message);
                               toast.success("Artisan flagged");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
@@ -1042,7 +1042,7 @@ function Admin() {
                   </p>
                 </div>
                 <Badge variant="outline" className="w-fit">
-                  {platform?.launch_mode === "launched" ? "Marketplace launched" : "Pre-launch mode"}
+                  {(platform as { launch_mode?: string } | undefined)?.launch_mode === "launched" ? "Marketplace launched" : "Pre-launch mode"}
                 </Badge>
               </div>
             </Card>
@@ -1464,7 +1464,7 @@ function PlatformSettings({
     }
 
     setLaunching(true);
-    const { error } = await supabase.rpc("admin_set_launch_mode", { _launch_mode: "launched" });
+    const { error } = await rpcUntyped("admin_set_launch_mode", { _launch_mode: "launched" });
     setLaunching(false);
 
     if (error) return toast.error(error.message);
