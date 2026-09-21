@@ -24,6 +24,7 @@ import {
 
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { fromUntyped } from "@/lib/db-untyped";
 import { ARTISAN_CATEGORIES } from "@/lib/artisan-categories";
 import { toast } from "sonner";
 
@@ -294,8 +295,7 @@ function ArtisanCreatePage() {
         }
       }
 
-      const { error } = await supabase
-        .from("profiles")
+      const { error } = await fromUntyped("profiles")
         .update({
           full_name: values.full_name,
           profession: values.profession,
