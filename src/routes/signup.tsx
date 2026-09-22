@@ -18,6 +18,7 @@ import { EmailVerificationNotice } from "@/components/auth/email-verification-no
 import { signupSchema, accountTypes, type AccountType } from "@/lib/auth-schemas";
 import { Loader2, ShoppingBag, Store, Wrench, Eye, EyeOff, Phone, Briefcase } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { siteUrl } from "@/lib/site-url";
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
@@ -156,7 +157,7 @@ function SignupPage() {
     }
 
     setBusy(true);
-    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/verify-email` : undefined;
+    const redirectTo = siteUrl("/verify-email");
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
