@@ -1678,6 +1678,14 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      artisan_profile_contact: {
+        Args: { _artisan_id: string }
+        Returns: {
+          email: string
+          phone: string
+          whatsapp: string
+        }[]
+      }
       category_counts: {
         Args: never
         Returns: {
