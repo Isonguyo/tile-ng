@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   FOUNDING_REWARDS,
-  buildReferralSharePath,
+  buildReferralShareUrl,
   formatRewardRange,
   getFoundingReward,
   type FoundingReward,
@@ -58,7 +58,7 @@ export function WaitlistProfile({
       return;
     }
 
-    setShareLink(`${window.location.origin}${window.location.pathname}${buildReferralSharePath(token)}`);
+    setShareLink(buildReferralShareUrl(token));
   }, [status?.referral_token]);
 
   const copyShareLink = async () => {
