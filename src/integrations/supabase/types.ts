@@ -443,6 +443,7 @@ export type Database = {
           promotion_type: string | null
           rejection_reason: string | null
           renewed_count: number
+          republished_from_expiry: boolean
           service_mode: Database["public"]["Enums"]["service_mode"] | null
           status: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -471,6 +472,7 @@ export type Database = {
           promotion_type?: string | null
           rejection_reason?: string | null
           renewed_count?: number
+          republished_from_expiry?: boolean
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -499,6 +501,7 @@ export type Database = {
           promotion_type?: string | null
           rejection_reason?: string | null
           renewed_count?: number
+          republished_from_expiry?: boolean
           service_mode?: Database["public"]["Enums"]["service_mode"] | null
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
@@ -1723,6 +1726,10 @@ export type Database = {
           wallet_balance: number
         }[]
       }
+      effective_tier_rank: {
+        Args: { _tier: Database["public"]["Enums"]["sub_tier"]; _until: string }
+        Returns: number
+      }
       ensure_chat: { Args: { _listing_id: string }; Returns: string }
       expire_old_listings: { Args: never; Returns: number }
       gen_shop_slug: { Args: { _name: string }; Returns: string }
@@ -1799,6 +1806,7 @@ export type Database = {
           used_services: number
         }[]
       }
+      get_public_platform_flags: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1900,6 +1908,37 @@ export type Database = {
         Returns: boolean
       }
       renew_listing: { Args: { _listing_id: string }; Returns: string }
+      search_listings: {
+        Args: {
+          _category?: string
+          _limit?: number
+          _location?: string
+          _q?: string
+          _type?: string
+        }
+        Returns: {
+          category: string
+          clicks_count: number
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          is_promoted: boolean
+          location: string
+          price: number
+          rank_tier: number
+          seller_name: string
+          seller_shop: string
+          seller_tier: string
+          seller_verified: boolean
+          title: string
+          trust_score: number
+          type: Database["public"]["Enums"]["listing_type"]
+          user_id: string
+          views_count: number
+        }[]
+      }
+      seller_trust_score: { Args: { _uid: string }; Returns: number }
       set_vanity_slug: { Args: { _slug: string }; Returns: string }
       shop_contact: {
         Args: { _slug: string }
