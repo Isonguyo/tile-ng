@@ -1,3 +1,4 @@
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -122,13 +123,9 @@ function PostAd() {
   const { data: platformSettings } = useQuery({
     queryKey: ["post-ad-platform-settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("platform_settings")
-        .select("launch_mode, disable_posting")
-        .eq("id", 1)
-        .maybeSingle();
+      const { data, error } = await rpcUntyped("get_public_platform_flags");
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as { launch_mode?: "prelaunch" | "launched"; disable_posting?: boolean } | null;
     },
     staleTime: 30_000,

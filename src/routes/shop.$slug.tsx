@@ -1,3 +1,4 @@
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -168,15 +169,14 @@ function ShopPage() {
     return list;
   }, [shop, listings.length, avgRating, reviews.length, totalViews, followerCount, featuredListings.length]);
 
-  const trustScore = useMemo(() => {
-    let score = 40;
-    if (shop?.is_verified) score += 20;
-    if ((shop?.subscription_tier ?? "free") !== "free") score += 10;
-    score += Math.min(15, Math.round(avgRating * 3));
-    score += Math.min(10, Math.floor(reviews.length / 2));
-    score += Math.min(5, Math.floor(followerCount / 20));
-    return Math.min(100, score);
-  }, [shop, avgRating, reviews.length, followerCount]);
+  const { data: trustScore = 0 } = useQuery({
+    queryKey: ["seller-trust", shop?.id],
+    enabled: !!shop?.id,
+    queryFn: async () => {
+      const { data } = await rpcUntyped("seller_trust_score", { _uid: shop!.id! });
+      return typeof data === "number" ? data : 0;
+    },
+  });
 
   const dynamicCategories = useMemo(() => {
     const cats = new Map<string, number>();

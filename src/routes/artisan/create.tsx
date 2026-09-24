@@ -1,3 +1,4 @@
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -79,13 +80,9 @@ function ArtisanCreatePage() {
   const { data: platformSettings } = useQuery({
     queryKey: ["artisan-create-platform-settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("platform_settings")
-        .select("launch_mode, disable_posting")
-        .eq("id", 1)
-        .maybeSingle();
+      const { data, error } = await rpcUntyped("get_public_platform_flags");
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as { launch_mode?: "prelaunch" | "launched"; disable_posting?: boolean } | null;
     },
     staleTime: 30_000,

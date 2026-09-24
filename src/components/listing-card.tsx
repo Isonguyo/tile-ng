@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, ImageIcon, Eye, MousePointerClick, BadgeCheck } from "lucide-react";
+import { MapPin, Star, ImageIcon, Eye, MousePointerClick, BadgeCheck, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getSignedUrl } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
@@ -21,6 +21,7 @@ export type ListingCardData = {
   clicks_count?: number | null;
   seller_tier?: string | null;
   seller_verified?: boolean | null;
+  seller_trust?: number | null;
 };
 
 export function ListingCard({ l }: { l: ListingCardData }) {
@@ -117,7 +118,17 @@ export function ListingCard({ l }: { l: ListingCardData }) {
           {l.description && (
             <p className="text-xs text-muted-foreground line-clamp-2">{l.description}</p>
           )}
-          <p className="text-accent font-bold text-lg">{formatNaira(l.price)}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-accent font-bold text-lg">{formatNaira(l.price)}</p>
+            {typeof l.seller_trust === "number" && (
+              <span
+                title="Seller trust score"
+                className={`flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${l.seller_trust >= 70 ? "border-primary/40 text-primary" : l.seller_trust >= 40 ? "border-border text-muted-foreground" : "border-destructive/40 text-destructive"}`}
+              >
+                <ShieldCheck className="h-3 w-3" />{l.seller_trust}
+              </span>
+            )}
+          </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{l.location}</span>
             <span className="flex items-center gap-2">
