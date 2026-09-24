@@ -133,52 +133,19 @@ function Index() {
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings", { q, loc, cat }],
     queryFn: async () => {
-      let query = supabase
-        .from("listings")
-        .select(`
-          id, title, price, type, category, description, location, images, is_promoted, views_count, clicks_count, user_id, created_at
-        `)
-        .eq("status", "approved")
-        .limit(150);
-
-      if (q) {
-        query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`);
-      }
-      if (loc && loc !== "all") {
-        query = query.eq("location", loc);
-      }
-      if (cat) {
-        query = query.eq("category", cat);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const rows = (data as Array<ListingCardData & { user_id: string; created_at: string }>) || [];
-      const userIds = [...new Set(rows.map((r) => r.user_id))];
-
-      if (!userIds.length) return rows;
-
-      const { data: profiles } = await supabase
-        .from("shops")
-        .select(`id, subscription_tier, is_verified, business_name, avatar_url, shop_slug`)
-        .in("id", userIds);
-
-      const profileMap = new Map(((profiles || []) as ProfileRow[]).map((p) => [p.id, p]));
-
-      return rows
-        .map((listing) => ({
-          ...listing,
-          seller_tier: profileMap.get(listing.user_id)?.subscription_tier ?? null,
-          seller_verified: profileMap.get(listing.user_id)?.is_verified ?? false,
-          seller_shop: profileMap.get(listing.user_id)?.shop_slug ?? null,
-          seller_name: profileMap.get(listing.user_id)?.business_name ?? null,
-        }))
-        .sort((a, b) => {
-          if (a.is_promoted !== b.is_promoted) return a.is_promoted ? -1 : 1;
-          if (a.seller_verified !== b.seller_verified) return a.seller_verified ? -1 : 1;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
+      // Ranking (plan tier → promotion → trust → relevance → recency) happens in the database.
+      const { data, error } = await rpcUntyped("search_listings", {
+        _q: q || null,
+        _location: loc && loc !== "all" ? loc : null,
+        _category: cat || null,
+        _limit: 150,
+      });
+      if (error) throw new Error(error.message);
+      return ((data as Array<ListingCardData & { user_id: string; created_at: string; trust_score: number; seller_name: string | null; seller_shop: string | null }>) || []).map((r) => ({
+        ...r,
+        images: r.images ?? [],
+        seller_trust: r.trust_score,
+      }));
     },
   });
 

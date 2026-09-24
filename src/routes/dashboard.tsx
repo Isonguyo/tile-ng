@@ -669,9 +669,10 @@ function ListingRow({ l, onChange }: {
   }, [l.id]);
 
   const renew = async () => {
+    const wasExpired = (l as { status?: string }).status === "expired";
     const { error } = await supabase.rpc("renew_listing", { _listing_id: l.id });
     if (error) return toast.error(error.message);
-    toast.success("Renewed for 30 days");
+    toast.success(wasExpired ? "Republished for 30 days (standard visibility)" : "Renewed for 30 days");
     onChange();
   };
 
