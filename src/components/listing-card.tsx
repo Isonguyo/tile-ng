@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, ImageIcon, Eye, MousePointerClick, BadgeCheck } from "lucide-react";
+import { MapPin, Star, ImageIcon, Eye, MousePointerClick, BadgeCheck, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getSignedUrl } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";

@@ -1,3 +1,4 @@
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
