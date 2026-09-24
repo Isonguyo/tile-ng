@@ -11,7 +11,8 @@ import { getSignedUrls } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Store } from "lucide-react";
+import { Store, ShieldCheck } from "lucide-react";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 
 export const Route = createFileRoute("/listing/$id")({
   component: ListingDetail,
@@ -42,7 +43,8 @@ function ListingDetail() {
         .select("full_name, avatar_url, is_verified, shop_slug, subscription_tier")
         .eq("id", row.user_id)
         .maybeSingle();
-      return { ...row, profile: prof } as any;
+      const { data: trust } = await rpcUntyped("seller_trust_score", { _uid: row.user_id });
+      return { ...row, profile: prof, trust_score: typeof trust === "number" ? trust : null } as any;
     },
   });
 
@@ -205,6 +207,11 @@ function ListingDetail() {
                   {listing.profile?.full_name ?? "Vendor"}
                   {listing.profile?.is_verified && <Badge className="bg-accent text-accent-foreground ml-1">Verified</Badge>}
                 </p>
+                {typeof listing.trust_score === "number" && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Trust score <span className="font-semibold text-foreground">{listing.trust_score}/100</span>
+                  </p>
+                )}
               </div>
             </div>
             <Button
