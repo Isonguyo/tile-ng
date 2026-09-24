@@ -855,8 +855,8 @@ function ListingRow({ l, onChange }: {
       )}
       {l.status === "expired" && (
         <div className="mt-2 flex items-center gap-2 text-xs bg-muted p-2 rounded">
-          <AlertTriangle className="h-3 w-3" /> Expired.
-          <Button size="sm" variant="outline" className="ml-auto h-7" onClick={renew}><RefreshCw className="h-3 w-3 mr-1" />Reactivate</Button>
+          <AlertTriangle className="h-3 w-3" /> Expired — hidden from buyers and deleted 30 days after expiry. Republished ads get standard (free) visibility.
+          <Button size="sm" variant="outline" className="ml-auto h-7" onClick={renew}><RefreshCw className="h-3 w-3 mr-1" />Republish</Button>
         </div>
       )}
       {daysLeft !== null && daysLeft > 3 && l.status === "approved" && (
