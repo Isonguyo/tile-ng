@@ -431,6 +431,7 @@ export type Database = {
           condition: Database["public"]["Enums"]["item_condition"] | null
           created_at: string
           description: string
+          expired_at: string | null
           expires_at: string
           id: string
           images: string[]
@@ -460,6 +461,7 @@ export type Database = {
           condition?: Database["public"]["Enums"]["item_condition"] | null
           created_at?: string
           description: string
+          expired_at?: string | null
           expires_at?: string
           id?: string
           images?: string[]
@@ -489,6 +491,7 @@ export type Database = {
           condition?: Database["public"]["Enums"]["item_condition"] | null
           created_at?: string
           description?: string
+          expired_at?: string | null
           expires_at?: string
           id?: string
           images?: string[]
