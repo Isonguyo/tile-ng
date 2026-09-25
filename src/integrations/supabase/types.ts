@@ -1692,6 +1692,7 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      artisan_trust_score: { Args: { _uid: string }; Returns: number }
       category_counts: {
         Args: never
         Returns: {
@@ -1911,6 +1912,33 @@ export type Database = {
         Returns: boolean
       }
       renew_listing: { Args: { _listing_id: string }; Returns: string }
+      search_artisans: {
+        Args: {
+          _lga?: string
+          _q?: string
+          _state?: string
+          _verified_only?: boolean
+        }
+        Returns: {
+          avatar_url: string
+          avg_rating: number
+          bio: string
+          full_name: string
+          id: string
+          is_available: boolean
+          is_verified: boolean
+          lga: string
+          profession: string
+          profile_photo: string
+          review_count: number
+          starting_price: number
+          state: string
+          subscription_tier: Database["public"]["Enums"]["sub_tier"]
+          tier_rank: number
+          trust_score: number
+          years_experience: number
+        }[]
+      }
       search_listings: {
         Args: {
           _category?: string
