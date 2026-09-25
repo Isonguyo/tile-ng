@@ -718,6 +718,14 @@ function ArtisanDirectoryPage() {
                     <div className="h-2 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
 
                     <div className="p-6">
+                      <div className="mb-3 flex items-center gap-2 text-xs font-semibold">
+                        {tier !== "free" && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 uppercase text-primary">{tier}</span>
+                        )}
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                          Trust {artisan.trust_score}/100
+                        </span>
+                      </div>
 
                       {/* Header */}
                       <div className="flex items-start gap-4">
