@@ -66,38 +66,20 @@ function ArtisanDirectoryPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["artisans"],
+    queryKey: ["artisans-ranked"],
     queryFn: async () => {
-      console.log("========== ARTISAN QUERY ==========");
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(`
-      id,
-      full_name,
-      profession,
-      state,
-      lga,
-      bio,
-      avatar_url,
-      profile_photo,
-      is_verified,
-      is_artisan,
-      subscription_tier,
-      years_experience,
-      starting_price,
-      avg_rating
-    `)
-        .eq("is_artisan", true)
-        .order("full_name");
-
-      console.log("DATA:", data);
-      console.log("ERROR:", error);
-      console.log("===================================");
-
-      if (error) throw error;
-
-      return data ?? [];
+      const { data, error } = await rpcUntyped("search_artisans", {});
+      if (error) throw new Error(error.message);
+      return (data ?? []) as Array<{
+        id: string; full_name: string | null; profession: string | null;
+        state: string | null; lga: string | null; bio: string | null;
+        avatar_url: string | null; profile_photo: string | null;
+        is_verified: boolean | null; subscription_tier: string | null;
+        tier_rank: number; trust_score: number;
+        years_experience: number | null; starting_price: number | null;
+        avg_rating: number | null; review_count: number | null;
+        is_available: boolean | null;
+      }>;
     },
   });
 
@@ -106,63 +88,30 @@ function ArtisanDirectoryPage() {
     const state = normalize(qState);
     const lga = normalize(qLga);
 
-    let result = artisans.filter((artisan) => {
-      if (
-        profession &&
-        !normalize(artisan.profession).includes(profession)
-      )
-        return false;
-
-      if (state && !normalize(artisan.state).includes(state))
-        return false;
-
-      if (lga && !normalize(artisan.lga).includes(lga))
-        return false;
-
-      if (verifiedOnly && !artisan.is_verified)
-        return false;
-
+    const result = artisans.filter((artisan) => {
+      if (profession && !normalize(artisan.profession).includes(profession)) return false;
+      if (state && !normalize(artisan.state).includes(state)) return false;
+      if (lga && !normalize(artisan.lga).includes(lga)) return false;
+      if (verifiedOnly && !artisan.is_verified) return false;
       return true;
     });
 
-    switch (sortBy) {
-      case "rating":
-        return [...result].sort(
-          (a, b) => (b.avg_rating ?? 0) - (a.avg_rating ?? 0)
-        );
-
-      case "price_low":
-        return [...result].sort(
-          (a, b) =>
-            Number(a.starting_price ?? 0) -
-            Number(b.starting_price ?? 0)
-        );
-
-      case "experience":
-        return [...result].sort(
-          (a, b) =>
-            (b.years_experience ?? 0) -
-            (a.years_experience ?? 0)
-        );
-
-      default:
-        return result;
-    }
-  }, [
-    artisans,
-    qProfession,
-    qState,
-    qLga,
-    verifiedOnly,
-    sortBy,
-  ]);
+    // Tier always wins (VIP > PRO > LITE > Free), then trust; the chosen sort breaks ties.
+    const tieBreak = (a: typeof result[number], b: typeof result[number]) => {
+      switch (sortBy) {
+        case "price_low": return Number(a.starting_price ?? 0) - Number(b.starting_price ?? 0);
+        case "experience": return (b.years_experience ?? 0) - (a.years_experience ?? 0);
+        default: return (b.avg_rating ?? 0) - (a.avg_rating ?? 0);
+      }
+    };
+    return [...result].sort(
+      (a, b) => b.tier_rank - a.tier_rank || b.trust_score - a.trust_score || tieBreak(a, b)
+    );
+  }, [artisans, qProfession, qState, qLga, verifiedOnly, sortBy]);
 
   const featuredArtisans = useMemo(() => {
-    return [...artisans]
-      .filter((artisan) =>
-        isPremiumTier(artisan.subscription_tier)
-      )
-      .sort(() => Math.random() - 0.5)
+    return artisans
+      .filter((artisan) => isPremiumTier(artisan.subscription_tier))
       .slice(0, 3);
   }, [artisans]);
 
