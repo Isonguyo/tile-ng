@@ -55,7 +55,7 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-visible border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
         <div className="grid h-16 w-full grid-cols-5 items-center">
           {/* Home */}
           <NavItem
@@ -80,7 +80,7 @@ export function MobileBottomNav() {
                 <button
                   type="button"
                   aria-label="Create"
-                  className="absolute -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-105 active:scale-95"
+                  className="absolute -top-7 z-10 flex h-14 w-14 items-center justify-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-105 active:scale-95"
                 >
                   <Plus className="h-7 w-7" />
                 </button>

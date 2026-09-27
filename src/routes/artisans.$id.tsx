@@ -13,6 +13,8 @@ import {
   BadgeCheck,
   Sparkles,
   X,
+  Clock,
+  Zap,
 } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
@@ -70,19 +72,24 @@ export const Route = createFileRoute("/artisans/$id")({
   notFoundComponent: () => (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="container mx-auto max-w-2xl px-4 py-24 text-center">
-        <h1 className="text-2xl font-bold">Artisan not found</h1>
-        <p className="mt-2 text-muted-foreground">This profile may have been removed.</p>
-        <Button asChild className="mt-6"><Link to="/artisans">Browse artisans</Link></Button>
+      <div className="container mx-auto max-w-2xl px-4 py-32 text-center">
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted">
+          <UserRound className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <h1 className="text-3xl font-black tracking-tight">Profile Not Found</h1>
+        <p className="mt-3 text-lg text-muted-foreground">This artisan profile may have been removed or is currently unavailable.</p>
+        <Button asChild size="lg" className="mt-8 rounded-full">
+          <Link to="/artisans">Explore Other Artisans</Link>
+        </Button>
       </div>
     </div>
   ),
   errorComponent: ({ error }) => (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="container mx-auto max-w-2xl px-4 py-24 text-center">
-        <h1 className="text-2xl font-bold">Something went wrong</h1>
-        <p className="mt-2 text-muted-foreground">{error.message}</p>
+      <div className="container mx-auto max-w-2xl px-4 py-32 text-center">
+        <h1 className="text-3xl font-black tracking-tight text-destructive">Something went wrong</h1>
+        <p className="mt-3 text-lg text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
       </div>
     </div>
   ),
@@ -93,14 +100,12 @@ function sanitizePhone(v?: string | null): string | null {
   if (!v) return null;
   const digits = v.replace(/\D+/g, "");
   if (!digits) return null;
-  // Normalize Nigerian numbers to E.164 for wa.me
   if (digits.startsWith("234")) return digits;
   if (digits.startsWith("0")) return `234${digits.slice(1)}`;
   return digits;
 }
 
 function ArtisanDetailPage() {
-  // The loader throws a not-found error when no artisan matches, so the record is present here.
   const artisan = Route.useLoaderData() as unknown as ArtisanProfile;
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -110,9 +115,8 @@ function ArtisanDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const avatar = artisan.profile_photo || artisan.avatar_url;
-
-  console.log("Avatar URL:", avatar);
   const gallery: string[] = ((artisan.portfolio_images ?? []) as string[]).filter(Boolean);
+  
   const { data: contact } = useQuery({
     queryKey: ["artisan-contact", artisan.id, currentUser?.id],
     enabled: !!currentUser,
@@ -121,6 +125,7 @@ function ArtisanDetailPage() {
       return (data as unknown as Array<{ phone: string | null; whatsapp: string | null }>)?.[0] ?? null;
     },
   });
+  
   const waPhone = sanitizePhone(contact?.whatsapp || contact?.phone);
   const telPhone = contact?.phone?.replace(/\s+/g, "") || null;
 
@@ -135,9 +140,7 @@ function ArtisanDetailPage() {
 
   const isOwner = currentUser?.id === artisan.id;
 
-  const {
-    data: profile,
-  } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ["my-profile", currentUser?.id],
     enabled: !!currentUser,
     queryFn: async () => {
@@ -146,20 +149,13 @@ function ArtisanDetailPage() {
         .select("is_artisan")
         .eq("id", currentUser!.id)
         .single();
-
       return data;
     },
   });
 
-  const canReview =
-    !!currentUser &&
-    !isOwner &&
-    profile?.is_artisan !== true;
+  const canReview = !!currentUser && !isOwner && profile?.is_artisan !== true;
 
-  const {
-    data: reviews = [],
-    refetch: refetchReviews,
-  } = useQuery({
+  const { data: reviews = [], refetch: refetchReviews } = useQuery({
     queryKey: ["artisan-reviews", artisan.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -180,14 +176,12 @@ function ArtisanDetailPage() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
       return data ?? [];
     },
   });
 
   const submitReview = async () => {
     if (!canReview) return;
-
     setSubmitting(true);
 
     try {
@@ -201,12 +195,8 @@ function ArtisanDetailPage() {
       if (existing) {
         const { error } = await supabase
           .from("artisan_reviews")
-          .update({
-            rating,
-            comment: review,
-          })
+          .update({ rating, comment: review })
           .eq("id", existing.id);
-
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -217,7 +207,6 @@ function ArtisanDetailPage() {
             rating,
             comment: review,
           });
-
         if (error) throw error;
       }
 
@@ -228,30 +217,18 @@ function ArtisanDetailPage() {
 
       if (allReviews) {
         const reviewCount = allReviews.length;
-
-        const totalRating = allReviews.reduce(
-          (sum, item) => sum + Number(item.rating),
-          0
-        );
-
-        const averageRating =
-          reviewCount > 0
-            ? Number((totalRating / reviewCount).toFixed(1))
-            : 0;
+        const totalRating = allReviews.reduce((sum, item) => sum + Number(item.rating), 0);
+        const averageRating = reviewCount > 0 ? Number((totalRating / reviewCount).toFixed(1)) : 0;
 
         const { error } = await supabase
           .from("profiles")
-          .update({
-            avg_rating: averageRating,
-            review_count: reviewCount,
-          })
+          .update({ avg_rating: averageRating, review_count: reviewCount })
           .eq("id", artisan.id);
 
         if (error) throw error;
       }
 
       await refetchReviews();
-
       setReview("");
       setRating(5);
     } finally {
@@ -260,53 +237,53 @@ function ArtisanDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/20 pb-20">
       <SiteHeader />
 
-      <div className="container mx-auto max-w-6xl px-4 py-6">
-        <Button asChild variant="ghost" size="sm" className="mb-4">
-          <Link to="/artisans"><ArrowLeft className="mr-2 h-4 w-4" /> Back to artisans</Link>
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <Button asChild variant="ghost" size="sm" className="mb-6 rounded-full hover:bg-background">
+          <Link to="/artisans"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory</Link>
         </Button>
 
-        {/* Cover / hero card */}
-        <Card className="overflow-hidden rounded-3xl border-0 shadow-xl">
-          <div className="relative h-56 sm:h-72">
+        {/* Hero Section */}
+        <Card className="relative overflow-hidden rounded-[2.5rem] border-0 bg-background shadow-2xl shadow-primary/5 ring-1 ring-border/50">
+          <div className="relative h-64 sm:h-80">
             {gallery[0] ? (
               <img
                 src={gallery[0]}
-                alt=""
+                alt="Cover"
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="h-full w-full bg-gradient-to-br from-primary via-primary/80 to-emerald-600" />
+              <div className="h-full w-full bg-gradient-to-tr from-primary/90 via-primary/60 to-emerald-400" />
             )}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            {/* Premium Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
-            <div className="absolute right-5 top-5 flex flex-wrap gap-2">
+            {/* Badges */}
+            <div className="absolute right-6 top-6 flex flex-wrap gap-3">
               {artisan.is_verified && (
-                <Badge className="bg-emerald-500 text-white shadow-lg">
-                  <BadgeCheck className="mr-1 h-4 w-4" />
-                  Verified
+                <Badge className="border-0 bg-white/90 px-3 py-1.5 text-emerald-700 shadow-xl backdrop-blur-md">
+                  <BadgeCheck className="mr-1.5 h-4 w-4" />
+                  Verified Pro
                 </Badge>
               )}
-
               {isPremium && (
-                <Badge className="bg-amber-500 text-black shadow-lg">
-                  <Sparkles className="mr-1 h-4 w-4" />
+                <Badge className="border-0 bg-amber-500/90 px-3 py-1.5 text-white shadow-xl backdrop-blur-md">
+                  <Sparkles className="mr-1.5 h-4 w-4" />
                   {tier.toUpperCase()}
                 </Badge>
               )}
             </div>
           </div>
 
-          <div className="relative px-6 pb-8 sm:px-8">
-            <div className="-mt-16 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-
-              <div className="flex items-end gap-5">
-
-                <div className="relative h-32 w-32 overflow-hidden rounded-3xl border-4 border-background bg-card shadow-2xl">
-
+          <div className="relative px-6 pb-10 sm:px-10">
+            <div className="-mt-20 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              
+              <div className="flex flex-col sm:flex-row sm:items-end gap-6">
+                {/* Avatar */}
+                <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-full ring-8 ring-background bg-card shadow-xl">
                   {avatar ? (
                     <img
                       src={avatar}
@@ -315,358 +292,187 @@ function ArtisanDetailPage() {
                     />
                   ) : (
                     <div className="grid h-full w-full place-items-center bg-muted">
-                      <UserRound className="h-12 w-12 text-muted-foreground" />
+                      <UserRound className="h-16 w-16 text-muted-foreground/50" />
                     </div>
                   )}
-
-                  <span className="absolute bottom-2 right-2 h-5 w-5 rounded-full border-2 border-white bg-emerald-500" />
-
+                  {artisan.is_verified && (
+                    <span className="absolute bottom-3 right-3 h-6 w-6 rounded-full border-4 border-background bg-emerald-500" />
+                  )}
                 </div>
 
-                <div>
-
-                  <h1 className="text-3xl font-extrabold tracking-tight">
+                {/* Info */}
+                <div className="pb-2">
+                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
                     {artisan.full_name || "Anonymous Artisan"}
                   </h1>
-
-                  <p className="mt-1 text-lg font-semibold text-primary">
+                  <p className="mt-2 text-xl font-medium text-primary">
                     {artisan.profession || "Professional Artisan"}
                   </p>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-
-                    <span className="flex items-center gap-1">
+                  <div className="mt-4 flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4" />
                       {artisan.state || "Nigeria"}
-                      {artisan.lga && ` • ${artisan.lga}`}
+                      {artisan.lga && `, ${artisan.lga}`}
                     </span>
-
-                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                      Available Today
+                    <div className="h-1.5 w-1.5 rounded-full bg-border" />
+                    <span className="flex items-center gap-1.5 text-emerald-600">
+                      <Clock className="h-4 w-4" /> Available Today
                     </span>
-
-                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                      Responds Quickly
+                    <div className="h-1.5 w-1.5 rounded-full bg-border" />
+                    <span className="flex items-center gap-1.5 text-blue-600">
+                      <Zap className="h-4 w-4" /> Fast Responder
                     </span>
-
                   </div>
-
                 </div>
-
               </div>
 
-              <div className="flex flex-wrap gap-3">
-
+              {/* Action Buttons */}
+              <div className="flex w-full flex-col gap-3 pb-2 sm:w-auto sm:flex-row">
                 {telPhone && (
                   <Button
                     size="lg"
                     asChild
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="rounded-full bg-emerald-600 px-8 text-base shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
                   >
                     <a href={`tel:${telPhone}`}>
-                      <Phone className="mr-2 h-4 w-4" />
+                      <Phone className="mr-2.5 h-5 w-5" />
                       Call Now
                     </a>
                   </Button>
                 )}
-
                 {waPhone && (
                   <Button
                     size="lg"
                     variant="outline"
                     asChild
-                    className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+                    className="rounded-full border-border/50 px-8 text-base shadow-sm hover:bg-emerald-50 hover:text-emerald-700"
                   >
                     <a
                       href={`https://wa.me/${waPhone}`}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <MessageCircle className="mr-2 h-4 w-4" />
+                      <MessageCircle className="mr-2.5 h-5 w-5" />
                       WhatsApp
                     </a>
                   </Button>
                 )}
-
               </div>
-
             </div>
 
-            {/* Trust Statistics */}
-            <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-
-              <div className="rounded-2xl border bg-card p-5 transition-all hover:-translate-y-1 hover:shadow-lg">
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100">
-                  <Briefcase className="h-5 w-5 text-blue-600" />
-                </div>
-                <p className="text-2xl font-bold">
-                  {artisan.years_experience ?? 0}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Years Experience
-                </p>
-              </div>
-
-              <div className="rounded-2xl border bg-card p-5 transition-all hover:-translate-y-1 hover:shadow-lg">
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
-                  <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                </div>
-                <p className="text-2xl font-bold">
-                  {(artisan.avg_rating ?? 0).toFixed(1)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Customer Rating
-                </p>
-              </div>
-
-              <div className="rounded-2xl border bg-card p-5 transition-all hover:-translate-y-1 hover:shadow-lg">
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
-                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                </div>
-                <p className="text-2xl font-bold">
-                  {artisan.total_sales ?? 0}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Projects Completed
-                </p>
-              </div>
-
-              <div className="rounded-2xl border bg-card p-5 transition-all hover:-translate-y-1 hover:shadow-lg">
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-xl font-bold text-primary">
-                  {artisan.starting_price
-                    ? `₦${Number(artisan.starting_price).toLocaleString()}`
-                    : "Quote"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Starting Price
-                </p>
-              </div>
-
+            {/* Trust Statistics (Using integrated Stat component) */}
+            <div className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <Stat 
+                icon={<Briefcase className="h-5 w-5" />}
+                iconBg="bg-blue-50 text-blue-600"
+                label="Experience"
+                value={`${artisan.years_experience ?? 0} Years`}
+              />
+              <Stat 
+                icon={<Star className="h-5 w-5 fill-amber-500" />}
+                iconBg="bg-amber-50 text-amber-500"
+                label="Rating"
+                value={(artisan.avg_rating ?? 0).toFixed(1)}
+              />
+              <Stat 
+                icon={<ShieldCheck className="h-5 w-5" />}
+                iconBg="bg-emerald-50 text-emerald-600"
+                label="Projects Completed"
+                value={`${artisan.total_sales ?? 0}+`}
+              />
+              <Stat 
+                icon={<Sparkles className="h-5 w-5" />}
+                iconBg="bg-primary/10 text-primary"
+                label="Starting Price"
+                value={artisan.starting_price ? `₦${Number(artisan.starting_price).toLocaleString()}` : "Custom Quote"}
+              />
             </div>
-
           </div>
         </Card>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
-
-          {/* Portfolio */}
-          <Card className="rounded-3xl border-0 shadow-lg">
-            <div className="flex items-center justify-between border-b px-6 py-5">
-              <div>
-                <h2 className="text-2xl font-bold">Portfolio</h2>
-                <p className="text-sm text-muted-foreground">
-                  Recent work by this artisan
-                </p>
-              </div>
-
-              <Badge variant="secondary" className="rounded-full px-4 py-1">
-                {gallery.length} {gallery.length === 1 ? "Photo" : "Photos"}
-              </Badge>
-            </div>
-
-            {gallery.length === 0 ? (
-
-              <div className="flex h-72 flex-col items-center justify-center rounded-b-3xl text-center">
-
-                <Briefcase className="mb-4 h-12 w-12 text-muted-foreground" />
-
-                <h3 className="text-lg font-semibold">
-                  No Portfolio Yet
-                </h3>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                  This artisan hasn't uploaded any project photos.
-                </p>
-
-              </div>
-
-            ) : (
-
-              <div className="grid grid-cols-2 gap-4 p-6 md:grid-cols-3">
-
-                {gallery.map((src, i) => (
-
-                  <button
-                    key={`${src}-${i}`}
-                    type="button"
-                    onClick={() => setPreview(src)}
-                    className="group relative aspect-square overflow-hidden rounded-2xl"
-                  >
-
-                    <img
-                      src={src}
-                      alt={`Portfolio ${i + 1}`}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-                    />
-
-                    <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/30" />
-
-                    <div className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold opacity-0 transition group-hover:opacity-100">
-                      View Image
-                    </div>
-
-                  </button>
-
-                ))}
-
-              </div>
-
-            )}
-          </Card>
-
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            {/* Customer Reviews */}
-            <Card className="rounded-3xl border-0 shadow-lg">
-              <div className="border-b px-6 py-5">
-                <h2 className="text-xl font-bold">Customer Reviews</h2>
-                <p className="text-sm text-muted-foreground">
-                  Ratings and feedback from customers.
-                </p>
-              </div>
-
-              <div className="p-6">
-
-                {canReview && (
-                  <div className="mb-6 rounded-2xl border p-4">
-
-                    <label className="mb-2 block font-medium">
-                      Your Rating
-                    </label>
-
-                    <div className="mb-4 flex gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setRating(star)}
-                        >
-                          <Star
-                            className={`h-7 w-7 ${star <= rating
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-gray-300"
-                              }`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-
-                    <textarea
-                      value={review}
-                      onChange={(e) => setReview(e.target.value)}
-                      rows={4}
-                      placeholder="Share your experience with this artisan..."
-                      className="w-full rounded-xl border p-3"
-                    />
-
-                    <Button
-                      className="mt-4 w-full"
-                      onClick={submitReview}
-                      disabled={submitting}
-                    >
-                      {submitting ? "Submitting..." : "Submit Review"}
-                    </Button>
-
-                  </div>
-                )}
-
-                {!canReview && (
-                  <div className="mb-6 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-                    Only signed-in customers can leave reviews.
-                  </div>
-                )}
-
-                <div className="space-y-5">
-                  {reviews.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No reviews yet.
-                    </p>
-                  ) : (
-                    reviews.map((item: any) => (
-                      <div
-                        key={item.id}
-                        className="border-b pb-5 last:border-0"
-                      >
-                        <div className="flex items-center justify-between">
-
-                          <div>
-
-                            <p className="font-semibold">
-                              {item.profiles?.full_name ?? "Anonymous"}
-                            </p>
-
-                            <div className="mt-1 flex">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`h-4 w-4 ${star <= item.rating
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-gray-300"
-                                    }`}
-                                />
-                              ))}
-                            </div>
-
-                          </div>
-
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(item.created_at).toLocaleDateString()}
-                          </span>
-
-                        </div>
-
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          {item.comment}
-                        </p>
-
-                      </div>
-                    ))
-                  )}
+        <div className="mt-8 grid gap-8 lg:grid-cols-[2fr_1fr]">
+          
+          {/* Main Left Column */}
+          <div className="space-y-8">
+            {/* Portfolio */}
+            <Card className="overflow-hidden rounded-[2rem] border border-border/50 bg-background shadow-sm">
+              <div className="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight">Portfolio</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Recent work and completed projects</p>
                 </div>
-
+                <Badge variant="secondary" className="rounded-full bg-background px-4 py-1.5 text-sm font-medium shadow-sm">
+                  {gallery.length} {gallery.length === 1 ? "Photo" : "Photos"}
+                </Badge>
               </div>
+
+              {gallery.length === 0 ? (
+                <div className="flex h-72 flex-col items-center justify-center text-center px-6">
+                  <div className="mb-4 rounded-full bg-muted p-4">
+                    <Briefcase className="h-8 w-8 text-muted-foreground/50" />
+                  </div>
+                  <h3 className="text-lg font-semibold">No Portfolio Yet</h3>
+                  <p className="mt-2 text-sm text-muted-foreground max-w-sm">
+                    This artisan hasn't uploaded any project photos. Reach out to request examples of their past work.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 p-8 md:grid-cols-3">
+                  {gallery.map((src, i) => (
+                    <button
+                      key={`${src}-${i}`}
+                      type="button"
+                      onClick={() => setPreview(src)}
+                      className="group relative aspect-square overflow-hidden rounded-2xl bg-muted outline-none ring-primary transition-all focus-visible:ring-2"
+                    >
+                      <img
+                        src={src}
+                        alt={`Portfolio ${i + 1}`}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/30" />
+                      <div className="absolute bottom-4 left-4 translate-y-4 rounded-full bg-white/95 px-4 py-1.5 text-xs font-bold tracking-wide opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 text-black">
+                        View Image
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </Card>
 
             {/* About */}
-            <Card className="rounded-3xl border-0 shadow-lg">
-              <div className="border-b px-6 py-5">
-                <h2 className="text-xl font-bold">
-                  About the Artisan
-                </h2>
+            <Card className="overflow-hidden rounded-[2rem] border border-border/50 bg-background shadow-sm">
+              <div className="border-b border-border/50 bg-muted/10 px-8 py-6">
+                <h2 className="text-2xl font-bold tracking-tight">About the Artisan</h2>
               </div>
-
-              <div className="p-6">
-                <p className="leading-8 text-muted-foreground whitespace-pre-line">
+              <div className="p-8">
+                <p className="whitespace-pre-line text-lg leading-relaxed text-muted-foreground">
                   {artisan.bio?.trim() ||
-                    "This artisan hasn't added a biography yet. Contact them to learn more about their services and experience."}
+                    "This artisan hasn't added a biography yet. Contact them directly to learn more about their specific services, background, and expertise."}
                 </p>
               </div>
             </Card>
+          </div>
 
+          {/* Right Sidebar */}
+          <div className="space-y-8">
+            
             {/* Contact Card */}
-            <Card className="rounded-3xl border-0 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-xl">
-
-              <div className="p-6">
-
-                <h2 className="text-xl font-bold">
-                  Contact Artisan
-                </h2>
-
-                <p className="mt-2 text-sm text-primary-foreground/80">
-                  Ready to start your project? Reach out directly.
+            <Card className="overflow-hidden rounded-[2rem] border border-emerald-900/10 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 text-white shadow-xl">
+              <div className="p-8">
+                <h2 className="text-2xl font-bold tracking-tight">Hire {artisan.full_name?.split(" ")[0] || "Artisan"}</h2>
+                <p className="mt-2 text-emerald-100/80">
+                  Ready to start your project? Reach out to discuss details and get a quote.
                 </p>
 
-                <div className="mt-6 space-y-4">
-
+                <div className="mt-8 space-y-3">
                   {telPhone && (
                     <Button
                       asChild
                       size="lg"
                       variant="secondary"
-                      className="w-full justify-start rounded-xl"
+                      className="w-full justify-start rounded-xl border-0 bg-white/10 text-white hover:bg-white/20"
                     >
                       <a href={`tel:${telPhone}`}>
                         <Phone className="mr-3 h-5 w-5" />
@@ -674,12 +480,11 @@ function ArtisanDetailPage() {
                       </a>
                     </Button>
                   )}
-
                   {waPhone && (
                     <Button
                       asChild
                       size="lg"
-                      className="w-full justify-start rounded-xl bg-emerald-600 hover:bg-emerald-700"
+                      className="w-full justify-start rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
                     >
                       <a
                         href={`https://wa.me/${waPhone}`}
@@ -691,90 +496,186 @@ function ArtisanDetailPage() {
                       </a>
                     </Button>
                   )}
-
                 </div>
 
-                <div className="mt-6 rounded-2xl bg-white/10 p-4">
-
-                  <p className="text-sm font-semibold">
-                    Why hire through Tile?
-                  </p>
-
-                  <ul className="mt-3 space-y-2 text-sm text-primary-foreground/90">
-
-                    <li className="flex items-center gap-2">
-                      <ShieldCheck className="h-4 w-4" />
+                <div className="mt-8 rounded-2xl bg-black/20 p-5 backdrop-blur-md">
+                  <p className="text-sm font-semibold text-emerald-50">The Tile Guarantee</p>
+                  <ul className="mt-4 space-y-3 text-sm text-emerald-100/90">
+                    <li className="flex items-center gap-3">
+                      <div className="rounded-full bg-emerald-500/20 p-1">
+                        <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                      </div>
                       Verified professionals
                     </li>
-
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4" />
-                      Trusted by customers
+                    <li className="flex items-center gap-3">
+                      <div className="rounded-full bg-emerald-500/20 p-1">
+                        <Star className="h-4 w-4 text-emerald-400" />
+                      </div>
+                      Community trusted
                     </li>
-
-                    <li className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
+                    <li className="flex items-center gap-3">
+                      <div className="rounded-full bg-emerald-500/20 p-1">
+                        <Briefcase className="h-4 w-4 text-emerald-400" />
+                      </div>
                       Quality workmanship
                     </li>
-
                   </ul>
-
                 </div>
-
               </div>
-
             </Card>
 
+            {/* Customer Reviews */}
+            <Card className="overflow-hidden rounded-[2rem] border border-border/50 bg-background shadow-sm">
+              <div className="border-b border-border/50 bg-muted/10 px-8 py-6">
+                <h2 className="text-2xl font-bold tracking-tight">Reviews</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Feedback from past clients</p>
+              </div>
+
+              <div className="p-8">
+                {canReview && (
+                  <div className="mb-8 rounded-2xl border border-border/50 bg-muted/20 p-6">
+                    <label className="mb-3 block text-sm font-semibold">
+                      Leave a Rating
+                    </label>
+                    <div className="mb-5 flex gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setRating(star)}
+                          className="transition-transform hover:scale-110 focus:outline-none"
+                        >
+                          <Star
+                            className={`h-8 w-8 ${
+                              star <= rating
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-muted-foreground/30"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={review}
+                      onChange={(e) => setReview(e.target.value)}
+                      rows={4}
+                      placeholder="Share your experience working with this artisan..."
+                      className="w-full resize-none rounded-xl border border-border/50 bg-background p-4 text-sm outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                    <Button
+                      className="mt-4 w-full rounded-xl shadow-sm"
+                      onClick={submitReview}
+                      disabled={submitting || !review.trim()}
+                    >
+                      {submitting ? "Submitting..." : "Submit Review"}
+                    </Button>
+                  </div>
+                )}
+
+                {!canReview && (
+                  <div className="mb-8 rounded-xl bg-primary/5 p-4 text-center text-sm font-medium text-primary">
+                    Only signed-in customers can leave reviews.
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  {reviews.length === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-muted-foreground">No reviews yet.</p>
+                      <p className="text-sm text-muted-foreground/70 mt-1">Be the first to share your experience!</p>
+                    </div>
+                  ) : (
+                    reviews.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="border-b border-border/50 pb-6 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-foreground">
+                              {item.profiles?.full_name ?? "Anonymous User"}
+                            </p>
+                            <div className="mt-1.5 flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-4 w-4 ${
+                                    star <= item.rating
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "text-muted-foreground/30"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString(undefined, { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                        </div>
+                        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                          "{item.comment}"
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
-
         </div>
-
       </div>
 
+      {/* Image Preview Modal */}
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-6xl border-0 bg-black/95 p-2">
-          <button
-            type="button"
-            onClick={() => setPreview(null)}
-            className="absolute right-4 top-4 z-10 rounded-full bg-black/60 p-2 text-white backdrop-blur transition hover:bg-black/80"
-            aria-label="Close preview"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          {preview && (
-            <img
-              src={preview}
-              alt="Portfolio preview"
-              className="max-h-[90vh] w-full rounded-xl object-contain"
-            />
-          )}
+        <DialogContent className="max-w-6xl border-0 bg-transparent p-0 shadow-none">
+          <div className="relative flex min-h-[50vh] items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setPreview(null)}
+              className="absolute -right-4 -top-12 z-50 rounded-full bg-white/10 p-2 text-white backdrop-blur-md transition-colors hover:bg-white/20 sm:-right-12 sm:-top-0"
+              aria-label="Close preview"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            {preview && (
+              <img
+                src={preview}
+                alt="Portfolio preview high-res"
+                className="max-h-[85vh] w-full rounded-2xl object-contain shadow-2xl ring-1 ring-white/10"
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
+// Integrated and upgraded Stat component
 function Stat({
   icon,
+  iconBg,
   label,
   value,
 }: {
   icon: React.ReactNode;
+  iconBg: string;
   label: string;
-  value: string;
+  value: string | number;
 }) {
   return (
-    <div className="rounded-2xl border bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="group rounded-[1.5rem] border border-border/50 bg-muted/20 p-5 transition-all duration-300 hover:border-primary/20 hover:bg-background hover:shadow-xl hover:shadow-primary/5">
+      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${iconBg} transition-transform duration-300 group-hover:scale-110`}>
         {icon}
       </div>
-
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-
-      <p className="mt-1 text-xl font-bold">
+      <p className="mt-1.5 text-2xl font-black tracking-tight text-foreground">
         {value}
       </p>
     </div>

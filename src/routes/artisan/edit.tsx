@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Camera } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { SiteHeader } from "@/components/site-header";
@@ -17,13 +17,22 @@ export const Route = createFileRoute("/artisan/edit")({
 });
 
 function EditArtisanProfilePage() {
-    const { profile } = useAuth();
+    const { profile, loading: authLoading, refreshProfile } = useAuth();
 
     const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState("");
+    const [newPortfolioPreviews, setNewPortfolioPreviews] = useState<string[]>([]);
+    const [saving, setSaving] = useState(false);
 
-    const previewPhoto = profilePhoto
-        ? URL.createObjectURL(profilePhoto)
-        : profile?.profile_photo || profile?.avatar_url || "";
+    useEffect(() => {
+        if (!profilePhoto) {
+            setPhotoPreview(profile?.profile_photo || profile?.avatar_url || "");
+            return;
+        }
+        const previewUrl = URL.createObjectURL(profilePhoto);
+        setPhotoPreview(previewUrl);
+        return () => URL.revokeObjectURL(previewUrl);
+    }, [profilePhoto, profile?.profile_photo, profile?.avatar_url]);
 
     const [form, setForm] = useState({
         full_name: profile?.full_name ?? "",
@@ -41,11 +50,30 @@ function EditArtisanProfilePage() {
 
     const [newPortfolio, setNewPortfolio] = useState<File[]>([]);
 
+    useEffect(() => {
+        const previewUrls = newPortfolio.map((file) => URL.createObjectURL(file));
+        setNewPortfolioPreviews(previewUrls);
+        return () => previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    }, [newPortfolio]);
+
     // Images removed by the user (delete from Storage after save)
     const [deletedPortfolio, setDeletedPortfolio] = useState<string[]>([]);
 
+    useEffect(() => {
+        if (!profile) return;
+        setForm({
+            full_name: profile.full_name ?? "",
+            profession: profile.profession ?? "",
+            bio: profile.bio ?? "",
+            phone: profile.phone ?? "",
+            whatsapp: profile.whatsapp ?? "",
+        });
+        setExistingPortfolio(Array.isArray(profile.portfolio_images) ? profile.portfolio_images : []);
+    }, [profile]);
+
     const saveProfile = async () => {
         if (!profile) return;
+        setSaving(true);
 
         try {
             let avatarUrl = profile.profile_photo || profile.avatar_url || "";
@@ -133,37 +161,61 @@ function EditArtisanProfilePage() {
 
             setNewPortfolio([]);
             setDeletedPortfolio([]);
+            await refreshProfile();
 
             toast.success("Profile updated successfully.");
         } catch (err: any) {
             console.error(err);
             toast.error(err.message || "Could not update profile.");
+        } finally {
+            setSaving(false);
         }
     };
 
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-[#06120d] text-slate-100">
+                <SiteHeader />
+                <div className="container mx-auto max-w-3xl px-4 py-24 text-center text-slate-400">Loading your artisan profile…</div>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="min-h-screen bg-[#06120d] text-slate-100">
+                <SiteHeader />
+                <div className="container mx-auto max-w-xl px-4 py-24 text-center">
+                    <h1 className="text-2xl font-bold text-white">Sign in to edit your profile</h1>
+                    <p className="mt-3 text-sm text-slate-400">Your artisan details and portfolio are available after you sign in.</p>
+                    <Button asChild className="mt-6 rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"><Link to="/auth">Sign in</Link></Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-[#06120d] text-slate-100">
             <SiteHeader />
 
-            <div className="container mx-auto max-w-5xl px-4 py-8">
-                <Card className="p-6">
-                    <h1 className="text-3xl font-bold">
-                        Edit Artisan Profile
-                    </h1>
+            <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
+                <div className="mb-6 max-w-2xl">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Your professional presence</p>
+                    <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Edit artisan profile</h1>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">Keep your profile current so customers can find the right skills, contact details, and examples of your work.</p>
+                </div>
 
-                    <p className="mt-2 text-muted-foreground">
-                        Update your artisan profile information.
-                    </p>
+                <Card className="overflow-hidden rounded-3xl border border-[#1b3b2a] bg-gradient-to-b from-[#102017] to-[#09150f] p-5 text-slate-100 shadow-[0_24px_65px_rgba(0,0,0,0.28)] sm:p-8">
+                    <div className="flex flex-col gap-6 border-b border-white/[0.07] pb-7 sm:flex-row sm:items-center">
+                        <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.06] shadow-lg">
+                            {photoPreview ? <img src={photoPreview} alt="Artisan profile" className="h-full w-full object-cover" /> : <Camera className="h-9 w-9 text-emerald-300" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300/80">Profile photo</p>
+                            <h2 className="mt-1 text-xl font-bold text-white">Make a strong first impression</h2>
+                            <p className="mt-1 max-w-xl text-sm leading-5 text-slate-400">Use a clear, well-lit photo so customers can recognize who they’re contacting.</p>
 
-                    <div className="mt-8 flex flex-col items-center gap-4">
-
-                        <img
-                            src={previewPhoto}
-                            alt="Profile"
-                            className="h-36 w-36 rounded-full object-cover border-4 border-primary"
-                        />
-
-                        <label>
+                        <label className="mt-4 inline-flex">
                             <input
                                 type="file"
                                 accept="image/*"
@@ -175,30 +227,31 @@ function EditArtisanProfilePage() {
                                 }}
                             />
 
-                            <Button asChild variant="outline">
+                            <Button asChild variant="outline" className="h-10 rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]">
                                 <span>
                                     <Camera className="mr-2 h-4 w-4" />
                                     Change Profile Photo
                                 </span>
                             </Button>
                         </label>
-
+                        </div>
                     </div>
 
-                    <div className="mt-10">
+                    <div className="mt-8">
 
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h3 className="text-lg font-semibold">
-                                    Portfolio Images
+                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300/80">Work samples</p>
+                                <h3 className="mt-1 text-lg font-semibold text-white">
+                                    Portfolio images
                                 </h3>
 
-                                <p className="text-sm text-muted-foreground">
+                                <p className="mt-1 text-sm text-slate-400">
                                     Showcase your best work.
                                 </p>
                             </div>
 
-                            <label>
+                            <label className="inline-flex">
                                 <input
                                     type="file"
                                     multiple
@@ -214,7 +267,7 @@ function EditArtisanProfilePage() {
                                     }}
                                 />
 
-                                <Button asChild>
+                                <Button asChild className="h-10 rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]">
                                     <span>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Add Images
@@ -223,26 +276,27 @@ function EditArtisanProfilePage() {
                             </label>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
                             {existingPortfolio.map((url) => (
                                 <div
                                     key={url}
-                                    className="relative group overflow-hidden rounded-lg border"
+                                    className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-[#07150e]"
                                 >
                                     <img
                                         src={url}
+                                        alt="Portfolio project"
                                         className="aspect-square w-full object-cover"
                                     />
 
                                     <Button
                                         size="icon"
                                         variant="destructive"
-                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"
-                                        onClick={() =>
-                                            setExistingPortfolio((prev) =>
-                                                prev.filter((img) => img !== url)
-                                            )
-                                        }
+                                        aria-label="Remove portfolio image"
+                                        className="absolute right-2 top-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100"
+                                        onClick={() => {
+                                            setExistingPortfolio((prev) => prev.filter((img) => img !== url));
+                                            setDeletedPortfolio((prev) => [...prev, url]);
+                                        }}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -251,17 +305,19 @@ function EditArtisanProfilePage() {
                             {newPortfolio.map((file, index) => (
                                 <div
                                     key={index}
-                                    className="relative group overflow-hidden rounded-lg border border-primary"
+                                    className="group relative aspect-square overflow-hidden rounded-2xl border border-emerald-300/20 bg-[#07150e]"
                                 >
                                     <img
-                                        src={URL.createObjectURL(file)}
+                                        src={newPortfolioPreviews[index]}
+                                        alt="New portfolio project"
                                         className="aspect-square w-full object-cover"
                                     />
 
                                     <Button
                                         size="icon"
                                         variant="destructive"
-                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"
+                                        aria-label={`Remove new portfolio image ${index + 1}`}
+                                        className="absolute right-2 top-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100"
                                         onClick={() =>
                                             setNewPortfolio((prev) =>
                                                 prev.filter((_, i) => i !== index)
@@ -271,25 +327,30 @@ function EditArtisanProfilePage() {
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
 
-                                    <div className="absolute bottom-0 w-full bg-primary text-primary-foreground text-xs text-center py-1">
+                                    <div className="absolute bottom-0 w-full bg-emerald-300/90 py-1 text-center text-xs font-semibold text-[#06120d]">
                                         New
                                     </div>
                                 </div>
                             ))}
                             {existingPortfolio.length === 0 &&
                                 newPortfolio.length === 0 && (
-                                    <div className="col-span-full border rounded-lg p-10 text-center text-muted-foreground">
-                                        <ImageIcon className="mx-auto h-10 w-10 mb-3" />
+                                    <div className="col-span-full rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-8 text-center text-slate-400 sm:p-10">
+                                        <ImageIcon className="mx-auto mb-3 h-10 w-10 text-emerald-300/70" />
                                         No portfolio images yet.
                                     </div>
                                 )}
                         </div>
                     </div>
 
-                    <div className="mt-8 space-y-4">
-                        <div>
+                    <div className="mb-4 mt-9">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300/80">Profile details</p>
+                        <h3 className="mt-1 text-lg font-semibold text-white">Your public information</h3>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
                             <Label>Full Name</Label>
                             <Input
+                                className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                                 value={form.full_name}
                                 onChange={(e) =>
                                     setForm({ ...form, full_name: e.target.value })
@@ -297,9 +358,10 @@ function EditArtisanProfilePage() {
                             />
                         </div>
 
-                        <div>
+                        <div className="space-y-2">
                             <Label>Profession</Label>
                             <Input
+                                className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                                 value={form.profession}
                                 onChange={(e) =>
                                     setForm({ ...form, profession: e.target.value })
@@ -307,10 +369,11 @@ function EditArtisanProfilePage() {
                             />
                         </div>
 
-                        <div>
+                        <div className="space-y-2 sm:col-span-2">
                             <Label>Bio</Label>
                             <Textarea
                                 rows={5}
+                                className="rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                                 value={form.bio}
                                 onChange={(e) =>
                                     setForm({ ...form, bio: e.target.value })
@@ -318,9 +381,11 @@ function EditArtisanProfilePage() {
                             />
                         </div>
 
-                        <div>
+                        <div className="space-y-2">
                             <Label>Phone Number</Label>
                             <Input
+                                type="tel"
+                                className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                                 value={form.phone}
                                 onChange={(e) =>
                                     setForm({ ...form, phone: e.target.value })
@@ -328,9 +393,11 @@ function EditArtisanProfilePage() {
                             />
                         </div>
 
-                        <div>
+                        <div className="space-y-2">
                             <Label>WhatsApp Number</Label>
                             <Input
+                                type="tel"
+                                className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                                 value={form.whatsapp}
                                 onChange={(e) =>
                                     setForm({ ...form, whatsapp: e.target.value })
@@ -339,9 +406,10 @@ function EditArtisanProfilePage() {
                         </div>
                     </div>
 
-                    <div className="flex justify-end pt-8">
-                        <Button onClick={saveProfile}>
-                            Save Changes
+                    <div className="mt-8 flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-slate-500">Your changes update the information customers see on your public profile.</p>
+                        <Button onClick={saveProfile} disabled={saving} className="h-11 rounded-xl bg-[#35d879] px-6 font-bold text-[#04120a] hover:bg-[#52e98f]">
+                            {saving ? "Saving profile…" : "Save changes"}
                         </Button>
                     </div>
                 </Card>

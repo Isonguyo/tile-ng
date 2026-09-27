@@ -20,27 +20,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth-context";
 import { formatNaira } from "@/lib/categories";
 import {
-  Users, Tag, Banknote, ShieldAlert, Check, X, Flag, BadgeCheck, KeyRound, AlertTriangle, Copy,
+  Users, Tag, Banknote, ShieldAlert, Check, X, Flag, BadgeCheck, AlertTriangle,
   Activity, Bell, Search, Megaphone, Settings2, Gauge, TrendingUp, FileWarning, Sparkles,
-  UserSearch, LifeBuoy, ShieldCheck, Rocket, Eye, LockKeyhole, RefreshCw, Loader2, Wrench,
+  UserSearch, LifeBuoy, ShieldCheck, Rocket, Eye, LockKeyhole, RefreshCw, Loader2, Wrench, ChevronRight,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getSignedUrls } from "@/lib/storage";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip, CartesianGrid,
-  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend,
 } from "recharts";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin Cabin — Tile" }],
-   links: [
+  head: () => ({
+    meta: [{ title: "Admin Cabin — Tile" }],
+    links: [
       {
         rel: "icon",
         href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
       },
-    ]
-   }),
+    ],
+  }),
   component: Admin,
 });
 
@@ -153,8 +154,6 @@ function Admin() {
     },
   });
 
-  
-
   // ─── AI Moderation queue (risk-scored) ─────────────────────────
   const { data: modQueue = [] } = useQuery({
     queryKey: ["admin-mod-queue"],
@@ -212,7 +211,7 @@ function Admin() {
     },
   });
 
-  const pending = modQueue; // Backwards-compat name used below in mod tab
+  const pending = modQueue;
 
   // ─── Reports Center ────────────────────────────────────────────
   const [reportFilter, setReportFilter] = useState<"open" | "resolved" | "dismissed">("open");
@@ -344,7 +343,6 @@ function Admin() {
       }));
     },
   });
-
 
   // ─── Pending artisan profiles ─────────────────────────────────
   const { data: pendingArtisans = [], isFetching: artisansFetching } = useQuery({
@@ -481,7 +479,7 @@ function Admin() {
     { name: "Lite", value: dash?.lite ?? 0, color: "#10b981" },
   ];
 
-  // Marketplace health score (heuristic from real signals)
+  // Marketplace health score
   const health = useMemo(() => {
     if (!dash) return { score: 0, label: "—" };
     const reports = dash.reports_open;
@@ -497,54 +495,76 @@ function Admin() {
   }, [dash]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-950/20 dark:bg-slate-950/40 text-foreground">
       <SiteHeader />
+      
       {platform?.maintenance_mode && (
-        <div className="bg-destructive text-destructive-foreground text-center text-sm py-2 font-semibold">
+        <div className="bg-destructive/90 backdrop-blur-md text-destructive-foreground text-center text-xs tracking-wider uppercase py-2 font-bold shadow-md animate-pulse">
           ⚠ Maintenance mode is ACTIVE — public actions are frozen
         </div>
       )}
       {platform?.emergency_banner && (
-        <div className="bg-amber-500 text-black text-center text-sm py-2 font-semibold">
+        <div className="bg-amber-500/90 backdrop-blur-md text-slate-950 text-center text-xs font-bold py-2 shadow-sm">
           {platform.emergency_banner}
         </div>
       )}
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><ShieldAlert className="text-accent" /> Operations Center</h1>
-            <p className="text-muted-foreground">Mission control for the Tile marketplace</p>
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
-            <Gauge className={"h-5 w-5 " + (health.score >= 70 ? "text-emerald-500" : "text-amber-500")} />
-            <div>
-              <p className="text-[10px] uppercase text-muted-foreground font-bold">Marketplace health</p>
-              <p className="text-sm font-bold">{health.score} · <span className="text-muted-foreground">{health.label}</span></p>
+
+      <div className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-7xl">
+        {/* Header Hero Banner */}
+        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-r from-card via-card/80 to-background p-6 md:p-8 shadow-sm">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+                <ShieldAlert className="h-3.5 w-3.5" /> Operations Control
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
+                Mission Control Hub
+              </h1>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Real-time operational overview, moderation queue, user intelligence, and platform governance for Tile marketplace.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 bg-background/60 backdrop-blur-md border border-border/60 p-3.5 rounded-xl shadow-sm self-start md:self-auto">
+              <div className={`p-2.5 rounded-lg ${health.score >= 70 ? "bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20" : "bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20"}`}>
+                <Gauge className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">System Health</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black">{health.score}</span>
+                  <span className="text-xs font-medium text-muted-foreground">/ 100</span>
+                  <Badge variant="outline" className={`ml-1 text-[10px] font-bold py-0.5 px-2 ${health.score >= 70 ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5" : "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5"}`}>
+                    {health.label}
+                  </Badge>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-6">
-          <Card className="p-3">
-            <p className="text-[10px] uppercase text-muted-foreground font-bold">Registered Users</p>
-            <p className="text-xl font-extrabold mt-1">{signupStats.registeredUsers}</p>
+        {/* Signup Analytics Summary */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50 shadow-sm hover:border-border transition-all">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Registered Users</p>
+            <p className="text-2xl font-black mt-2 tracking-tight">{signupStats.registeredUsers}</p>
           </Card>
-          <Card className="p-3">
-            <p className="text-[10px] uppercase text-muted-foreground font-bold">Waitlist Users</p>
-            <p className="text-xl font-extrabold mt-1">{signupStats.waitlistUsers}</p>
+          <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50 shadow-sm hover:border-border transition-all">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Waitlist Users</p>
+            <p className="text-2xl font-black mt-2 tracking-tight text-primary">{signupStats.waitlistUsers}</p>
           </Card>
-          <Card className="p-3">
-            <p className="text-[10px] uppercase text-muted-foreground font-bold">Direct Signups</p>
-            <p className="text-xl font-extrabold mt-1">{signupStats.directSignups}</p>
+          <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50 shadow-sm hover:border-border transition-all">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Direct Signups</p>
+            <p className="text-2xl font-black mt-2 tracking-tight">{signupStats.directSignups}</p>
           </Card>
-          <Card className="p-3">
-            <p className="text-[10px] uppercase text-muted-foreground font-bold">Waitlist Conversion %</p>
-            <p className="text-xl font-extrabold mt-1">{signupStats.conversionPercent.toFixed(1)}%</p>
+          <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50 shadow-sm hover:border-border transition-all">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Waitlist Conversion</p>
+            <p className="text-2xl font-black mt-2 tracking-tight text-emerald-500">{signupStats.conversionPercent.toFixed(1)}%</p>
           </Card>
         </div>
 
-        {/* Mission control tiles */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 my-6">
+        {/* Mission Control Metric Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
           <MiniStat label="Users" value={dash?.users_total ?? stats?.users ?? 0} sub={`+${dash?.users_today ?? 0} today`} icon={Users} tint="blue" />
           <MiniStat label="Listings" value={dash?.listings_total ?? 0} sub={`+${dash?.listings_today ?? 0} today`} icon={Tag} tint="green" />
           <MiniStat label="Revenue" value={formatNaira(dash?.revenue_total ?? stats?.revenue ?? 0)} sub={`+${formatNaira(dash?.revenue_today ?? 0)} today`} icon={Banknote} tint="amber" />
@@ -553,8 +573,8 @@ function Admin() {
           <MiniStat label="Artisans" value={dash?.artisans_total ?? 0} sub="Directory" icon={Sparkles} tint="rose" />
         </div>
 
-        {/* Pending work queue */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {/* Action Needed Queues */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
           <QueueCard label="Pending listings" count={dash?.listings_pending ?? 0} icon={Tag} onClick={() => document.getElementById("tab-moderation")?.click()} />
           <QueueCard label="Pending artisans" count={pendingArtisans.length} icon={Wrench} onClick={() => document.getElementById("tab-artisans")?.click()} />
           <QueueCard label="Pending KYC" count={dash?.kyc_pending ?? 0} icon={ShieldCheck} onClick={() => document.getElementById("tab-kyc")?.click()} />
@@ -562,130 +582,147 @@ function Admin() {
           <QueueCard label="Monthly revenue" count={formatNaira(dash?.revenue_month ?? 0)} icon={TrendingUp} onClick={() => document.getElementById("tab-money")?.click()} />
         </div>
 
-    <Tabs defaultValue="overview" className="w-full">
+        {/* Tab Navigation & Content */}
+        <Tabs defaultValue="overview" className="w-full space-y-6">
+          <div className="overflow-x-auto scrollbar-hide pb-1">
+            <TabsList className="inline-flex h-11 items-center justify-start rounded-xl bg-muted/60 p-1 text-muted-foreground backdrop-blur-md border border-border/40 min-w-max">
+              <TabsTrigger id="tab-overview" value="overview" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">📊 Overview</TabsTrigger>
+              <TabsTrigger id="tab-moderation" value="moderation" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🛡 Moderation</TabsTrigger>
+              <TabsTrigger id="tab-artisans" value="artisans" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🧰 Artisans</TabsTrigger>
+              <TabsTrigger id="tab-reports" value="reports" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🚩 Reports</TabsTrigger>
+              <TabsTrigger id="tab-kyc" value="kyc" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">📄 KYC</TabsTrigger>
+              <TabsTrigger id="tab-money" value="money" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">💳 Revenue</TabsTrigger>
+              <TabsTrigger id="tab-users" value="users" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">👥 Users</TabsTrigger>
+              <TabsTrigger value="broadcast" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">📣 Broadcast</TabsTrigger>
+              <TabsTrigger value="waitlist" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🚀 Waitlist</TabsTrigger>
+              <TabsTrigger value="launch" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🌐 Launch Review</TabsTrigger>
+              <TabsTrigger value="settings" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">⚙ Platform</TabsTrigger>
+              <TabsTrigger value="codes" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🛡 Roles & Access</TabsTrigger>
+            </TabsList>
+          </div>
 
-  {/* Mobile-friendly tab navigation */}
-  <div className="overflow-x-auto scrollbar-hide pb-2">
-    <TabsList className="inline-flex w-max min-w-full md:min-w-0 gap-2">
-      <TabsTrigger id="tab-overview" value="overview" className="whitespace-nowrap">📊 Overview</TabsTrigger>
-      <TabsTrigger id="tab-moderation" value="moderation" className="whitespace-nowrap">🛡 Moderation</TabsTrigger>
-      <TabsTrigger id="tab-artisans" value="artisans" className="whitespace-nowrap">🧰 Artisans</TabsTrigger>
-      <TabsTrigger id="tab-reports" value="reports" className="whitespace-nowrap">🚩 Reports</TabsTrigger>
-      <TabsTrigger id="tab-kyc" value="kyc" className="whitespace-nowrap">📄 KYC</TabsTrigger>
-      <TabsTrigger id="tab-money" value="money" className="whitespace-nowrap">💳 Revenue</TabsTrigger>
-      <TabsTrigger id="tab-users" value="users" className="whitespace-nowrap">👥 Users</TabsTrigger>
-      <TabsTrigger value="broadcast" className="whitespace-nowrap">📣 Broadcast</TabsTrigger>
-      <TabsTrigger value="waitlist" className="whitespace-nowrap">🚀 Waitlist</TabsTrigger>
-      <TabsTrigger value="launch" className="whitespace-nowrap">🌐 Launch Review</TabsTrigger>
-      <TabsTrigger value="settings" className="whitespace-nowrap">⚙ Platform</TabsTrigger>
-      <TabsTrigger value="codes" className="whitespace-nowrap">🛡 Roles & Access</TabsTrigger>
-    </TabsList>
-  </div>
+          {/* ═══ OVERVIEW ══════════════════════════════════════════ */}
+          <TabsContent value="overview" className="space-y-6 mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="p-5 lg:col-span-2 border-border/50 bg-card/60 backdrop-blur-sm shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-base flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-emerald-500" /> 30-Day Revenue Trend
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Subscription & ad promotions revenue</p>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    Total: {formatNaira(trend.reduce((s, t) => s + t.revenue, 0))}
+                  </Badge>
+                </div>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trend}>
+                      <defs>
+                        <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                      <XAxis dataKey="day" fontSize={11} stroke="currentColor" className="text-muted-foreground opacity-70" />
+                      <YAxis fontSize={11} stroke="currentColor" className="text-muted-foreground opacity-70" tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
+                      <RTooltip formatter={(v: number) => formatNaira(v)} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }} />
+                      <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="url(#rev)" strokeWidth={2.5} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
 
-  {/* ═══ OVERVIEW ══════════════════════════════════════════ */}
-  <TabsContent value="overview" className="mt-4">
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <Card className="p-4 lg:col-span-2">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-emerald-500" /> Revenue — last 30 days</h3>
-          <p className="text-sm text-muted-foreground">Total: {formatNaira(trend.reduce((s, t) => s + t.revenue, 0))}</p>
-        </div>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend}>
-              <defs>
-                <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="day" fontSize={11} />
-              <YAxis fontSize={11} tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
-              <RTooltip formatter={(v: number) => formatNaira(v)} />
-              <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="url(#rev)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+              <Card className="p-5 border-border/50 bg-card/60 backdrop-blur-sm shadow-sm">
+                <h3 className="font-bold text-base mb-1 flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 text-primary" /> Subscription Breakdown
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">Active paid tier distribution</p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={tierData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={4}>
+                        {tierData.map((d) => <Cell key={d.name} fill={d.color} />)}
+                      </Pie>
+                      <Legend />
+                      <RTooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
 
-      <Card className="p-4">
-        <h3 className="font-semibold mb-3 flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-primary" /> Active subscribers</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={tierData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={4}>
-                {tierData.map((d) => <Cell key={d.name} fill={d.color} />)}
-              </Pie>
-              <Legend />
-              <RTooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-
-      <Card className="p-4 lg:col-span-3">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold flex items-center gap-2"><Activity className="h-4 w-4 text-emerald-500 animate-pulse" /> Live activity feed</h3>
-          <Badge variant="outline" className="text-xs">Auto-refresh · 15s</Badge>
-        </div>
-        <div className="divide-y max-h-96 overflow-y-auto">
-          {activity.length === 0 && <p className="text-center text-muted-foreground py-8">No recent activity</p>}
-          {activity.map((a, i) => (
-            <div key={`${a.kind}-${a.entity_id}-${i}`} className="flex items-center gap-3 py-2 text-sm">
-              <ActivityDot kind={a.kind} />
-              <span className="font-medium">{a.title}</span>
-              {a.subtitle && <span className="text-muted-foreground text-xs truncate">· {a.subtitle}</span>}
-              <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">{timeAgo(a.at)}</span>
+              <Card className="p-5 lg:col-span-3 border-border/50 bg-card/60 backdrop-blur-sm shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-base flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-emerald-500 animate-pulse" /> Live Activity Feed
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Real-time marketplace events and registrations</p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] font-mono py-1 px-2.5">Auto-refresh · 15s</Badge>
+                </div>
+                <div className="divide-y divide-border/40 max-h-96 overflow-y-auto pr-1">
+                  {activity.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">No recent activity detected</p>}
+                  {activity.map((a, i) => (
+                    <div key={`${a.kind}-${a.entity_id}-${i}`} className="flex items-center gap-3 py-3 text-sm hover:bg-muted/20 px-2 rounded-lg transition-colors">
+                      <ActivityDot kind={a.kind} />
+                      <span className="font-medium">{a.title}</span>
+                      {a.subtitle && <span className="text-muted-foreground text-xs truncate max-w-xs">· {a.subtitle}</span>}
+                      <span className="ml-auto text-xs font-mono text-muted-foreground whitespace-nowrap">{timeAgo(a.at)}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  </TabsContent>
+          </TabsContent>
 
-  <TabsContent value="moderation" className="mt-4">
+          {/* ═══ MODERATION ══════════════════════════════════════════ */}
+          <TabsContent value="moderation" className="space-y-4 mt-0">
             {selected.size > 0 && (
-              <Card className="p-3 mb-3 flex flex-wrap items-center gap-2 border-primary/50 bg-primary/5">
-                <span className="text-sm font-semibold">{selected.size} selected</span>
-                <Button size="sm" onClick={() => bulk("approve")} className="bg-emerald-600 hover:bg-emerald-700"><Check className="h-3 w-3 mr-1" />Approve all</Button>
-                <Button size="sm" variant="outline" onClick={() => bulk("reject")}><X className="h-3 w-3 mr-1" />Reject all</Button>
-                <Button size="sm" variant="destructive" onClick={() => bulk("flag")}><Flag className="h-3 w-3 mr-1" />Flag sellers</Button>
+              <Card className="p-3.5 flex flex-wrap items-center gap-3 border-primary/40 bg-primary/10 backdrop-blur-sm">
+                <span className="text-xs font-bold uppercase tracking-wider">{selected.size} selected</span>
+                <Button size="sm" onClick={() => bulk("approve")} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"><Check className="h-3.5 w-3.5 mr-1" />Approve all</Button>
+                <Button size="sm" variant="outline" onClick={() => bulk("reject")} className="font-medium"><X className="h-3.5 w-3.5 mr-1" />Reject all</Button>
+                <Button size="sm" variant="destructive" onClick={() => bulk("flag")} className="font-medium"><Flag className="h-3.5 w-3.5 mr-1" />Flag sellers</Button>
                 <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
               </Card>
             )}
-            <Card className="p-0 overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/40">
                   <TableRow>
-                    <TableHead className="w-8"></TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Seller</TableHead>
-                    <TableHead>Risk</TableHead>
+                    <TableHead className="w-10 text-center"></TableHead>
+                    <TableHead>Listing Item</TableHead>
+                    <TableHead>Seller Account</TableHead>
+                    <TableHead>Risk Score</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pending.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">🎉 Nothing pending — inbox zero</TableCell></TableRow>}
+                  {pending.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-12">🎉 Nothing pending — moderation queue clear</TableCell></TableRow>}
                   {pending.map((l) => (
-                    <TableRow key={l.id}>
-                      <TableCell><input type="checkbox" checked={selected.has(l.id)} onChange={() => toggleSel(l.id)} className="h-4 w-4" /></TableCell>
+                    <TableRow key={l.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="text-center"><input type="checkbox" checked={selected.has(l.id)} onChange={() => toggleSel(l.id)} className="rounded border-border h-4 w-4 accent-primary cursor-pointer" /></TableCell>
                       <TableCell className="font-medium">
                         <PendingTitle l={l} />
                       </TableCell>
                       <TableCell className="text-sm">
-                        <button onClick={() => setInspectId(l.seller_id)} className="hover:text-primary underline-offset-2 hover:underline text-left">
+                        <button onClick={() => setInspectId(l.seller_id)} className="font-medium hover:text-primary underline-offset-2 hover:underline text-left transition-colors">
                           {l.seller_name ?? "—"}
                         </button>
-                        <div className="text-xs text-muted-foreground">{l.account_age_days}d old</div>
+                        <div className="text-xs text-muted-foreground">{l.account_age_days}d account age</div>
                       </TableCell>
                       <TableCell><RiskCell score={l.risk_score} reasons={l.risk_reasons ?? []} /></TableCell>
-                      <TableCell>{formatNaira(l.price)}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button size="sm" onClick={() => approve(l.id)} className="bg-accent text-accent-foreground"><Check className="h-3 w-3 mr-1" />Approve</Button>
-                        <RejectModal onConfirm={(r) => reject(l.id, r)} />
-                        <Button size="sm" variant="destructive" onClick={() => flag(l.id)}><Flag className="h-3 w-3 mr-1" />Flag</Button>
+                      <TableCell className="font-semibold">{formatNaira(l.price)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button size="sm" onClick={() => approve(l.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-8"><Check className="h-3.5 w-3.5 mr-1" />Approve</Button>
+                          <RejectModal onConfirm={(r) => reject(l.id, r)} />
+                          <Button size="sm" variant="destructive" onClick={() => flag(l.id)} className="h-8"><Flag className="h-3.5 w-3.5 mr-1" />Flag</Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -695,60 +732,60 @@ function Admin() {
           </TabsContent>
 
           {/* ═══ ARTISAN MODERATION ══════════════════════════════ */}
-          <TabsContent value="artisans" className="mt-4 space-y-4">
-            <Card className="p-5 border-primary/30 bg-primary/5">
-              <div className="flex items-start gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <TabsContent value="artisans" className="space-y-4 mt-0">
+            <Card className="p-5 border-primary/20 bg-primary/5 backdrop-blur-sm">
+              <div className="flex items-start gap-4">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
                   <Wrench className="h-5 w-5" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Pending artisan profiles</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Review pre-launch artisan profiles before they can become eligible for public visibility.
+                <div className="flex-1">
+                  <h3 className="font-bold text-base">Pending Artisan Profiles</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Review pre-launch artisan registrations before enabling public directory visibility.
                   </p>
                 </div>
-                <Badge variant="outline" className="ml-auto">
+                <Badge variant="outline" className="font-mono text-xs font-bold">
                   {artisansFetching ? "Loading…" : `${pendingArtisans.length} pending`}
                 </Badge>
               </div>
             </Card>
 
-            <Card className="p-0 overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/40">
                   <TableRow>
                     <TableHead>Artisan</TableHead>
                     <TableHead>Profession</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Experience</TableHead>
                     <TableHead>Availability</TableHead>
-                    <TableHead>Pre-launch</TableHead>
+                    <TableHead>Visibility</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {artisansFetching && pendingArtisans.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                         Loading artisan review queue…
                       </TableCell>
                     </TableRow>
                   )}
                   {!artisansFetching && pendingArtisans.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                         🎉 No pending artisan profiles
                       </TableCell>
                     </TableRow>
                   )}
                   {pendingArtisans.map((artisan) => (
-                    <TableRow key={artisan.id}>
+                    <TableRow key={artisan.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-3 min-w-[220px]">
                           {artisan.profile_photo ? (
-                            <img src={artisan.profile_photo} alt="" className="h-10 w-10 rounded-full object-cover border" />
+                            <img src={artisan.profile_photo} alt="" className="h-10 w-10 rounded-full object-cover border border-border" />
                           ) : (
-                            <div className="h-10 w-10 rounded-full bg-primary/10 grid place-items-center text-primary">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 grid place-items-center text-primary font-bold">
                               <Wrench className="h-4 w-4" />
                             </div>
                           )}
@@ -756,37 +793,37 @@ function Admin() {
                             <button
                               type="button"
                               onClick={() => setInspectId(artisan.user_id)}
-                              className="font-semibold hover:text-primary hover:underline text-left"
+                              className="font-bold text-sm hover:text-primary hover:underline text-left transition-colors"
                             >
                               {artisan.full_name ?? "Unnamed artisan"}
                             </button>
                             <p className="text-xs text-muted-foreground">
-                              {artisan.email ?? artisan.phone ?? "No contact"}
+                              {artisan.email ?? artisan.phone ?? "No contact info"}
                             </p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{artisan.profession ?? "—"}</TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-sm font-medium">{artisan.profession ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
                         {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "—"}
                       </TableCell>
                       <TableCell className="text-sm">{artisan.years_experience ?? 0} yrs</TableCell>
                       <TableCell>
-                        <Badge variant={artisan.is_available ? "default" : "secondary"}>
+                        <Badge variant={artisan.is_available ? "default" : "secondary"} className="text-[10px]">
                           {artisan.is_available ? "Available" : "Unavailable"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{artisan.is_prelaunch ? "Private" : "Public eligible"}</Badge>
+                        <Badge variant="outline" className="text-[10px] font-mono">{artisan.is_prelaunch ? "Private" : "Public"}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-wrap justify-end gap-1.5">
-                          <Button size="sm" variant="outline" onClick={() => setInspectId(artisan.user_id)}>
+                          <Button size="sm" variant="outline" onClick={() => setInspectId(artisan.user_id)} className="h-8">
                             <Eye className="h-3.5 w-3.5 mr-1" />Inspect
                           </Button>
                           <Button
                             size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
                             onClick={async () => {
                               const { error } = await rpcUntyped("admin_approve_artisan", { _user_id: artisan.user_id });
                               if (error) return toast.error(error.message);
@@ -813,6 +850,7 @@ function Admin() {
                           <Button
                             size="sm"
                             variant="destructive"
+                            className="h-8"
                             onClick={async () => {
                               if (!confirm(`Flag ${artisan.full_name ?? "this artisan"}?`)) return;
                               const { error } = await rpcUntyped("admin_flag_artisan", { _user_id: artisan.user_id });
@@ -833,23 +871,27 @@ function Admin() {
           </TabsContent>
 
           {/* ═══ REPORTS ═════════════════════════════════════════ */}
-          <TabsContent value="reports" className="mt-4">
-            <div className="flex items-center gap-2 mb-3">
+          <TabsContent value="reports" className="space-y-4 mt-0">
+            <div className="flex items-center gap-2">
               {(["open", "resolved", "dismissed"] as const).map((s) => (
-                <Button key={s} size="sm" variant={reportFilter === s ? "default" : "outline"} onClick={() => setReportFilter(s)} className="capitalize">{s}</Button>
+                <Button key={s} size="sm" variant={reportFilter === s ? "default" : "outline"} onClick={() => setReportFilter(s)} className="capitalize text-xs font-medium">
+                  {s}
+                </Button>
               ))}
             </div>
-            <Card className="p-0 overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader><TableRow><TableHead>Target</TableHead><TableHead>Reason</TableHead><TableHead>Reporter</TableHead><TableHead>When</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-muted/40">
+                  <TableRow><TableHead>Target</TableHead><TableHead>Reason</TableHead><TableHead>Reporter</TableHead><TableHead>Reported At</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                </TableHeader>
                 <TableBody>
-                  {reports.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No {reportFilter} reports</TableCell></TableRow>}
+                  {reports.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-12">No {reportFilter} reports found</TableCell></TableRow>}
                   {reports.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell><Badge variant="outline" className="capitalize">{r.entity_type}</Badge><div className="font-mono text-[10px] text-muted-foreground mt-1">{r.entity_id.slice(0, 8)}…</div></TableCell>
+                    <TableRow key={r.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell><Badge variant="outline" className="capitalize text-[10px]">{r.entity_type}</Badge><div className="font-mono text-[10px] text-muted-foreground mt-1">{r.entity_id.slice(0, 8)}…</div></TableCell>
                       <TableCell className="text-sm max-w-xs"><div className="font-medium">{r.reason}</div>{r.details && <div className="text-xs text-muted-foreground truncate">{r.details}</div>}</TableCell>
                       <TableCell className="text-xs">{r.reporter_name ?? "—"}</TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">{timeAgo(r.created_at)}</TableCell>
+                      <TableCell className="text-xs font-mono whitespace-nowrap">{timeAgo(r.created_at)}</TableCell>
                       <TableCell className="text-right"><ReportActions report={r} onDone={() => qc.invalidateQueries({ queryKey: ["admin-reports"] })} /></TableCell>
                     </TableRow>
                   ))}
@@ -858,22 +900,25 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="kyc" className="mt-4">
-            <Card className="p-0 overflow-x-auto">
+          {/* ═══ KYC ═════════════════════════════════════════ */}
+          <TabsContent value="kyc" className="space-y-4 mt-0">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Document</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-muted/40">
+                  <TableRow><TableHead>User Account</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Document</TableHead><TableHead className="text-right">Action</TableHead></TableRow>
+                </TableHeader>
                 <TableBody>
-                  {kycPending.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No pending KYC</TableCell></TableRow>}
+                  {kycPending.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-12">No pending KYC verifications</TableCell></TableRow>}
                   {kycPending.map((p) => (
-                    <TableRow key={p.id}>
+                    <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium">
                         <button onClick={() => setInspectId(p.id)} className="hover:text-primary underline-offset-2 hover:underline text-left">{p.full_name}</button>
                       </TableCell>
-                      <TableCell>{p.phone ?? "—"}</TableCell>
-                      <TableCell><Badge className="capitalize">{p.kyc_status}</Badge></TableCell>
+                      <TableCell className="text-sm">{p.phone ?? "—"}</TableCell>
+                      <TableCell><Badge className="capitalize text-[10px]">{p.kyc_status}</Badge></TableCell>
                       <TableCell className="font-mono text-xs">{p.kyc_doc_url ? "uploaded" : "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" onClick={() => grantVerified(p.id)} className="bg-accent text-accent-foreground"><BadgeCheck className="h-3 w-3 mr-1" />Grant Verified</Button>
+                        <Button size="sm" onClick={() => grantVerified(p.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"><BadgeCheck className="h-3.5 w-3.5 mr-1" />Grant Verified</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -882,174 +927,175 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="money" className="mt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">Today</p><p className="text-lg font-extrabold">{formatNaira(dash?.revenue_today ?? 0)}</p></Card>
-              <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">This month</p><p className="text-lg font-extrabold">{formatNaira(dash?.revenue_month ?? 0)}</p></Card>
-              <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">This year</p><p className="text-lg font-extrabold">{formatNaira(stats?.yearly ?? 0)}</p></Card>
-              <Card className="p-3"><p className="text-[10px] uppercase text-muted-foreground font-bold">Lifetime</p><p className="text-lg font-extrabold">{formatNaira(dash?.revenue_total ?? 0)}</p></Card>
+          {/* ═══ REVENUE ═════════════════════════════════════════ */}
+          <TabsContent value="money" className="space-y-4 mt-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50"><p className="text-[10px] uppercase text-muted-foreground font-bold">Today</p><p className="text-xl font-black mt-1">{formatNaira(dash?.revenue_today ?? 0)}</p></Card>
+              <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50"><p className="text-[10px] uppercase text-muted-foreground font-bold">This month</p><p className="text-xl font-black mt-1 text-primary">{formatNaira(dash?.revenue_month ?? 0)}</p></Card>
+              <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50"><p className="text-[10px] uppercase text-muted-foreground font-bold">This year</p><p className="text-xl font-black mt-1">{formatNaira(stats?.yearly ?? 0)}</p></Card>
+              <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50"><p className="text-[10px] uppercase text-muted-foreground font-bold">Lifetime</p><p className="text-xl font-black mt-1 text-emerald-500">{formatNaira(dash?.revenue_total ?? 0)}</p></Card>
             </div>
-            <Card className="p-0 overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader><TableRow><TableHead>When</TableHead><TableHead>Type</TableHead><TableHead>Amount</TableHead><TableHead>Reference</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-muted/40">
+                  <TableRow><TableHead>Timestamp</TableHead><TableHead>Type</TableHead><TableHead>Amount</TableHead><TableHead>Reference ID</TableHead></TableRow>
+                </TableHeader>
                 <TableBody>
-                  {txns.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No transactions yet</TableCell></TableRow>}
+                  {txns.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-12">No revenue transactions recorded</TableCell></TableRow>}
                   {txns.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="text-xs">{new Date(t.created_at).toLocaleString()}</TableCell>
-                      <TableCell><Badge className="capitalize">{t.tx_type}</Badge></TableCell>
-                      <TableCell className={Number(t.amount) < 0 ? "text-destructive" : "text-accent"}>{formatNaira(Number(t.amount))}</TableCell>
-                      <TableCell className="font-mono text-xs">{t.reference ?? "—"}</TableCell>
+                    <TableRow key={t.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="text-xs font-mono">{new Date(t.created_at).toLocaleString()}</TableCell>
+                      <TableCell><Badge className="capitalize text-[10px]">{t.tx_type}</Badge></TableCell>
+                      <TableCell className={`font-mono font-bold ${Number(t.amount) < 0 ? "text-destructive" : "text-emerald-500"}`}>{formatNaira(Number(t.amount))}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{t.reference ?? "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-              <div className="p-4 text-xs text-muted-foreground border-t">Plan prices: Lite ₦5,000 · Pro ₦15,000 · VIP ₦40,000</div>
+              <div className="p-3.5 text-xs text-muted-foreground border-t bg-muted/20">Plan price tiers: Lite ₦5,000 · Pro ₦15,000 · VIP ₦40,000</div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="users" className="mt-4">
-            <div className="mb-3 relative max-w-md">
+          {/* ═══ USERS ═════════════════════════════════════════ */}
+          <TabsContent value="users" className="space-y-4 mt-0">
+            <div className="relative max-w-md">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input placeholder="Search by name or email…" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} className="pl-9" />
+              <Input placeholder="Search users by name or email…" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} className="pl-9 h-10 border-border/60 bg-card/60" />
             </div>
-            <Card className="p-0 overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Tier</TableHead><TableHead>Signup Source</TableHead><TableHead>KYC</TableHead><TableHead className="text-right">Active Ads</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-muted/40">
+                  <TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Tier</TableHead><TableHead>Signup Source</TableHead><TableHead>KYC</TableHead><TableHead className="text-right">Active Ads</TableHead></TableRow>
+                </TableHeader>
                 <TableBody>
-                  {filteredUsers.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No users match</TableCell></TableRow>}
+                  {filteredUsers.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-12">No users match search criteria</TableCell></TableRow>}
                   {filteredUsers.slice(0, 100).map((u) => (
-                    <TableRow key={u.id}>
+                    <TableRow key={u.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium">
-                        <button onClick={() => setInspectId(u.id)} className="hover:text-primary underline-offset-2 hover:underline text-left flex items-center gap-1">
-                          <UserSearch className="h-3.5 w-3.5" />{u.full_name ?? "—"}
+                        <button onClick={() => setInspectId(u.id)} className="hover:text-primary underline-offset-2 hover:underline text-left flex items-center gap-1.5 font-semibold">
+                          <UserSearch className="h-3.5 w-3.5 text-muted-foreground" />{u.full_name ?? "—"}
                         </button>
                       </TableCell>
-                      <TableCell className="text-xs">{u.email ?? "—"}</TableCell>
-                      <TableCell><Badge className="capitalize">{u.subscription_tier}</Badge>{u.is_verified && <BadgeCheck className="inline h-4 w-4 text-accent ml-1" />}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{u.email ?? "—"}</TableCell>
+                      <TableCell><Badge className="capitalize text-[10px]">{u.subscription_tier}</Badge>{u.is_verified && <BadgeCheck className="inline h-4 w-4 text-emerald-500 ml-1" />}</TableCell>
                       <TableCell>
-                        <Badge className={u.signupSource === "Direct Signup" ? "border-blue-200 bg-blue-100 text-blue-700" : "border-green-200 bg-green-100 text-green-700"}>
+                        <Badge variant="outline" className={u.signupSource === "Direct Signup" ? "border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/5" : "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"}>
                           {u.signupSource}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs capitalize">{(u as { kyc_status?: string }).kyc_status ?? "—"}</TableCell>
-                      <TableCell className="text-right font-mono">{u.active_ads}</TableCell>
+                      <TableCell className="text-xs capitalize">{u.kyc_status ?? "—"}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{u.active_ads}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-              {filteredUsers.length > 100 && <div className="p-3 text-xs text-muted-foreground text-center border-t">Showing first 100 of {filteredUsers.length}. Refine your search.</div>}
+              {filteredUsers.length > 100 && <div className="p-3 text-xs text-muted-foreground text-center border-t bg-muted/20">Showing first 100 of {filteredUsers.length} users.</div>}
             </Card>
           </TabsContent>
 
           {/* ═══ BROADCAST ═══════════════════════════════════════ */}
-          <TabsContent value="broadcast" className="mt-4">
+          <TabsContent value="broadcast" className="space-y-4 mt-0">
             <BroadcastPanel />
           </TabsContent>
 
-          {/* ═══ WAITLIST OVERSIGHT ═══════════════════════════════ */}
-          <TabsContent value="waitlist" className="mt-4 space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Card className="p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Total</p>
-                <p className="text-2xl font-extrabold mt-1">{waitlistEntries.length}</p>
+          {/* ═══ WAITLIST ═══════════════════════════════════════ */}
+          <TabsContent value="waitlist" className="space-y-4 mt-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="p-4 bg-card/60 border-border/50">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Waitlist</p>
+                <p className="text-2xl font-black mt-1">{waitlistEntries.length}</p>
               </Card>
-              <Card className="p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Accounts linked</p>
-                <p className="text-2xl font-extrabold mt-1">
+              <Card className="p-4 bg-card/60 border-border/50">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Accounts Linked</p>
+                <p className="text-2xl font-black mt-1 text-emerald-500">
                   {waitlistEntries.filter((w) => Boolean(w.auth_user_id)).length}
                 </p>
               </Card>
-              <Card className="p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Seller / artisan</p>
-                <p className="text-2xl font-extrabold mt-1">
+              <Card className="p-4 bg-card/60 border-border/50">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Sellers / Artisans</p>
+                <p className="text-2xl font-black mt-1 text-primary">
                   {waitlistEntries.filter((w) => w.user_type === "seller" || w.user_type === "artisan" || w.user_type === "all").length}
                 </p>
               </Card>
-              <Card className="p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Pre-launch approved ads</p>
-                <p className="text-2xl font-extrabold mt-1">{prelaunchListings.length}</p>
+              <Card className="p-4 bg-card/60 border-border/50">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Pre-launch Approved Ads</p>
+                <p className="text-2xl font-black mt-1">{prelaunchListings.length}</p>
               </Card>
             </div>
 
-            <Card className="p-0 overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/40">
                   <TableRow>
-                    <TableHead>Queue</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Queue Position</TableHead>
+                    <TableHead>Full Name</TableHead>
+                    <TableHead>Email Address</TableHead>
+                    <TableHead>Account Type</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Joined</TableHead>
+                    <TableHead>Account Status</TableHead>
+                    <TableHead>Joined Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {waitlistEntries.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        No wait-list members yet
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                        No waitlist signups recorded
                       </TableCell>
                     </TableRow>
                   )}
                   {waitlistEntries.map((entry) => (
-                    <TableRow key={entry.id ?? `${entry.email}-${entry.created_at}`}>
-                      <TableCell className="font-mono">#{entry.queue_position ?? "—"}</TableCell>
+                    <TableRow key={entry.id ?? `${entry.email}-${entry.created_at}`} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-mono font-bold text-xs">#{entry.queue_position ?? "—"}</TableCell>
                       <TableCell className="font-medium">{entry.full_name ?? "—"}</TableCell>
-                      <TableCell className="text-xs">{entry.email ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{entry.email ?? "—"}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="capitalize">{entry.user_type ?? "buyer"}</Badge>
+                        <Badge variant="outline" className="capitalize text-[10px]">{entry.user_type ?? "buyer"}</Badge>
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-xs text-muted-foreground">
                         {[entry.city, entry.state].filter(Boolean).join(", ") || "—"}
                       </TableCell>
                       <TableCell>
                         {entry.auth_user_id ? (
-                          <Badge className="bg-emerald-600 text-white gap-1">
+                          <Badge className="bg-emerald-600 text-white gap-1 text-[10px]">
                             <BadgeCheck className="h-3 w-3" /> Linked
                           </Badge>
                         ) : (
-                          <Badge variant="secondary">Waitlist only</Badge>
+                          <Badge variant="secondary" className="text-[10px]">Waitlist only</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">
+                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
                         {entry.created_at ? timeAgo(entry.created_at) : "—"}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-              {waitlistEntries.length >= 500 && (
-                <div className="p-3 text-xs text-muted-foreground text-center border-t">
-                  Showing the latest 500 wait-list entries.
-                </div>
-              )}
             </Card>
           </TabsContent>
 
-          {/* ═══ PRE-LAUNCH APPROVED LISTINGS ═════════════════════ */}
-          <TabsContent value="launch" className="mt-4 space-y-4">
-            <Card className="p-5 border-primary/30 bg-primary/5">
+          {/* ═══ LAUNCH REVIEW ═══════════════════════════════════ */}
+          <TabsContent value="launch" className="space-y-4 mt-0">
+            <Card className="p-5 border-primary/20 bg-primary/5 backdrop-blur-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <Rocket className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold">Pre-launch approved listings</h3>
+                    <h3 className="font-bold text-base">Pre-launch Approved Listings</h3>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    These ads passed moderation but remain hidden from the public marketplace until launch.
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    These listings are approved by moderation but hidden from the public marketplace until launch.
                   </p>
                 </div>
-                <Badge variant="outline" className="w-fit">
-                  {(platform as { launch_mode?: string } | undefined)?.launch_mode === "launched" ? "Marketplace launched" : "Pre-launch mode"}
+                <Badge variant="outline" className="w-fit text-xs font-bold font-mono">
+                  {(platform as { launch_mode?: string } | undefined)?.launch_mode === "launched" ? "Marketplace Launched" : "Pre-launch Mode"}
                 </Badge>
               </div>
             </Card>
 
-            <Card className="p-0 overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/40">
                   <TableRow>
                     <TableHead>Listing</TableHead>
                     <TableHead>Seller</TableHead>
@@ -1062,27 +1108,27 @@ function Admin() {
                 <TableBody>
                   {prelaunchFetching && prelaunchListings.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                         Loading pre-launch listings…
                       </TableCell>
                     </TableRow>
                   )}
                   {!prelaunchFetching && prelaunchListings.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No approved pre-launch listings.
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                        No approved pre-launch listings waiting.
                       </TableCell>
                     </TableRow>
                   )}
                   {prelaunchListings.map((listing) => (
-                    <TableRow key={listing.id}>
-                      <TableCell className="font-medium">{listing.title}</TableCell>
+                    <TableRow key={listing.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-bold text-sm">{listing.title}</TableCell>
                       <TableCell className="text-sm">{listing.seller_name}</TableCell>
-                      <TableCell className="text-xs">{listing.category}</TableCell>
-                      <TableCell>{formatNaira(listing.price)}</TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">{timeAgo(listing.created_at)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{listing.category}</TableCell>
+                      <TableCell className="font-semibold">{formatNaira(listing.price)}</TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">{timeAgo(listing.created_at)}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline" asChild>
+                        <Button size="sm" variant="outline" asChild className="h-8">
                           <a href={`/listing/${listing.id}`} target="_blank" rel="noreferrer">
                             <Eye className="h-3.5 w-3.5 mr-1" /> Inspect
                           </a>
@@ -1095,8 +1141,8 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ PLATFORM SETTINGS / EMERGENCY ═══════════════════ */}
-          <TabsContent value="settings" className="mt-4">
+          {/* ═══ PLATFORM SETTINGS ═══════════════════════════════ */}
+          <TabsContent value="settings" className="space-y-4 mt-0">
             <PlatformSettings
               initial={platform}
               prelaunchListingCount={prelaunchListings.length}
@@ -1111,7 +1157,8 @@ function Admin() {
             />
           </TabsContent>
 
-          <TabsContent value="codes" className="mt-4 space-y-4">
+          {/* ═══ ROLES & ACCESS ═══════════════════════════════════ */}
+          <TabsContent value="codes" className="space-y-4 mt-0">
             <RolesPanel />
           </TabsContent>
         </Tabs>
@@ -1120,20 +1167,6 @@ function Admin() {
         <UserInspector id={inspectId} onClose={() => setInspectId(null)} />
       </div>
     </div>
-  );
-}
-
-function StatCard({ label, value, icon: Icon }: { label: string; value: string | number; icon: React.ComponentType<{ className?: string }> }) {
-  return (
-    <Card className="p-5 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-primary-foreground/70 uppercase tracking-wide">{label}</p>
-          <p className="text-3xl font-extrabold mt-1">{value}</p>
-        </div>
-        <Icon className="h-10 w-10 opacity-60" />
-      </div>
-    </Card>
   );
 }
 
@@ -1150,21 +1183,22 @@ function RejectArtisanModal({ onConfirm }: { onConfirm: (reason: string) => void
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" className="h-8">
           <X className="h-3.5 w-3.5 mr-1" />Reject
         </Button>
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Request artisan profile changes</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>Request Artisan Profile Changes</DialogTitle></DialogHeader>
         <Textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Explain what the artisan needs to change…"
+          placeholder="Explain what the artisan needs to update or fix…"
           rows={4}
+          className="mt-2"
         />
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <Button variant="destructive" onClick={submit} disabled={!reason.trim()}>
-            Confirm
+            Send Rejection Reason
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1177,11 +1211,11 @@ function RejectModal({ onConfirm }: { onConfirm: (reason: string) => void }) {
   const [reason, setReason] = useState("");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button size="sm" variant="outline"><X className="h-3 w-3 mr-1" />Reject</Button></DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Reject listing</DialogTitle></DialogHeader>
-        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (sent to vendor)" rows={4} />
-        <DialogFooter><Button onClick={() => { onConfirm(reason); setOpen(false); }} variant="destructive">Confirm reject</Button></DialogFooter>
+      <DialogTrigger asChild><Button size="sm" variant="outline" className="h-8"><X className="h-3.5 w-3.5 mr-1" />Reject</Button></DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>Reject Listing</DialogTitle></DialogHeader>
+        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for rejection (sent to vendor)" rows={4} className="mt-2" />
+        <DialogFooter className="mt-4"><Button onClick={() => { onConfirm(reason); setOpen(false); }} variant="destructive">Confirm Reject</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1192,26 +1226,28 @@ function PendingTitle({ l }: { l: { id: string; title: string; type?: string; im
   const [open, setOpen] = useState(false);
   useEffect(() => { if (l.images?.length) getSignedUrls(l.images).then(setUrls); }, [l.images]);
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {urls[0] ? (
-        <button onClick={() => setOpen(true)} className="h-12 w-12 rounded overflow-hidden border hover:border-accent">
+        <button onClick={() => setOpen(true)} className="h-12 w-12 rounded-lg overflow-hidden border border-border/80 hover:border-primary transition-all shrink-0 shadow-sm">
           <img src={urls[0]} alt="" className="w-full h-full object-cover" />
         </button>
-      ) : <span className="h-12 w-12 rounded bg-muted inline-block" />}
-      <div className="flex-1">
-        <a href={`/listing/${l.id}`} target="_blank" rel="noreferrer" className="hover:text-accent underline-offset-2 hover:underline">{l.title}</a>
+      ) : <span className="h-12 w-12 rounded-lg bg-muted border border-border/60 inline-block shrink-0" />}
+      <div className="flex-1 min-w-0">
+        <a href={`/listing/${l.id}`} target="_blank" rel="noreferrer" className="hover:text-primary underline-offset-2 hover:underline font-semibold block text-sm truncate">
+          {l.title}
+        </a>
         {l.type === "goods" && (l.images?.length ?? 0) < 2 && (
-          <Badge variant="destructive" className="ml-2 gap-1"><AlertTriangle className="h-3 w-3" />Low image count</Badge>
+          <Badge variant="destructive" className="mt-1 gap-1 text-[10px] py-0 px-1.5"><AlertTriangle className="h-2.5 w-2.5" />Low images ({l.images?.length ?? 0})</Badge>
         )}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>{l.title} — images ({urls.length})</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[70vh] overflow-y-auto">
-            {urls.map((u, i) => <img key={i} src={u} alt="" className="w-full rounded border" />)}
+          <DialogHeader><DialogTitle>{l.title} — Images ({urls.length})</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
+            {urls.map((u, i) => <img key={i} src={u} alt="" className="w-full h-40 object-cover rounded-lg border border-border" />)}
           </div>
           <DialogFooter>
-            <Button asChild variant="outline"><a href={`/listing/${l.id}`} target="_blank" rel="noreferrer">Open full listing</a></Button>
+            <Button asChild variant="outline"><a href={`/listing/${l.id}`} target="_blank" rel="noreferrer">View Full Listing Page</a></Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1219,27 +1255,27 @@ function PendingTitle({ l }: { l: { id: string; title: string; type?: string; im
   );
 }
 
-// ─── Helper components ─────────────────────────────────────────
+// ─── Helper UI Components ─────────────────────────────────────────
 
 const TINTS: Record<string, string> = {
-  blue: "from-blue-500/15 to-blue-500/5 text-blue-600 dark:text-blue-400",
-  green: "from-emerald-500/15 to-emerald-500/5 text-emerald-600 dark:text-emerald-400",
-  amber: "from-amber-500/15 to-amber-500/5 text-amber-600 dark:text-amber-400",
-  purple: "from-purple-500/15 to-purple-500/5 text-purple-600 dark:text-purple-400",
-  cyan: "from-cyan-500/15 to-cyan-500/5 text-cyan-600 dark:text-cyan-400",
-  rose: "from-rose-500/15 to-rose-500/5 text-rose-600 dark:text-rose-400",
+  blue: "border-blue-500/20 bg-blue-500/5 text-blue-600 dark:text-blue-400",
+  green: "border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400",
+  amber: "border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-400",
+  purple: "border-purple-500/20 bg-purple-500/5 text-purple-600 dark:text-purple-400",
+  cyan: "border-cyan-500/20 bg-cyan-500/5 text-cyan-600 dark:text-cyan-400",
+  rose: "border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-400",
 };
 
 function MiniStat({ label, value, sub, icon: Icon, tint = "blue" }: { label: string; value: string | number; sub?: string; icon: React.ComponentType<{ className?: string }>; tint?: string }) {
   return (
-    <Card className={`p-4 bg-gradient-to-br ${TINTS[tint] ?? TINTS.blue} border-border/50`}>
+    <Card className={`p-4 border backdrop-blur-sm shadow-sm transition-all hover:scale-[1.01] ${TINTS[tint] ?? TINTS.blue}`}>
       <div className="flex items-start justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-wide font-bold text-muted-foreground">{label}</p>
-          <p className="text-xl font-extrabold mt-1 text-foreground truncate">{value}</p>
-          {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+          <p className="text-[10px] uppercase tracking-wider font-bold opacity-80">{label}</p>
+          <p className="text-xl font-black mt-1 text-foreground truncate">{value}</p>
+          {sub && <p className="text-[10px] opacity-75 mt-0.5 truncate">{sub}</p>}
         </div>
-        <Icon className="h-5 w-5 opacity-70" />
+        <Icon className="h-5 w-5 opacity-70 shrink-0" />
       </div>
     </Card>
   );
@@ -1248,19 +1284,21 @@ function MiniStat({ label, value, sub, icon: Icon, tint = "blue" }: { label: str
 function QueueCard({ label, count, icon: Icon, onClick }: { label: string; count: number | string; icon: React.ComponentType<{ className?: string }>; onClick?: () => void }) {
   const isEmpty = count === 0 || count === "₦0";
   return (
-    <button onClick={onClick} className={`text-left rounded-lg border p-4 transition-colors hover:border-primary/50 ${isEmpty ? "bg-card" : "bg-primary/5 border-primary/40"}`}>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase font-bold"><Icon className="h-3.5 w-3.5" />{label}</div>
-      <p className="text-2xl font-extrabold mt-2">{count}</p>
-      {!isEmpty && <p className="text-[10px] text-primary mt-1 font-semibold">Needs urgent attention →</p>}
+    <button onClick={onClick} className={`group text-left rounded-xl border p-4 transition-all duration-200 shadow-sm hover:shadow-md ${isEmpty ? "bg-card/60 border-border/50 hover:border-border" : "bg-primary/5 border-primary/30 hover:border-primary/60"}`}>
+      <div className="flex items-center justify-between text-xs text-muted-foreground font-bold uppercase tracking-wider">
+        <span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5 text-primary" />{label}</span>
+      </div>
+      <p className="text-2xl font-black mt-2 tracking-tight">{count}</p>
+      {!isEmpty && <p className="text-[10px] text-primary mt-1 font-semibold flex items-center gap-0.5">Review immediately <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" /></p>}
     </button>
   );
 }
 
 function ActivityDot({ kind }: { kind: string }) {
   const map: Record<string, string> = {
-    signup: "bg-blue-500", listing: "bg-emerald-500", payment: "bg-amber-500", report: "bg-rose-500",
+    signup: "bg-blue-500 ring-blue-500/20", listing: "bg-emerald-500 ring-emerald-500/20", payment: "bg-amber-500 ring-amber-500/20", report: "bg-rose-500 ring-rose-500/20",
   };
-  return <span className={`h-2 w-2 rounded-full ${map[kind] ?? "bg-muted-foreground"}`} />;
+  return <span className={`h-2.5 w-2.5 rounded-full ring-4 ${map[kind] ?? "bg-muted-foreground ring-muted/20"}`} />;
 }
 
 function timeAgo(iso: string): string {
@@ -1275,23 +1313,23 @@ function timeAgo(iso: string): string {
 }
 
 function RiskCell({ score, reasons }: { score: number; reasons: string[] }) {
-  const color = score >= 70 ? "bg-red-500" : score >= 40 ? "bg-amber-500" : "bg-emerald-500";
+  const color = score >= 70 ? "bg-rose-500" : score >= 40 ? "bg-amber-500" : "bg-emerald-500";
   const label = score >= 70 ? "HIGH" : score >= 40 ? "MED" : "LOW";
   return (
-    <div className="min-w-[140px]">
+    <div className="min-w-[130px]">
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 rounded-full ${color}`} />
-        <span className="text-sm font-bold">{score}</span>
-        <Badge variant="outline" className="text-[10px] py-0 h-4">{label}</Badge>
+        <span className="text-sm font-black">{score}</span>
+        <Badge variant="outline" className="text-[9px] py-0 px-1 font-bold">{label}</Badge>
       </div>
       {reasons.length > 0 && (
         <div className="mt-1 space-y-0.5">
           {reasons.slice(0, 2).map((r, i) => (
-            <div key={i} className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <AlertTriangle className="h-2.5 w-2.5" />{r}
+            <div key={i} className="text-[10px] text-muted-foreground flex items-center gap-1 truncate">
+              <AlertTriangle className="h-2.5 w-2.5 shrink-0" />{r}
             </div>
           ))}
-          {reasons.length > 2 && <div className="text-[10px] text-muted-foreground">+{reasons.length - 2} more</div>}
+          {reasons.length > 2 && <div className="text-[10px] text-muted-foreground font-mono">+{reasons.length - 2} more</div>}
         </div>
       )}
     </div>
@@ -1310,31 +1348,31 @@ function ReportActions({ report, onDone }: { report: { id: string; entity_type: 
     setOpen(false);
     onDone();
   };
-  if (report.status !== "open") return <Badge variant="outline" className="capitalize">{report.status}</Badge>;
+  if (report.status !== "open") return <Badge variant="outline" className="capitalize text-[10px]">{report.status}</Badge>;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button size="sm" variant="outline">Resolve</Button></DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Resolve report</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+      <DialogTrigger asChild><Button size="sm" variant="outline" className="h-8">Resolve</Button></DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>Resolve Moderation Report</DialogTitle></DialogHeader>
+        <div className="space-y-4 mt-2">
           <div>
-            <Label>Action</Label>
+            <Label className="text-xs font-bold uppercase tracking-wider">Action</Label>
             <Select value={action} onValueChange={setAction}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="dismiss">Dismiss</SelectItem>
-                {report.entity_type === "user" && <SelectItem value="warn">Warn user</SelectItem>}
-                {report.entity_type === "listing" && <SelectItem value="remove_listing">Remove listing</SelectItem>}
-                {report.entity_type === "user" && <SelectItem value="suspend_user">Suspend user</SelectItem>}
+                <SelectItem value="dismiss">Dismiss Report</SelectItem>
+                {report.entity_type === "user" && <SelectItem value="warn">Warn User</SelectItem>}
+                {report.entity_type === "listing" && <SelectItem value="remove_listing">Remove Listing</SelectItem>}
+                {report.entity_type === "user" && <SelectItem value="suspend_user">Suspend User</SelectItem>}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Internal note (optional)</Label>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Context for audit log…" />
+            <Label className="text-xs font-bold uppercase tracking-wider">Internal Audit Note</Label>
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Provide audit context for this action…" className="mt-1" />
           </div>
         </div>
-        <DialogFooter><Button onClick={resolve}>Apply</Button></DialogFooter>
+        <DialogFooter className="mt-4"><Button onClick={resolve} className="w-full">Apply Action</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1353,32 +1391,46 @@ function BroadcastPanel() {
     const { data, error } = await supabase.rpc("admin_broadcast", { _audience: audience, _title: title, _body: body, _link: link || undefined });
     setSending(false);
     if (error) return toast.error(error.message);
-    toast.success(`Sent to ${data} users`);
+    toast.success(`Sent broadcast to ${data} users`);
     setTitle(""); setBody(""); setLink("");
   };
   return (
-    <Card className="p-6 max-w-2xl">
-      <div className="flex items-center gap-2 mb-4"><Megaphone className="h-5 w-5 text-primary" /><h3 className="font-semibold text-lg">Compose broadcast</h3></div>
+    <Card className="p-6 max-w-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-sm">
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b">
+        <Megaphone className="h-5 w-5 text-primary" />
+        <h3 className="font-bold text-lg">Compose System Broadcast</h3>
+      </div>
       <div className="space-y-4">
         <div>
-          <Label>Audience</Label>
+          <Label className="text-xs font-bold uppercase tracking-wider">Target Audience</Label>
           <Select value={audience} onValueChange={setAudience}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Everyone</SelectItem>
-              <SelectItem value="verified">Verified users</SelectItem>
-              <SelectItem value="vip">VIP subscribers</SelectItem>
-              <SelectItem value="pro">Pro subscribers</SelectItem>
-              <SelectItem value="lite">Lite subscribers</SelectItem>
-              <SelectItem value="shops">Shop owners</SelectItem>
+              <SelectItem value="verified">Verified Users Only</SelectItem>
+              <SelectItem value="vip">VIP Subscribers</SelectItem>
+              <SelectItem value="pro">Pro Subscribers</SelectItem>
+              <SelectItem value="lite">Lite Subscribers</SelectItem>
+              <SelectItem value="shops">Shop Owners</SelectItem>
               <SelectItem value="artisans">Artisans</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short, catchy headline" maxLength={80} /></div>
-        <div><Label>Body</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="What do you want users to know?" maxLength={500} /></div>
-        <div><Label>Link (optional)</Label><Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/dashboard" /></div>
-        <Button onClick={send} disabled={sending} className="w-full"><Bell className="h-4 w-4 mr-2" />{sending ? "Sending…" : "Send broadcast"}</Button>
+        <div>
+          <Label className="text-xs font-bold uppercase tracking-wider">Notification Title</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Catchy, concise headline" maxLength={80} className="mt-1.5" />
+        </div>
+        <div>
+          <Label className="text-xs font-bold uppercase tracking-wider">Broadcast Body Message</Label>
+          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="Announcement text to display to selected users..." maxLength={500} className="mt-1.5" />
+        </div>
+        <div>
+          <Label className="text-xs font-bold uppercase tracking-wider">Action Link (Optional)</Label>
+          <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="e.g. /dashboard or /upgrade" className="mt-1.5" />
+        </div>
+        <Button onClick={send} disabled={sending} className="w-full h-10 font-semibold">
+          <Bell className="h-4 w-4 mr-2" />{sending ? "Dispatching Broadcast…" : "Dispatch Broadcast"}
+        </Button>
       </div>
     </Card>
   );
@@ -1458,7 +1510,7 @@ function PlatformSettings({
 
     const approvedCount = prelaunchListingCount;
     if (!confirm(
-      `Launch Tile Marketplace now?\n\nThis will make ${approvedCount} approved pre-launch listing${approvedCount === 1 ? "" : "s"} publicly visible.\n\nThis should only be used when you are ready for public launch.`,
+      `Launch Tile Marketplace now?\n\nThis will make ${approvedCount} approved pre-launch listing${approvedCount === 1 ? "" : "s"} publicly visible.\n\nThis action cannot be undone automatically.`,
     )) {
       return;
     }
@@ -1469,91 +1521,95 @@ function PlatformSettings({
 
     if (error) return toast.error(error.message);
 
-    toast.success("Tile Marketplace has been launched.");
+    toast.success("Tile Marketplace has been launched!");
     onLaunchChanged();
   };
 
   const toggles: Array<[keyof typeof s, string, string]> = [
-    ["maintenance_mode", "Maintenance mode", "Freeze all public actions and show a banner"],
+    ["maintenance_mode", "Maintenance mode", "Freeze all public user actions site-wide"],
     ["disable_registration", "Disable new signups", "Block new account creation"],
     ["disable_posting", "Disable new listings", "Block ad posting temporarily"],
     ["disable_payments", "Disable payments", "Block subscription and boost payments"],
-    ["disable_withdrawals", "Freeze withdrawals", "Halt payouts pending review"],
-    ["disable_messaging", "Disable messaging", "Freeze buyer↔seller chats"],
+    ["disable_withdrawals", "Freeze withdrawals", "Halt seller payouts pending review"],
+    ["disable_messaging", "Disable messaging", "Freeze buyer-seller chat system"],
   ];
 
   const launched = initial?.launch_mode === "launched";
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      <Card className="p-6 border-primary/30 bg-primary/5">
+    <div className="space-y-6 max-w-3xl">
+      <Card className="p-6 border-primary/30 bg-primary/5 backdrop-blur-sm shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <Rocket className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-lg">Marketplace launch control</h3>
+              <h3 className="font-bold text-lg">Marketplace Launch Control</h3>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Approved wait-list listings remain private until the marketplace is launched.
+            <p className="text-xs text-muted-foreground mt-1">
+              Approved waitlist listings remain private until launch is triggered.
             </p>
           </div>
 
-          <Badge className={launched ? "bg-emerald-600 text-white" : "bg-amber-100 text-amber-800 border-amber-200"}>
-            {launched ? "LIVE" : "PRE-LAUNCH"}
+          <Badge className={launched ? "bg-emerald-600 text-white font-mono text-[10px]" : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30 font-mono text-[10px]"}>
+            {launched ? "LIVE MARKETPLACE" : "PRE-LAUNCH MODE"}
           </Badge>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border bg-background p-4">
-            <p className="text-[10px] uppercase font-bold text-muted-foreground">Approved & waiting</p>
+          <div className="rounded-xl border border-border/60 bg-card/60 p-4 shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground">Approved & Waiting</p>
             <p className="mt-1 text-2xl font-black">{prelaunchListingLoading ? "…" : prelaunchListingCount}</p>
-            <p className="text-xs text-muted-foreground mt-1">Listings currently approved but not public.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Approved pre-launch items ready for public feed.</p>
           </div>
 
-          <div className="rounded-xl border bg-background p-4">
-            <p className="text-[10px] uppercase font-bold text-muted-foreground">Public state</p>
-            <p className="mt-1 text-lg font-black flex items-center gap-2">
-              {launched ? <><Eye className="h-4 w-4 text-emerald-600" /> Public marketplace</> : <><LockKeyhole className="h-4 w-4 text-amber-600" /> Hidden until launch</>}
+          <div className="rounded-xl border border-border/60 bg-card/60 p-4 shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground">Visibility State</p>
+            <p className="mt-1 text-base font-bold flex items-center gap-2">
+              {launched ? <><Eye className="h-4 w-4 text-emerald-500" /> Public Marketplace</> : <><LockKeyhole className="h-4 w-4 text-amber-500" /> Hidden Until Launch</>}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Controlled by the database, not just the frontend.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Enforced at the database RPC layer.</p>
           </div>
         </div>
 
         <div className="mt-5">
           {launched ? (
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-              <p className="font-semibold text-emerald-700">Marketplace is live.</p>
-              <p className="text-sm text-muted-foreground mt-1">New listings will follow the live marketplace visibility rules.</p>
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-600 dark:text-emerald-400 text-sm font-semibold flex items-center gap-2">
+              <BadgeCheck className="h-5 w-5" /> Marketplace is live for the public.
             </div>
           ) : (
-            <Button onClick={launchMarketplace} disabled={launching} className="w-full h-11 bg-primary text-primary-foreground">
+            <Button onClick={launchMarketplace} disabled={launching} className="w-full h-11 bg-primary font-bold">
               {launching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
-              {launching ? "Launching marketplace…" : "Launch Marketplace"}
+              {launching ? "Launching Marketplace…" : "Launch Marketplace Now"}
             </Button>
           )}
         </div>
 
         <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
           <RefreshCw className="h-3.5 w-3.5" />
-          Launch status and approved pre-launch count refresh automatically.
+          Launch state syncs real-time with production databases.
         </div>
       </Card>
 
-      <Card className="p-6 border-destructive/40">
-        <div className="flex items-center gap-2 mb-4"><Settings2 className="h-5 w-5 text-destructive" /><h3 className="font-semibold text-lg">Emergency controls</h3></div>
-        <p className="text-sm text-muted-foreground mb-4">Changes apply platform-wide immediately. Every change is audit-logged.</p>
+      <Card className="p-6 border-destructive/30 bg-card/60 backdrop-blur-sm shadow-sm">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/40">
+          <Settings2 className="h-5 w-5 text-destructive" />
+          <h3 className="font-bold text-lg">Emergency Controls & Overrides</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">Changes take effect immediately across all client sessions.</p>
         <div className="space-y-3">
           {toggles.map(([key, label, desc]) => (
-            <div key={key} className="flex items-center justify-between gap-4 rounded-lg border p-3">
-              <div><p className="font-medium text-sm">{label}</p><p className="text-xs text-muted-foreground">{desc}</p></div>
+            <div key={key} className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-background/50 p-3.5">
+              <div><p className="font-bold text-sm">{label}</p><p className="text-xs text-muted-foreground">{desc}</p></div>
               <Switch checked={s[key] as boolean} onCheckedChange={(v) => setS((prev) => ({ ...prev, [key]: v }))} />
             </div>
           ))}
-          <div className="rounded-lg border p-3">
-            <Label>Emergency banner (shown site-wide when non-empty)</Label>
-            <Textarea value={s.emergency_banner} onChange={(e) => setS((prev) => ({ ...prev, emergency_banner: e.target.value }))} rows={2} placeholder="e.g. Scheduled maintenance from 2am–3am WAT" className="mt-1" />
+          <div className="rounded-xl border border-border/60 bg-background/50 p-3.5">
+            <Label className="text-xs font-bold uppercase tracking-wider">Emergency Announcement Banner</Label>
+            <Textarea value={s.emergency_banner} onChange={(e) => setS((prev) => ({ ...prev, emergency_banner: e.target.value }))} rows={2} placeholder="e.g. Scheduled maintenance in progress until 4:00 AM WAT" className="mt-1.5" />
           </div>
-          <Button onClick={save} className="w-full bg-destructive hover:bg-destructive/90"><ShieldAlert className="h-4 w-4 mr-2" />Apply settings</Button>
+          <Button onClick={save} variant="destructive" className="w-full h-10 font-bold mt-2">
+            <ShieldAlert className="h-4 w-4 mr-2" />Save & Apply Emergency Controls
+          </Button>
         </div>
       </Card>
     </div>
@@ -1577,56 +1633,56 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
   });
   return (
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-md overflow-y-auto p-6">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2"><UserSearch className="h-4 w-4" /> User inspector</SheetTitle>
-          <SheetDescription>Deep dive into any user's activity</SheetDescription>
+          <SheetTitle className="flex items-center gap-2"><UserSearch className="h-5 w-5 text-primary" /> User Inspector</SheetTitle>
+          <SheetDescription className="text-xs">Comprehensive profile and operational telemetry</SheetDescription>
         </SheetHeader>
-        {isLoading && <div className="py-16 text-center text-muted-foreground">Loading…</div>}
+        {isLoading && <div className="py-20 text-center text-muted-foreground text-sm">Fetching user records…</div>}
         {data && (
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/70 grid place-items-center text-white text-xl font-bold">
+          <div className="mt-6 space-y-5">
+            <div className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-muted/20">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/60 grid place-items-center text-primary-foreground text-xl font-black shadow-inner shrink-0">
                 {(data.full_name ?? "?").slice(0, 1).toUpperCase()}
               </div>
-              <div>
-                <p className="font-bold">{data.full_name ?? "Anonymous"}</p>
-                <p className="text-xs text-muted-foreground">{data.email ?? "—"}</p>
-                <div className="flex gap-1 mt-1">
-                  <Badge className="capitalize">{data.subscription_tier}</Badge>
-                  {data.is_verified && <Badge className="bg-emerald-500 text-white gap-1"><BadgeCheck className="h-3 w-3" />Verified</Badge>}
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-base truncate">{data.full_name ?? "Anonymous User"}</p>
+                <p className="text-xs text-muted-foreground truncate">{data.email ?? "—"}</p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <Badge className="capitalize text-[10px]">{data.subscription_tier}</Badge>
+                  {data.is_verified && <Badge className="bg-emerald-600 text-white gap-1 text-[10px]"><BadgeCheck className="h-3 w-3" />Verified</Badge>}
                 </div>
               </div>
             </div>
 
-            <Card className="p-4">
+            <Card className="p-4 border-border/60 bg-card">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs uppercase font-bold text-muted-foreground">Trust score</p>
-                <p className="text-lg font-extrabold">{data.trust_score}/100</p>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Account Trust Score</p>
+                <p className="text-lg font-black">{data.trust_score}/100</p>
               </div>
               <Progress value={data.trust_score} className="h-2" />
             </Card>
 
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <InspectStat label="Listings" value={`${data.active_listings}/${data.listings_count}`} />
-              <InspectStat label="Chats" value={data.chats_count} />
-              <InspectStat label="Reports against" value={data.reports_against} danger={data.reports_against > 0} />
-              <InspectStat label="Wallet" value={formatNaira(data.wallet_balance)} />
-              <InspectStat label="Wallet txns" value={data.wallet_txns} />
-              <InspectStat label="KYC" value={data.kyc_status} />
-              <InspectStat label="Phone" value={data.phone ?? "—"} />
+              <InspectStat label="Listings (Active/Total)" value={`${data.active_listings}/${data.listings_count}`} />
+              <InspectStat label="Chats Count" value={data.chats_count} />
+              <InspectStat label="Reports Against" value={data.reports_against} danger={data.reports_against > 0} />
+              <InspectStat label="Wallet Balance" value={formatNaira(data.wallet_balance)} />
+              <InspectStat label="Wallet Transactions" value={data.wallet_txns} />
+              <InspectStat label="KYC Status" value={data.kyc_status} />
+              <InspectStat label="Phone Number" value={data.phone ?? "—"} />
               <InspectStat label="State" value={data.state ?? "—"} />
-              <InspectStat label="Shop" value={data.shop_slug ?? "—"} />
-              <InspectStat label="Artisan" value={data.is_artisan ? "Yes" : "No"} />
-              <InspectStat label="Joined" value={timeAgo(data.created_at)} />
-              <InspectStat label="Sub. until" value={data.subscription_until ? new Date(data.subscription_until).toLocaleDateString() : "—"} />
+              <InspectStat label="Shop Slug" value={data.shop_slug ?? "—"} />
+              <InspectStat label="Artisan Status" value={data.is_artisan ? "Yes" : "No"} />
+              <InspectStat label="Account Created" value={timeAgo(data.created_at)} />
+              <InspectStat label="Sub Expires" value={data.subscription_until ? new Date(data.subscription_until).toLocaleDateString() : "—"} />
             </div>
 
-            <div className="pt-2 border-t space-y-2">
-              <p className="text-xs font-bold uppercase text-muted-foreground">Quick actions</p>
+            <div className="pt-4 border-t space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Admin Quick Actions</p>
               <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="outline" asChild><a href={`mailto:${data.email}`}><LifeBuoy className="h-3.5 w-3.5 mr-1" />Email</a></Button>
-                {data.shop_slug && <Button size="sm" variant="outline" asChild><a href={`/shop/${data.shop_slug}`} target="_blank" rel="noreferrer">View shop</a></Button>}
+                <Button size="sm" variant="outline" asChild className="h-9"><a href={`mailto:${data.email}`}><LifeBuoy className="h-3.5 w-3.5 mr-1.5" />Send Email</a></Button>
+                {data.shop_slug && <Button size="sm" variant="outline" asChild className="h-9"><a href={`/shop/${data.shop_slug}`} target="_blank" rel="noreferrer">Open Shop</a></Button>}
               </div>
             </div>
           </div>
@@ -1638,9 +1694,9 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
 
 function InspectStat({ label, value, danger }: { label: string; value: string | number; danger?: boolean }) {
   return (
-    <div className={`rounded-lg border p-2.5 ${danger ? "border-destructive/50 bg-destructive/5" : ""}`}>
-      <p className="text-[10px] uppercase font-bold text-muted-foreground">{label}</p>
-      <p className={`text-sm font-semibold mt-0.5 ${danger ? "text-destructive" : ""}`}>{value}</p>
+    <div className={`rounded-xl border p-3 ${danger ? "border-rose-500/40 bg-rose-500/5 text-rose-500" : "border-border/60 bg-card/60"}`}>
+      <p className="text-[9px] uppercase font-bold text-muted-foreground">{label}</p>
+      <p className={`text-xs font-bold mt-1 truncate ${danger ? "text-rose-500" : ""}`}>{value}</p>
     </div>
   );
 }
@@ -1694,6 +1750,7 @@ function RolesPanel() {
             variant={has ? "destructive" : "outline"}
             disabled={busy === row.user_id + r}
             onClick={() => setRole(row.user_id, r, !has)}
+            className="h-8 text-xs font-medium"
           >
             {has ? `Remove ${r}` : `Make ${r}`}
           </Button>
@@ -1703,27 +1760,27 @@ function RolesPanel() {
   );
 
   return (
-    <>
-      <Card className="p-4 space-y-3">
+    <div className="space-y-4">
+      <Card className="p-5 border-border/50 bg-card/60 backdrop-blur-sm shadow-sm space-y-4">
         <div>
-          <p className="font-semibold flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Grant platform roles</p>
-          <p className="text-sm text-muted-foreground">Search any registered user by name or email and grant or remove admin, moderator or support access.</p>
+          <p className="font-bold text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" />Grant Platform Access Roles</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Search any user account to grant admin, moderator, or support privileges.</p>
         </div>
         <form
           className="flex gap-2"
           onSubmit={(e) => { e.preventDefault(); setTerm(q); }}
         >
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or email…" />
-          <Button type="submit" className="bg-accent text-accent-foreground"><Search className="h-4 w-4 mr-1" />Search</Button>
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search user by name or email…" className="h-10 border-border/60 bg-background/50" />
+          <Button type="submit" className="h-10 font-semibold px-4"><Search className="h-4 w-4 mr-1.5" />Search</Button>
         </form>
         {term.trim().length >= 2 && (
-          <div className="rounded-lg border divide-y">
-            {isFetching && <p className="p-3 text-sm text-muted-foreground">Searching…</p>}
-            {!isFetching && results.length === 0 && <p className="p-3 text-sm text-muted-foreground">No users match “{term}”.</p>}
+          <div className="rounded-xl border border-border/60 divide-y divide-border/40 overflow-hidden bg-background/40">
+            {isFetching && <p className="p-4 text-xs text-muted-foreground">Searching user directory…</p>}
+            {!isFetching && results.length === 0 && <p className="p-4 text-xs text-muted-foreground">No users match “{term}”.</p>}
             {results.map((r) => (
-              <div key={r.user_id} className="p-3 flex items-center justify-between gap-3 flex-wrap">
+              <div key={r.user_id} className="p-3.5 flex items-center justify-between gap-3 flex-wrap hover:bg-muted/30 transition-colors">
                 <div>
-                  <p className="font-medium text-sm">{r.full_name ?? "Unnamed user"}</p>
+                  <p className="font-bold text-sm">{r.full_name ?? "Unnamed user"}</p>
                   <p className="text-xs text-muted-foreground">{r.email ?? "—"}</p>
                 </div>
                 <RoleButtons row={r} />
@@ -1733,17 +1790,19 @@ function RolesPanel() {
         )}
       </Card>
 
-      <Card className="p-0 overflow-x-auto">
+      <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
         <Table>
-          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Roles</TableHead><TableHead className="text-right">Manage</TableHead></TableRow></TableHeader>
+          <TableHeader className="bg-muted/40">
+            <TableRow><TableHead>Staff Name</TableHead><TableHead>Email</TableHead><TableHead>Assigned Roles</TableHead><TableHead className="text-right">Access Controls</TableHead></TableRow>
+          </TableHeader>
           <TableBody>
-            {staff.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No staff accounts yet</TableCell></TableRow>}
+            {staff.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-12">No elevated staff accounts found</TableCell></TableRow>}
             {staff.map((s) => (
-              <TableRow key={s.user_id}>
-                <TableCell className="font-medium">{s.full_name ?? "—"}</TableCell>
-                <TableCell className="text-xs">{s.email ?? "—"}</TableCell>
+              <TableRow key={s.user_id} className="hover:bg-muted/30 transition-colors">
+                <TableCell className="font-bold text-sm">{s.full_name ?? "—"}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{s.email ?? "—"}</TableCell>
                 <TableCell className="space-x-1">
-                  {(s.roles ?? []).map((r) => <Badge key={r} className="capitalize">{r}</Badge>)}
+                  {(s.roles ?? []).map((r) => <Badge key={r} className="capitalize text-[10px] font-semibold">{r}</Badge>)}
                 </TableCell>
                 <TableCell className="text-right"><RoleButtons row={s} /></TableCell>
               </TableRow>
@@ -1751,6 +1810,6 @@ function RolesPanel() {
           </TableBody>
         </Table>
       </Card>
-    </>
+    </div>
   );
 }

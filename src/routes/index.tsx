@@ -5,9 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { ListingCard, type ListingCardData } from "@/components/listing-card";
-import { CATEGORIES, LOCATIONS } from "@/lib/categories";
+import { CATEGORIES, LOCATIONS, formatNaira } from "@/lib/categories";
+import { getSignedUrl } from "@/lib/storage";
 import { HeroSearch } from "@/components/hero-search";
-import { LiveActivityFeed } from "@/components/live-activity-feed";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -107,6 +107,7 @@ function Index() {
   // Search & Filters local input state
   const [searchInput, setSearchInput] = useState(q ?? "");
   const [selectedLocation, setSelectedLocation] = useState(loc ?? "all");
+  const [featuredProductImage, setFeaturedProductImage] = useState<string | null>(null);
 
   // Marketplace Feed state
   const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
@@ -252,6 +253,20 @@ function Index() {
     },
   });
 
+  const featuredListing = trendingListings[0];
+  const featuredImagePath = featuredListing?.images?.[0];
+  useEffect(() => {
+    if (!featuredImagePath) {
+      setFeaturedProductImage(null);
+      return;
+    }
+    let active = true;
+    getSignedUrl(featuredImagePath).then((url) => {
+      if (active) setFeaturedProductImage(url);
+    });
+    return () => { active = false; };
+  }, [featuredImagePath]);
+
   // ==========================
   // 4.7 FEATURED ARTISANS QUERY (Trending/Top Professionals)
   // ==========================
@@ -340,6 +355,8 @@ function Index() {
     () => vendors.filter((v) => v.is_verified),
     [vendors]
   );
+  const featuredStore = verifiedMerchants[0];
+  const featuredArtisan = featuredArtisans[0];
 
   const executeSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -374,107 +391,47 @@ function Index() {
   }, [cat]);
 
   return (
-    <div className="min-h-screen bg-muted/20 text-foreground flex flex-col justify-between">
+    <div className="flex min-h-screen flex-col justify-between bg-[#06120d] text-slate-100">
       <div>
         <SiteHeader />
 
         {/* 1. HERO SECTION */}
         {!isFiltering && (
-          <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground">
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:26px_26px]" />
-            <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
-              <div className="max-w-4xl mx-auto text-center space-y-6">
-                <span className="inline-flex items-center rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide backdrop-blur">
-                  🇳🇬 Nigeria's Marketplace for Goods & Services
-                </span>
-                <h1 className="text-4xl md:text-6xl font-black leading-tight tracking-tight">
-                  Find Trusted Stores,<br />Products & Services Near You
-                </h1>
-                <p className="max-w-2xl mx-auto text-primary-foreground/90 text-base md:text-lg leading-relaxed">
-                  Shop from verified businesses, discover local services, compare prices and connect directly with trusted sellers across Nigeria.
-                </p>
-                <div className="pt-4">
+          <section className="tile-market-hero relative isolate overflow-hidden text-white">
+            <div className="tile-market-backdrop" aria-hidden="true" />
+            <div className="container relative z-10 mx-auto px-4 py-12 sm:py-16 lg:py-20">
+              <div className="grid items-center gap-10 lg:grid-cols-[1.14fr_.86fr] xl:gap-14">
+                <div className="tile-market-copy space-y-6">
+                  <div className="tile-trust-pill"><Icons.BadgeCheck className="h-4 w-4 fill-emerald-400 text-emerald-400" /> Verified Businesses <span>&#8226;</span> Safe <span>&#8226;</span> Reliable</div>
+                  <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl md:text-6xl xl:text-[4.4rem]">
+                    Find Trusted Stores,<br /><span>Products &amp; Services</span><br />Near You
+                  </h1>
+                  <p className="max-w-2xl text-base leading-7 text-white/75 sm:text-lg">
+                    Shop from verified businesses, discover local services, compare prices and connect directly with trusted sellers across Nigeria.
+                  </p>
                   <HeroSearch initialQ={q ?? ""} initialLoc={loc ?? "all"} />
                 </div>
-                <p className="mt-8 mb-4 text-xs uppercase tracking-[0.2em] text-primary-foreground/70 font-semibold">
-                  Choose Your Experience
-                </p>
-                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
 
-                  {/* Marketplace Card */}
-                  <Link
-                    to="/"
-                    hash="market"
-                    className="group rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-5 hover:bg-white/15 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                        <Icons.Store className="h-6 w-6 text-white" />
-                      </div>
-
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg">
-                          Marketplace
-                        </h3>
-
-                        <p className="text-sm text-primary-foreground/80 mt-1">
-                          Buy & sell products from trusted shops across Nigeria.
-                        </p>
-
-                        <div className="mt-4 flex items-center text-sm font-semibold">
-                          Explore Marketplace
-                          <Icons.ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Services Card */}
-                  <Link
-                    to="/artisans"
-                    className="group rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-5 hover:bg-white/15 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                        <Icons.Hammer className="h-6 w-6 text-white" />
-                      </div>
-
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg">
-                          Hire Professionals
-                        </h3>
-
-                        <p className="text-sm text-primary-foreground/80 mt-1">
-                          Find verified artisans and skilled professionals near you.
-                        </p>
-
-                        <div className="mt-4 flex items-center text-sm font-semibold">
-                          Browse Artisans
-                          <Icons.ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-
-                </div>
-                
-
-                <div className="flex flex-wrap justify-center gap-6 pt-8 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Icons.Package className="h-5 w-5" />
-                    <span>Explore <strong><AnimatedCounter value={stats?.total_listings ?? 0} /></strong> Listings</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icons.Store className="h-5 w-5" />
-                    <span><strong><AnimatedCounter value={stats?.active_shops ?? 0} /></strong> Shops</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icons.BadgeCheck className="h-5 w-5" />
-                    <span><strong><AnimatedCounter value={stats?.verified_vendors ?? 0} /></strong> Verified Sellers</span>
-                  </div>
-                </div>
-                <div className="pt-6 max-w-2xl mx-auto text-left">
-                  <LiveActivityFeed />
+                <div className="tile-market-showcase" role="group" aria-label="Featured local products, stores and artisans">
+                  <div className="tile-map-glow" aria-hidden="true"><span /><span /><span /><i /></div>
+                  <article className="tile-feature-product">
+                    <div className="tile-card-ribbon">&#10024; {featuredListing ? "Trending" : "Popular Finds"}</div>
+                    {featuredProductImage ? <img src={featuredProductImage} alt={featuredListing?.title || "Featured local product"} /> : <div className="tile-product-placeholder"><Icons.Package /></div>}
+                    <div className="tile-product-info"><strong>{featuredListing?.title || "Find something local"}</strong><b>{featuredListing?.price != null ? formatNaira(featuredListing.price) : "Explore listings"}</b><span><Icons.MapPin /> {featuredListing?.location || "Across Nigeria"}</span></div>
+                  </article>
+                  <article className="tile-feature-store">
+                    <img className="tile-store-photo" src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=85" alt="Modern local shop" />
+                    <div className="tile-store-info"><div className="tile-store-mark">{featuredStore?.avatar_url ? <img src={featuredStore.avatar_url} alt="" /> : (featuredStore?.business_name || "Tile").slice(0, 2).toUpperCase()}</div><div><strong>{featuredStore?.business_name || featuredStore?.full_name || "Explore nearby shops"} {featuredStore && <Icons.BadgeCheck />}</strong><span>Local products &amp; services</span><small>Trusted businesses near you</small><em>{featuredStore ? "Verified Store" : "Across Nigeria"}</em></div></div>
+                  </article>
+                  <article className="tile-feature-artisan">
+                    <img src={featuredArtisan?.avatar_url || "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=800&q=85"} alt={featuredArtisan?.full_name ? `Photo of ${featuredArtisan.full_name}` : "Skilled artisan at work"} />
+                    <div className="tile-artisan-info"><em>{featuredArtisan ? "Featured Artisan" : "Skilled Professionals"}</em><strong>{featuredArtisan?.full_name || "Find a professional"}</strong><span>{featuredArtisan?.profession || "Trusted services near you"}</span><small><Icons.MapPin /> {featuredArtisan?.lga || featuredArtisan?.state || "Across Nigeria"}{featuredArtisan?.state ? `, ${featuredArtisan.state}` : ""} <Icons.ChevronRight /></small></div>
+                  </article>
+                  <div className="tile-real-people"><Icons.ShieldCheck /><span>Real People<br />Real Businesses<br />Across Nigeria</span></div>
+                  <div className="tile-map-pin tile-map-pin-one"><Icons.MapPin /></div>
+                  <div className="tile-map-pin tile-map-pin-two"><Icons.MapPin /></div>
+                  <div className="tile-float-icon tile-float-bag"><Icons.ShoppingBag /></div>
+                  <div className="tile-float-icon tile-float-tool"><Icons.Wrench /></div>
                 </div>
               </div>
             </div>
@@ -486,18 +443,18 @@ function Index() {
           <section className="container mx-auto px-4 -mt-8 relative z-20">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-blue-500 bg-blue-500/10" },
-                { label: "Verified Sellers", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-emerald-500 bg-emerald-500/10" },
-                { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-500 bg-amber-500/10" },
-                { label: "Categories", val: quickCategories.length, icon: Icons.LayoutGrid, color: "text-purple-500 bg-purple-500/10" },
+                { label: "Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-emerald-300 bg-emerald-300/10" },
+                { label: "Verified Sellers", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-teal-300 bg-teal-300/10" },
+                { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-200 bg-amber-200/10" },
+                { label: "Categories", val: quickCategories.length, icon: Icons.LayoutGrid, color: "text-lime-200 bg-lime-200/10" },
               ].map((s, i) => {
                 const Ic = s.icon;
                 return (
-                  <Card key={i} className="p-4 rounded-xl bg-background shadow-md border flex items-center gap-4">
-                    <div className={`hidden sm:flex p-3 rounded-lg ${s.color}`}><Ic className="h-5 w-5" /></div>
-                    <div>
-                      <p className="text-xl md:text-2xl font-extrabold">{Number(s.val).toLocaleString()}</p>
-                      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</p>
+                  <Card key={i} className="group flex items-center gap-3 overflow-hidden rounded-2xl border-[#1b3b2a] bg-gradient-to-br from-[#10241a] to-[#0b1a13] p-3.5 shadow-[0_12px_35px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2c6944] hover:shadow-[0_18px_40px_rgba(0,0,0,0.24)] sm:gap-4 sm:p-4">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${s.color}`}><Ic className="h-5 w-5" /></div>
+                    <div className="min-w-0">
+                      <p className="text-xl font-extrabold tracking-tight text-white md:text-2xl">{Number(s.val).toLocaleString()}</p>
+                      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 sm:text-[11px]">{s.label}</p>
                     </div>
                   </Card>
                 );
@@ -511,15 +468,15 @@ function Index() {
           <section className="container mx-auto px-4 pt-12 pb-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Icons.Store className="h-6 w-6 text-primary" />
+                <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-white">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/15 bg-emerald-300/[0.08]"><Icons.Store className="h-5 w-5 text-emerald-300" /></span>
                   Featured Stores
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-2 text-sm text-slate-400">
                   Discover trusted businesses with active listings across Nigeria.
                 </p>
               </div>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:border-emerald-300/30 hover:bg-white/[0.07] hover:text-white">
                 <Link to="/">View All</Link>
               </Button>
             </div>
@@ -530,23 +487,25 @@ function Index() {
                   key={v.id}
                   to="/shop/$slug"
                   params={{ slug: v.shop_slug! }}
-                  className="group rounded-2xl border bg-background overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  className="group overflow-hidden rounded-2xl border border-[#1b3b2a] bg-gradient-to-b from-[#10241a] to-[#0b1a13] shadow-[0_12px_35px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/30 hover:shadow-[0_20px_45px_rgba(0,0,0,0.26)]"
                 >
-                  <div className="h-24 bg-gradient-to-br from-primary/10 via-primary/5 to-background flex items-center justify-center">
+                  <div className="relative flex h-24 items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_10%,rgba(52,211,153,0.18),transparent_70%),linear-gradient(145deg,#102b1e,#0a1b13)]">
+                    <div aria-hidden="true" className="absolute h-20 w-20 rounded-full border border-emerald-300/10" />
                     {v.avatar_url ? (
-                      <img src={v.avatar_url} className="h-14 w-14 rounded-full object-cover border-2 border-background" />
+                      <img src={v.avatar_url} alt={v.business_name || v.full_name || "Store owner"} className="relative h-14 w-14 rounded-2xl border border-emerald-200/30 object-cover shadow-lg transition-transform duration-300 group-hover:scale-105" />
                     ) : (
-                      <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Icons.Store className="h-6 w-6 text-primary" />
+                      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200/20 bg-emerald-300/10 text-emerald-200 shadow-lg">
+                        <Icons.Store className="h-6 w-6" />
                       </div>
                     )}
                   </div>
                   <div className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <h3 className="font-bold truncate text-sm">{v.business_name || v.full_name}</h3>
-                      {v.is_verified && <Icons.BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />}
+                    <div className="flex items-center justify-center gap-1.5">
+                      <h3 className="truncate text-sm font-bold text-slate-100 transition-colors group-hover:text-emerald-200">{v.business_name || v.full_name}</h3>
+                      {v.is_verified && <Icons.BadgeCheck className="h-4 w-4 shrink-0 fill-emerald-300 text-emerald-300" />}
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">{v.location || "Nigeria"}</p>
+                    <p className="mt-1 truncate text-xs text-slate-500">{v.location || "Nigeria"}</p>
+                    <span className="mt-3 inline-flex items-center gap-1 rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-2.5 py-1 text-[10px] font-semibold text-emerald-200"><Icons.BadgeCheck className="h-3 w-3" />Verified business</span>
                   </div>
                 </Link>
               ))}
@@ -557,17 +516,17 @@ function Index() {
         {/* 4. VERIFIED TRUST FLAGBANNER */}
         {!isFiltering && verifiedMerchants.length > 0 && (
           <section className="container mx-auto px-4 py-6">
-            <div className="bg-gradient-to-r from-emerald-500/10 via-background to-background border border-emerald-500/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col items-center justify-between gap-6 rounded-3xl border border-emerald-300/15 bg-[radial-gradient(ellipse_at_0%_50%,rgba(52,211,153,0.13),transparent_55%),linear-gradient(120deg,#10271b,#0a1a12)] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:flex-row md:p-8">
               <div className="space-y-2 max-w-xl text-center md:text-left">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  <Icons.BadgeCheck className="h-3.5 w-3.5" /> Verified Merchants Only
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/15 bg-emerald-300/[0.08] px-3 py-1 text-xs font-semibold text-emerald-200">
+                  <Icons.BadgeCheck className="h-3.5 w-3.5" /> Trusted businesses
                 </div>
-                <h3 className="text-xl font-bold tracking-tight">Trade Safely with Verified Merchants</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-xl font-bold tracking-tight text-white">Trade with confidence</h3>
+                <p className="text-sm leading-6 text-slate-400">
                   We review business credentials, historical fulfillment consistency, and identity markers so you can buy items or book trade services with absolute confidence.
                 </p>
               </div>
-              <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 font-bold shrink-0">
+              <Button asChild variant="default" className="h-11 shrink-0 rounded-xl bg-[#35d879] px-5 font-bold text-[#04120a] shadow-[0_8px_24px_rgba(53,216,121,0.18)] hover:bg-[#52e98f]">
                 <Link to="/">Find Verified Sellers</Link>
               </Button>
             </div>
@@ -579,8 +538,8 @@ function Index() {
           <section className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <Icons.Flame className="h-6 w-6 text-orange-500 animate-pulse" />
-                <h2 className="text-2xl font-bold tracking-tight">Trending Products</h2>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-300/15 bg-orange-300/[0.08]"><Icons.Flame className="h-5 w-5 text-orange-300" /></span>
+                <h2 className="text-2xl font-bold tracking-tight text-white">Trending Products</h2>
               </div>
               <Link to="/" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
                 View All <Icons.ArrowRight className="h-4 w-4" />
@@ -598,22 +557,22 @@ function Index() {
 
         {/* 6. FEATURED PROFESSIONALS & ARTISANS (Trending Professionals) */}
         {!isFiltering && featuredArtisans.length > 0 && (
-          <section className="container mx-auto px-4 py-12">
+          <section className="container mx-auto px-4 py-12 sm:py-14">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
-                <Badge className="mb-3 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 gap-1">
+                <Badge className="mb-3 gap-1 rounded-full border border-emerald-300/15 bg-emerald-300/[0.07] px-3 text-emerald-200">
                   🔥 Trending Professionals
                 </Badge>
-                <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Find Skilled Artisans Near You
                 </h2>
-                <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
                   Hire verified electricians, plumbers, mechanics, fashion designers,
                   carpenters, photographers, cleaners, painters, welders,
                   technicians and hundreds of skilled professionals across Nigeria.
                 </p>
               </div>
-              <Button asChild variant="outline" className="self-start sm:self-center">
+              <Button asChild variant="outline" className="self-start rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:border-emerald-300/30 hover:bg-white/[0.07] hover:text-white sm:self-center">
                 <Link to="/artisans">
                   Browse All Artisans
                 </Link>
@@ -626,48 +585,46 @@ function Index() {
                   key={artisan.id}
                   to="/artisans/$id"
                   params={{ id: artisan.id ?? "" }}
-                  className="group rounded-3xl border bg-card overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="group overflow-hidden rounded-3xl border border-[#1b3b2a] bg-gradient-to-b from-[#10241a] to-[#0a1912] shadow-[0_14px_38px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/30 hover:shadow-[0_22px_48px_rgba(0,0,0,0.3)]"
                 >
-                  <div className="h-28 bg-gradient-to-r from-primary/10 to-primary/5 flex items-center justify-center relative">
+                  <div className="relative flex h-28 items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_15%,rgba(52,211,153,0.2),transparent_65%),linear-gradient(145deg,#102b1e,#0a1912)]">
                     {artisan.avatar_url ? (
                       <img
                         src={artisan.avatar_url}
-                        className="h-20 w-20 rounded-full object-cover border-4 border-background absolute -bottom-6 shadow-sm"
+                        alt={artisan.full_name ? `Photo of ${artisan.full_name}` : "Artisan profile"}
+                        className="absolute -bottom-6 h-20 w-20 rounded-2xl border-4 border-[#0d2016] object-cover shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="h-20 w-20 rounded-full bg-background border-4 border-background flex items-center justify-center absolute -bottom-6 shadow-sm">
-                        <Icons.UserRound className="h-10 w-10 text-primary" />
+                      <div className="absolute -bottom-6 flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-[#0d2016] bg-emerald-300/10 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+                        <Icons.UserRound className="h-9 w-9 text-emerald-200" />
                       </div>
                     )}
                   </div>
 
                   <div className="pt-8 p-5 text-center sm:text-left">
                     <div className="flex items-center justify-center sm:justify-start gap-1.5">
-                      <h3 className="font-bold truncate text-base">
+                      <h3 className="truncate text-base font-bold text-white transition-colors group-hover:text-emerald-200">
                         {artisan.full_name}
                       </h3>
                     </div>
 
-                    <p className="text-sm font-medium text-primary mt-1">
+                    <p className="mt-1 text-sm font-semibold text-emerald-300">
                       {artisan.profession}
                     </p>
 
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center sm:justify-start gap-1">
+                    <p className="mt-2 flex items-center justify-center gap-1 text-xs text-slate-400 sm:justify-start">
                       📍 {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "Nigeria"}
                     </p>
 
-                    <div className="flex items-center justify-between mt-5 pt-3 border-t border-muted">
-                      <Badge variant="secondary" className="font-bold text-xs">
+                    <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-3">
+                      <Badge variant="secondary" className="border border-emerald-300/10 bg-emerald-300/[0.06] text-xs font-semibold text-emerald-100">
                         Professional
                       </Badge>
-                      <span className="text-xs font-medium text-muted-foreground">
+                      <span className="text-xs font-medium text-slate-500 transition-colors group-hover:text-emerald-200">
                         View profile
                       </span>
                     </div>
 
-                    <div className="text-xs text-primary font-bold mt-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-0.5">
-                      View Profile <Icons.ArrowRight className="h-3 w-3" />
-                    </div>
                   </div>
                 </Link>
               ))}
@@ -677,11 +634,15 @@ function Index() {
 
         {/* 6.5 POPULAR SERVICES QUICK FILTER STRIP */}
         {!isFiltering && (
-          <section className="container mx-auto px-4 py-4 mb-6">
-            <div className="border-t border-b border-muted py-6">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
-                Popular Services
-              </h3>
+          <section className="container mx-auto mb-6 px-4 py-4">
+            <div className="rounded-3xl border border-[#1b3b2a] bg-gradient-to-r from-[#0d2117] via-[#0b1a13] to-[#0d2117] px-4 py-5 sm:px-6">
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">Find your next hire</p>
+                  <h3 className="mt-1 text-lg font-bold tracking-tight text-white">Popular services</h3>
+                </div>
+                <Icons.Sparkles className="mb-1 h-5 w-5 text-emerald-300/70" />
+              </div>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
                 {POPULAR_SERVICES.map((service) => {
                   const ServiceIcon = (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[service.icon] ?? Icons.Wrench;
@@ -697,9 +658,9 @@ function Index() {
                           }),
                         });
                       }}
-                      className="rounded-full flex items-center gap-2 h-10 px-5 shrink-0 hover:border-primary hover:bg-primary/5 transition-all text-sm font-medium snap-start"
+                      className="h-10 shrink-0 snap-start rounded-full border border-white/10 bg-white/[0.025] px-5 text-sm font-medium text-slate-200 transition-all hover:-translate-y-0.5 hover:border-emerald-300/35 hover:bg-emerald-300/[0.07] hover:text-white"
                     >
-                      <ServiceIcon className="h-4 w-4 text-primary" />
+                      <ServiceIcon className="h-4 w-4 text-emerald-300" />
                       {service.label}
                     </Button>
                   );
@@ -711,10 +672,12 @@ function Index() {
 
         {/* 7. BROWSE BY CATEGORY GRID */}
         {!isFiltering && quickCategories.length > 0 && (
-          <section className="container mx-auto px-4 py-8 bg-muted/30 border-y border-muted-foreground/10 my-6">
-            <div className="max-w-4xl mb-6">
-              <h2 className="text-2xl font-bold tracking-tight">Browse by Category</h2>
-              <p className="text-sm text-muted-foreground mt-1">
+          <section className="container mx-auto my-6 px-4 py-4 sm:py-6">
+            <div className="rounded-3xl border border-[#1b3b2a] bg-[radial-gradient(ellipse_at_100%_0%,rgba(52,211,153,0.08),transparent_40%),linear-gradient(145deg,#0e2117,#091710)] p-5 sm:p-7">
+            <div className="mb-6 max-w-4xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">Explore Tile</p>
+              <h2 className="mt-1 text-2xl font-bold tracking-tight text-white">Browse by category</h2>
+              <p className="mt-1 text-sm text-slate-400">
                 Explore thousands of verified products and services organized explicitly by trade class.
               </p>
             </div>
@@ -727,35 +690,36 @@ function Index() {
                     key={c.slug}
                     variant="ghost"
                     onClick={() => handleCategoryFilter(c.slug)}
-                    className={`h-auto flex flex-col items-center justify-center text-center rounded-2xl border p-5 transition-all group normal-case whitespace-normal ${active
-                      ? "border-accent bg-accent/10 ring-2 ring-accent hover:bg-accent/10"
-                      : "bg-background hover:border-primary hover:shadow-md hover:bg-background"
+                    className={`group flex h-auto flex-col items-center justify-center whitespace-normal rounded-2xl border p-4 text-center normal-case transition-all duration-300 hover:-translate-y-0.5 sm:p-5 ${active
+                      ? "border-emerald-300/50 bg-emerald-300/[0.1] ring-1 ring-emerald-300/25 hover:bg-emerald-300/[0.1]"
+                      : "border-white/[0.07] bg-white/[0.025] hover:border-emerald-300/25 hover:bg-white/[0.05]"
                       }`}
                   >
-                    <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                      <Ic className="h-6 w-6 text-primary" />
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.07] transition-colors group-hover:bg-emerald-300/[0.12]">
+                      <Ic className="h-6 w-6 text-emerald-300" />
                     </div>
-                    <p className="text-sm font-bold truncate max-w-[140px] text-foreground">{c.label}</p>
-                    <p className="text-xs text-muted-foreground mt-1 font-medium bg-muted px-2 py-0.5 rounded-full">
+                    <p className="max-w-[140px] truncate text-sm font-bold text-slate-100">{c.label}</p>
+                    <p className="mt-1 rounded-full border border-white/[0.06] bg-black/15 px-2 py-0.5 text-xs font-medium text-slate-400">
                       {c.count.toLocaleString()}
                     </p>
                   </Button>
                 );
               })}
             </div>
+            </div>
           </section>
         )}
 
         {/* 8. ALL LISTINGS SECTION & SEARCH RESULTS VIEW CONTAINER */}
-        <section ref={listingsRef} className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-8 scroll-mt-16">
+        <section ref={listingsRef} className="container mx-auto grid scroll-mt-16 grid-cols-1 gap-6 px-4 py-8 lg:grid-cols-4 lg:gap-8">
           {/* SEARCH FILTERS CONTROLS ASIDE */}
           <aside className="lg:col-span-1 space-y-6">
             {/* TRENDING TOP CATEGORIES */}
             {!isFiltering && trendingCategories.length > 0 && (
-              <Card className="border shadow-sm overflow-hidden">
-                <div className="bg-primary text-primary-foreground px-4 py-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Icons.Flame className="h-4 w-4 text-orange-300" /> Top Categories
+              <Card className="overflow-hidden rounded-2xl border-[#1b3b2a] bg-gradient-to-b from-[#10241a] to-[#0b1a13] shadow-[0_14px_38px_rgba(0,0,0,0.16)]">
+                <div className="border-b border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                  <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-slate-200">
+                    <Icons.Flame className="h-4 w-4 text-emerald-300" /> Top categories
                   </h3>
                 </div>
                 <div className="p-3 space-y-2">
@@ -766,16 +730,16 @@ function Index() {
                         key={tc.slug}
                         variant="ghost"
                         onClick={() => handleCategoryFilter(tc.slug)}
-                        className="w-full h-auto justify-start flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-primary hover:bg-primary/5"
+                        className="h-auto w-full justify-start gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-left transition-all hover:border-emerald-300/25 hover:bg-emerald-300/[0.05]"
                       >
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Ic className="h-5 w-5 text-primary" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-300/10 bg-emerald-300/[0.07]">
+                          <Ic className="h-5 w-5 text-emerald-300" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate text-foreground">{tc.label}</p>
-                          <p className="text-xs text-muted-foreground">{tc.count.toLocaleString()} active listings</p>
+                          <p className="truncate text-sm font-semibold text-slate-100">{tc.label}</p>
+                          <p className="text-xs text-slate-500">{tc.count.toLocaleString()} active listings</p>
                         </div>
-                        <Icons.ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-auto" />
+                        <Icons.ChevronRight className="ml-auto h-4 w-4 shrink-0 text-slate-500" />
                       </Button>
                     );
                   })}
@@ -784,27 +748,30 @@ function Index() {
             )}
 
             {/* FILTER FORM ASIDE BLOCK */}
-            <Card className="p-4 border shadow-sm space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Filter Listings</h3>
+            <Card className="space-y-4 rounded-2xl border-[#1b3b2a] bg-gradient-to-b from-[#10241a] to-[#0b1a13] p-4 shadow-[0_14px_38px_rgba(0,0,0,0.16)]">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300/80">Narrow your search</p>
+                <h3 className="mt-1 text-base font-bold text-white">Filter listings</h3>
+              </div>
               <form onSubmit={executeSearch} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">Keywords</label>
+                    <label className="text-xs font-semibold text-slate-400">Keywords</label>
                   <div className="relative">
-                    <Icons.Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Icons.Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                     <input
                       type="text"
                       placeholder="Search items..."
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
-                      className="w-full bg-background border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-xl border border-white/10 bg-[#08150f] py-2 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-300/50"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">State Location</label>
+                    <label className="text-xs font-semibold text-slate-400">State location</label>
                   <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger className="w-full bg-background">
+                    <SelectTrigger className="w-full rounded-xl border-white/10 bg-[#08150f] text-slate-100">
                       <SelectValue placeholder="Select Location" />
                     </SelectTrigger>
                     <SelectContent>
@@ -816,12 +783,12 @@ function Index() {
                   </Select>
                 </div>
 
-                <Button type="submit" className="w-full font-bold">
+                <Button type="submit" className="w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]">
                   Apply Filters
                 </Button>
 
                 {isFiltering && (
-                  <Button type="button" variant="ghost" onClick={clearAllFilters} className="w-full text-xs">
+                  <Button type="button" variant="ghost" onClick={clearAllFilters} className="w-full text-xs text-slate-400 hover:bg-white/[0.05] hover:text-white">
                     Clear Active Filters
                   </Button>
                 )}
@@ -831,28 +798,28 @@ function Index() {
 
           {/* MAIN LISTINGS GRID FEED */}
           <main id="market" className="lg:col-span-3 space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+            <div className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-4 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-xl font-black tracking-tight">
+                <h2 className="text-xl font-black tracking-tight text-white">
                   {isFiltering ? `Search Results ${activeCategoryLabel ? `in ${activeCategoryLabel}` : ""}` : "Explore Marketplace Feed"}
                 </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="mt-1 text-xs text-slate-500">
                   Showing {processedListings.length} approved listings across chosen filters.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full sm:w-auto">
-                  <TabsList className="grid grid-cols-4 w-full sm:w-auto">
-                    <TabsTrigger value="all" className="text-xs font-bold">All</TabsTrigger>
-                    <TabsTrigger value="goods" className="text-xs font-bold">Goods</TabsTrigger>
-                    <TabsTrigger value="service" className="text-xs font-bold">Services</TabsTrigger>
-                    <TabsTrigger value="featured" className="text-xs font-bold">Featured</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-4 rounded-xl border border-white/[0.07] bg-[#0a1912] p-1 sm:w-auto">
+                    <TabsTrigger value="all" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">All</TabsTrigger>
+                    <TabsTrigger value="goods" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">Goods</TabsTrigger>
+                    <TabsTrigger value="service" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">Services</TabsTrigger>
+                    <TabsTrigger value="featured" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">Featured</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-                  <SelectTrigger className="w-full sm:w-[140px] bg-background">
+                  <SelectTrigger className="w-full rounded-xl border-white/10 bg-[#0a1912] text-slate-100 sm:w-[140px]">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
                   <SelectContent>
@@ -869,19 +836,19 @@ function Index() {
             {isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 py-12">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="h-[280px] bg-muted animate-pulse rounded-2xl" />
+                  <div key={i} className="h-[280px] animate-pulse rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#10241a] to-[#0a1912]" />
                 ))}
               </div>
             ) : processedListings.length === 0 ? (
-              <Card className="p-12 text-center max-w-md mx-auto space-y-4 border border-dashed rounded-2xl">
-                <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                  <Icons.SearchX className="h-6 w-6 text-muted-foreground" />
+              <Card className="mx-auto max-w-md space-y-4 rounded-3xl border border-dashed border-white/15 bg-gradient-to-b from-[#10241a] to-[#0b1a13] p-8 text-center sm:p-12">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.07]">
+                  <Icons.SearchX className="h-6 w-6 text-emerald-300" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-bold">No items match your criteria</h4>
-                  <p className="text-xs text-muted-foreground">Try loosening search keywords, selecting standard categories, or switching states.</p>
+                  <h4 className="font-bold text-white">No items match your criteria</h4>
+                  <p className="text-xs leading-5 text-slate-400">Try loosening search keywords, selecting standard categories, or switching states.</p>
                 </div>
-                <Button size="sm" onClick={clearAllFilters}>Reset All View Filters</Button>
+                <Button size="sm" onClick={clearAllFilters} className="rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]">Reset All View Filters</Button>
               </Card>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -895,7 +862,7 @@ function Index() {
       </div>
 
       {/* FOOTER */}
-      <footer className="bg-muted/40 border-t py-6 text-center text-xs text-muted-foreground">
+      <footer className="border-t border-white/[0.07] bg-[#050f0a] px-4 py-7 text-center text-xs text-slate-500">
         <p>&copy; {new Date().getFullYear()} Tile Marketplace. Connecting trustworthy commercial hubs safely across Nigeria.</p>
       </footer>
     </div>

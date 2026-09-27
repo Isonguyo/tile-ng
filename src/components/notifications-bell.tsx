@@ -42,19 +42,36 @@ export function NotificationsBell() {
   return (
     <DropdownMenu onOpenChange={(o) => o && open()}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80 relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative text-slate-200 hover:text-[#22C55E] hover:bg-[#102A1C]/60 rounded-xl transition-all duration-200"
+        >
           <Bell className="h-5 w-5" />
-          {unread > 0 && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-accent" />}
+          {unread > 0 && (
+            <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-[#22C55E] shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" />
+          )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
-        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {items.length === 0 && <p className="px-3 py-6 text-sm text-muted-foreground text-center">You're all caught up.</p>}
+      <DropdownMenuContent
+        align="end"
+        className="w-80 max-h-96 overflow-y-auto rounded-2xl border border-[#163321] bg-[#081810]/95 backdrop-blur-xl p-1.5 text-slate-200 shadow-2xl shadow-black/80"
+      >
+        <DropdownMenuLabel className="text-xs font-bold uppercase tracking-wider text-[#22C55E] px-3 py-2">
+          Notifications
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-[#163321]" />
+        {items.length === 0 && (
+          <p className="px-3 py-8 text-xs text-slate-400 text-center">You're all caught up.</p>
+        )}
         {items.map((n) => (
-          <DropdownMenuItem key={n.id} className="flex-col items-start gap-0.5" onClick={() => n.link && nav({ to: n.link as never })}>
-            <p className="font-medium text-sm">{n.title}</p>
-            {n.body && <p className="text-xs text-muted-foreground">{n.body}</p>}
+          <DropdownMenuItem
+            key={n.id}
+            className="flex flex-col items-start gap-1 p-2.5 rounded-xl hover:bg-[#102A1C]/70 focus:bg-[#102A1C] cursor-pointer transition-colors"
+            onClick={() => n.link && nav({ to: n.link as never })}
+          >
+            <p className="font-semibold text-xs text-slate-100">{n.title}</p>
+            {n.body && <p className="text-[11px] text-slate-400 leading-snug">{n.body}</p>}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

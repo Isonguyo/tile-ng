@@ -38,12 +38,19 @@ export function MessagesBell() {
   }, [user?.id]);
 
   if (!user) return null;
+
   return (
-    <Button asChild variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80 relative" aria-label={`Messages${unread ? ` (${unread} unread)` : ""}`}>
+    <Button
+      asChild
+      variant="ghost"
+      size="icon"
+      className="relative text-slate-200 hover:text-[#22C55E] hover:bg-[#102A1C]/60 rounded-xl transition-all duration-200"
+      aria-label={`Messages${unread ? ` (${unread} unread)` : ""}`}
+    >
       <Link to="/messages">
         <MessageCircle className="h-5 w-5" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#22C55E] text-[#05100B] text-[10px] font-extrabold grid place-items-center shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse">
             {unread > 99 ? "99+" : unread}
           </span>
         )}

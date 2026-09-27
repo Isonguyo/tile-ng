@@ -2,7 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, ImageIcon, Eye, MousePointerClick, BadgeCheck, ShieldCheck } from "lucide-react";
+import { 
+  MapPin, 
+  Star, 
+  ImageIcon, 
+  Eye, 
+  MousePointerClick, 
+  CheckCircle2, 
+  ShieldCheck 
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getSignedUrl } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
@@ -27,13 +35,13 @@ export type ListingCardData = {
 export function ListingCard({ l }: { l: ListingCardData }) {
   const [url, setUrl] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (l.images[0]) getSignedUrl(l.images[0]).then(setUrl);
   }, [l.images]);
 
   useEffect(() => {
     const card = cardRef.current;
-
     if (!card) return;
 
     let tracked = false;
@@ -42,18 +50,15 @@ export function ListingCard({ l }: { l: ListingCardData }) {
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-
         if (tracked) return;
 
-        const isVisibleEnough =
-          entry.isIntersecting && entry.intersectionRatio >= 0.5;
+        const isVisibleEnough = entry.isIntersecting && entry.intersectionRatio >= 0.5;
 
         if (isVisibleEnough) {
           if (visibilityTimer) return;
 
           visibilityTimer = setTimeout(async () => {
             if (tracked) return;
-
             tracked = true;
 
             const { error } = await supabase.rpc("track_listing_event", {
@@ -76,64 +81,107 @@ export function ListingCard({ l }: { l: ListingCardData }) {
           visibilityTimer = null;
         }
       },
-      {
-        threshold: [0, 0.5, 1],
-      }
+      { threshold: [0, 0.5, 1] }
     );
 
     observer.observe(card);
 
     return () => {
-      if (visibilityTimer) {
-        clearTimeout(visibilityTimer);
-      }
-
+      if (visibilityTimer) clearTimeout(visibilityTimer);
       observer.disconnect();
     };
   }, [l.id]);
+
   return (
     <Link to="/listing/$id" params={{ id: l.id }} className="block group">
       <Card
         ref={cardRef}
-        className="overflow-hidden border-border hover:shadow-lg transition-all hover:-translate-y-0.5 p-0"
+        className="overflow-hidden rounded-2xl bg-[#081810] border border-[#163321] hover:border-[#22C55E]/50 hover:shadow-[0_8px_30px_rgba(34,197,94,0.12)] transition-all duration-300 p-0"
       >
-        <div className="relative aspect-[4/3] bg-muted">
+        {/* Image Container */}
+        <div className="relative aspect-[4/3] bg-[#05100B] overflow-hidden">
           {url ? (
-            <img src={url} alt={l.title} className="w-full h-full object-cover" loading="lazy" />
+            <img
+              src={url}
+              alt={l.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              loading="lazy"
+            />
           ) : (
-            <div className="w-full h-full grid place-items-center text-muted-foreground"><ImageIcon className="h-10 w-10" /></div>
+            <div className="w-full h-full grid place-items-center text-[#22C55E]/20">
+              <ImageIcon className="h-10 w-10" />
+            </div>
           )}
+
+          {/* Promoted Tag */}
           {l.is_promoted && (
-            <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground"><Star className="h-3 w-3 mr-1" />Promoted</Badge>
+            <Badge className="absolute top-3 left-3 bg-[#22C55E] hover:bg-[#16A34A] text-[#05100B] font-bold shadow-lg border-none px-2.5 py-1 rounded-md gap-1 text-xs">
+              <Star className="h-3 w-3 fill-[#05100B]" /> Top Pick
+            </Badge>
           )}
-          <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground capitalize">{l.type}</Badge>
-          {(l.seller_tier && l.seller_tier !== "free") && (
-            <Badge className="absolute bottom-2 left-2 bg-emerald-600 text-white gap-1 capitalize">
-              <BadgeCheck className="h-3 w-3" />Verified {l.seller_tier === "lite" ? "Vendor" : l.seller_tier}
+
+          {/* Listing Type Tag */}
+          <Badge className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-[#E2F0E9] border border-[#22C55E]/20 font-medium text-xs px-2.5 py-1 rounded-md capitalize">
+            {l.type}
+          </Badge>
+
+          {/* Verified Seller Tag */}
+          {l.seller_tier && l.seller_tier !== "free" && (
+            <Badge className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md border border-[#22C55E]/40 text-[#22C55E] font-medium px-2.5 py-1 rounded-md gap-1.5 text-[11px] shadow-sm">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Verified {l.seller_tier === "lite" ? "Vendor" : l.seller_tier}
             </Badge>
           )}
         </div>
-        <div className="p-3 space-y-1">
-          <h3 className="font-medium line-clamp-2 text-sm group-hover:text-accent">{l.title}</h3>
+
+        {/* Content Section */}
+        <div className="p-4 space-y-2.5">
+          <h3 className="font-semibold text-slate-100 line-clamp-1 text-base group-hover:text-[#22C55E] transition-colors">
+            {l.title}
+          </h3>
+
           {l.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2">{l.description}</p>
+            <p className="text-xs text-slate-400 line-clamp-1">
+              {l.description}
+            </p>
           )}
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-accent font-bold text-lg">{formatNaira(l.price)}</p>
+
+          {/* Price & Trust Score */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <p className="text-[#22C55E] font-bold text-lg tracking-tight">
+              {formatNaira(l.price)}
+            </p>
             {typeof l.seller_trust === "number" && (
               <span
                 title="Seller trust score"
-                className={`flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${l.seller_trust >= 70 ? "border-primary/40 text-primary" : l.seller_trust >= 40 ? "border-border text-muted-foreground" : "border-destructive/40 text-destructive"}`}
+                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium border bg-[#05100B] ${
+                  l.seller_trust >= 70
+                    ? "border-[#22C55E]/30 text-[#22C55E]"
+                    : l.seller_trust >= 40
+                    ? "border-slate-700 text-slate-300"
+                    : "border-red-500/30 text-red-400"
+                }`}
               >
-                <ShieldCheck className="h-3 w-3" />{l.seller_trust}
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {l.seller_trust}%
               </span>
             )}
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{l.location}</span>
-            <span className="flex items-center gap-2">
-              <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" />{l.views_count ?? 0}</span>
-              <span className="flex items-center gap-0.5"><MousePointerClick className="h-3 w-3" />{l.clicks_count ?? 0}</span>
+
+          {/* Location & Analytics Footer */}
+          <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-[#163321]">
+            <span className="flex items-center gap-1 truncate max-w-[140px] group-hover:text-slate-300 transition-colors">
+              <MapPin className="h-3.5 w-3.5 text-[#22C55E] shrink-0" />
+              <span className="truncate">{l.location}</span>
+            </span>
+            <span className="flex items-center gap-3 shrink-0">
+              <span className="flex items-center gap-1">
+                <Eye className="h-3.5 w-3.5 text-slate-500" />
+                {l.views_count ?? 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <MousePointerClick className="h-3.5 w-3.5 text-slate-500" />
+                {l.clicks_count ?? 0}
+              </span>
             </span>
           </div>
         </div>

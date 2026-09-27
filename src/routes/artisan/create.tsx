@@ -113,8 +113,26 @@ function ArtisanCreatePage() {
 
   const [step, setStep] = useState(1);
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState("");
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
+  const [portfolioPreviews, setPortfolioPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!profilePhoto) {
+      setProfilePhotoPreview(existingArtisan?.profile_photo || existingArtisan?.avatar_url || "");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(profilePhoto);
+    setProfilePhotoPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [profilePhoto, existingArtisan?.profile_photo, existingArtisan?.avatar_url]);
+
+  useEffect(() => {
+    const previewUrls = portfolioImages.map((file) => URL.createObjectURL(file));
+    setPortfolioPreviews(previewUrls);
+    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url));
+  }, [portfolioImages]);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const portfolioInputRef = useRef<HTMLInputElement>(null);
@@ -228,11 +246,12 @@ function ArtisanCreatePage() {
   };
 
   const handleAdvanceToReview = () => {
-    if (!profilePhoto) {
+    if (!profilePhoto && !existingArtisan?.profile_photo && !existingArtisan?.avatar_url) {
       toast.error("Please attach a professional profile photo.");
       return;
     }
-    if (portfolioImages.length < 3) {
+    const existingPortfolioCount = existingArtisan?.portfolio_images?.length ?? 0;
+    if (portfolioImages.length + existingPortfolioCount < 3) {
       toast.error("Please upload at least 3 samples of your previous work.");
       return;
     }
@@ -248,7 +267,7 @@ function ArtisanCreatePage() {
 
     try {
       let avatarUrl = "";
-      let portfolioUrls: string[] = [];
+      let portfolioUrls: string[] = [...(existingArtisan?.portfolio_images ?? [])];
 
       if (profilePhoto) {
         const fileExt = profilePhoto.name.split(".").pop();
@@ -347,11 +366,12 @@ function ArtisanCreatePage() {
 
   if (!loading && !user) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#06120d] text-slate-100">
         <SiteHeader />
         <div className="container mx-auto max-w-xl px-4 py-24 text-center">
-          <h1 className="text-3xl font-bold">Become a Tile Artisan</h1>
-          <p className="mt-4 text-muted-foreground">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]"><Briefcase className="h-8 w-8 text-emerald-300" /></div>
+          <h1 className="text-3xl font-bold text-white">Become a Tile Artisan</h1>
+          <p className="mt-4 text-slate-400">
             Create your professional profile so customers can discover and contact you anywhere in Nigeria.
           </p>
           <Button asChild className="mt-8">
@@ -363,85 +383,92 @@ function ArtisanCreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
-      <div className="container mx-auto max-w-3xl px-4 py-10">
+      <div className="min-h-screen bg-[#06120d] text-slate-100">
+        <SiteHeader />
+      <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
         {isPrelaunch && (
-          <div className="mb-6 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-            <p className="font-semibold text-primary">Tile is currently in pre-launch.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className="mb-5 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4 sm:p-5">
+            <p className="font-semibold text-emerald-200">Tile is currently in pre-launch.</p>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
               You can complete your artisan profile now. It will be reviewed by Admin and remain private until the marketplace launches.
             </p>
           </div>
         )}
 
         {postingDisabled && (
-          <div className="mb-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
-            <p className="font-semibold text-destructive">New marketplace submissions are temporarily disabled.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className="mb-5 rounded-2xl border border-rose-300/15 bg-rose-400/[0.05] p-4 sm:p-5">
+            <p className="font-semibold text-rose-200">New marketplace submissions are temporarily disabled.</p>
+            <p className="mt-1 text-sm text-slate-400">
               Submitting new artisan profile changes is currently paused.
             </p>
           </div>
         )}
 
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">Become a Tile Pro</h1>
-          <p className="mt-3 text-muted-foreground">
+        <div className="mb-8">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Artisan onboarding</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Create your artisan profile</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
             Join the professional network of verified service providers and installers across Nigeria.
           </p>
         </div>
 
-        <div className="mb-8">
-          <Progress value={step * 25} className="h-2" />
-          <p className="text-sm text-center mt-2 text-muted-foreground font-medium">
-            Step {step} of 4
-          </p>
+        <div className="mb-6 rounded-2xl border border-[#1b3b2a] bg-gradient-to-r from-[#10241a] to-[#0b1a13] p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <span className="text-sm font-semibold text-white">Your profile setup</span>
+            <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.07] px-3 py-1 text-xs font-semibold text-emerald-200">Step {step} of 4</span>
+          </div>
+          <Progress value={step * 25} className="h-2 bg-white/[0.08]" />
+          <div className="mt-4 grid grid-cols-4 gap-2 text-center text-[10px] font-semibold sm:text-xs">
+            {["Start", "Details", "Portfolio", "Review"].map((label, index) => (
+              <span key={label} className={index + 1 <= step ? "text-emerald-200" : "text-slate-500"}>{label}</span>
+            ))}
+          </div>
         </div>
 
-        <Card className="overflow-hidden border shadow-sm">
+        <Card className="overflow-hidden rounded-3xl border border-[#1b3b2a] bg-gradient-to-b from-[#102017] to-[#09150f] text-slate-100 shadow-[0_24px_65px_rgba(0,0,0,0.28)]">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             {/* STEP 1: Onboarding Introduction */}
             {step === 1 && (
-              <div className="p-8">
+              <div className="p-5 sm:p-8">
                 <div className="text-center">
                   <div className="flex justify-center mb-5">
-                    <UserRound className="h-16 w-16 text-primary" />
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]"><UserRound className="h-8 w-8 text-emerald-300" /></div>
                   </div>
-                  <h2 className="text-3xl font-bold">Become a Tile Artisan</h2>
-                  <p className="mt-4 text-muted-foreground max-w-lg mx-auto">
+                  <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Build your professional presence</h2>
+                  <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400 sm:text-base">
                     Create your professional profile so customers across Nigeria can discover your skills, view your previous work and contact you directly.
                   </p>
                 </div>
 
-                <div className="mt-10 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-sm text-slate-300">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" />
                     <span>Appear in local artisan search results</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-sm text-slate-300">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" />
                     <span>Build trust with a complete professional profile</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-sm text-slate-300">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" />
                     <span>Showcase photos of your previous projects</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-sm text-slate-300">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" />
                     <span>Receive enquiries directly from customers</span>
                   </div>
                 </div>
 
-                <div className="mt-10 rounded-xl border bg-muted/30 p-5">
-                  <h3 className="font-semibold mb-4">How it works</h3>
-                  <div className="space-y-3 text-sm">
+                <div className="mt-6 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-5">
+                  <h3 className="mb-4 font-semibold text-white">How it works</h3>
+                  <div className="space-y-3 text-sm text-slate-400">
                     <p>1️⃣ Create your artisan profile</p>
                     <p>2️⃣ Upload your portfolio</p>
                     <p>3️⃣ Customers contact you directly</p>
                   </div>
                 </div>
 
-                <Button className="w-full mt-10" size="lg" type="button" onClick={() => setStep(2)} disabled={postingDisabled}>
+                <Button className="mt-7 h-12 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" size="lg" type="button" onClick={() => setStep(2)} disabled={postingDisabled}>
                   Create My Profile
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -450,15 +477,16 @@ function ArtisanCreatePage() {
 
             {/* STEP 2: Basic Identity Configuration */}
             {step === 2 && (
-              <div className="p-8 space-y-6">
+              <div className="space-y-6 p-5 sm:p-8">
                 <div>
-                  <h2 className="text-2xl font-bold">Basic Information</h2>
-                  <p className="text-muted-foreground mt-2">Tell customers who you are and what you do.</p>
+                  <h2 className="text-2xl font-bold text-white">Basic information</h2>
+                  <p className="mt-2 text-sm text-slate-400">Tell customers who you are and what you do.</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Full Name</Label>
-                  <Input placeholder="John Doe" {...form.register("full_name")} />
+                  <Input placeholder="John Doe" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("full_name")} />
+                  {form.formState.errors.full_name && <p className="text-xs text-rose-300">{form.formState.errors.full_name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -469,7 +497,7 @@ function ArtisanCreatePage() {
                       form.setValue("profession", value, { shouldValidate: true, shouldDirty: true })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 rounded-xl border-white/10 bg-[#08150f] text-slate-100">
                       <SelectValue placeholder="Select your profession" />
                     </SelectTrigger>
                     <SelectContent>
@@ -481,15 +509,17 @@ function ArtisanCreatePage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {form.formState.errors.profession && <p className="-mt-4 text-xs text-rose-300">{form.formState.errors.profession.message}</p>}
 
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
-                  <Input placeholder="08012345678" {...form.register("phone")} />
+                  <Input type="tel" placeholder="08012345678" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("phone")} />
+                  {form.formState.errors.phone && <p className="text-xs text-rose-300">{form.formState.errors.phone.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label>WhatsApp Number (Optional)</Label>
-                  <Input placeholder="08012345678" {...form.register("whatsapp")} />
+                  <Input type="tel" placeholder="08012345678" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("whatsapp")} />
                 </div>
 
                 <div className="space-y-2">
@@ -501,7 +531,7 @@ function ArtisanCreatePage() {
                       form.setValue("lga", "");
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 rounded-xl border-white/10 bg-[#08150f] text-slate-100">
                       <SelectValue placeholder="Select State" />
                     </SelectTrigger>
                     <SelectContent>
@@ -521,7 +551,7 @@ function ArtisanCreatePage() {
                     value={watch.lga}
                     onValueChange={(value) => form.setValue("lga", value, { shouldValidate: true, shouldDirty: true })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 rounded-xl border-white/10 bg-[#08150f] text-slate-100">
                       <SelectValue placeholder="Select Local Government" />
                     </SelectTrigger>
                     <SelectContent>
@@ -536,7 +566,7 @@ function ArtisanCreatePage() {
 
                 <div className="space-y-2">
                   <Label>Years of Experience</Label>
-                  <Input type="number" placeholder="5" {...form.register("years_experience")} />
+                  <Input type="number" min="0" max="80" placeholder="5" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("years_experience")} />
                 </div>
 
                 <div className="space-y-2">
@@ -544,35 +574,36 @@ function ArtisanCreatePage() {
                     <Label>Professional Bio</Label>
                     <span
                       className={`text-xs ${(watch.bio?.length ?? 0) >= 30
-                        ? "text-green-600 font-medium"
-                        : "text-muted-foreground"
+                        ? "font-medium text-emerald-300"
+                        : "text-slate-500"
                         }`}
                     >
                       {watch.bio?.length ?? 0}/500 characters
                     </span>
                   </div>
                   <Textarea
-                    rows={6}
+                    rows={5}
                     maxLength={500}
                     placeholder="Tell customers about your experience, skills, projects and why they should hire you..."
+                    className="rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                     {...form.register("bio")}
                   />
                   <p
                     className={`text-xs ${(watch.bio?.length ?? 0) >= 30
-                      ? "text-green-600"
-                      : "text-orange-600 font-medium"
+                      ? "text-emerald-300"
+                      : "font-medium text-amber-200"
                       }`}
                   >
                     Minimum 30 characters required. Tell customers what makes you stand out.
                   </p>
                 </div>
 
-                <div className="flex justify-between pt-4 border-t">
-                  <Button variant="outline" onClick={() => setStep(1)} type="button">
+                <div className="flex justify-between border-t border-white/[0.07] pt-4">
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(1)} type="button">
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="button" onClick={handleValidateBasicInfo}>
+                  <Button type="button" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" onClick={handleValidateBasicInfo}>
                     Continue
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -582,31 +613,31 @@ function ArtisanCreatePage() {
 
             {/* STEP 3: Portfolio & Scope Settings */}
             {step === 3 && (
-              <div className="p-8 space-y-8">
+              <div className="space-y-8 p-5 sm:p-8">
                 <div className="flex items-center gap-3">
-                  <Images className="h-8 w-8 text-primary" />
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]"><Images className="h-6 w-6 text-emerald-300" /></span>
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Portfolio & Setup</h2>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <h2 className="text-2xl font-bold tracking-tight text-white">Portfolio and availability</h2>
+                    <p className="mt-1 text-sm text-slate-400">
                       This is what customers will look at before they initiate contact with you.
                     </p>
                   </div>
                 </div>
 
                 {/* Profile Photo Section */}
-                <Card className="p-6 border-dashed border-2 flex flex-col items-center bg-muted/5">
-                  <Camera className="h-8 w-8 text-muted-foreground mb-3" />
-                  <h3 className="font-semibold text-center text-sm flex items-center gap-2">
+                <Card className="flex flex-col items-center rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
+                  <Camera className="mb-3 h-8 w-8 text-emerald-300" />
+                  <h3 className="flex items-center gap-2 text-center text-sm font-semibold text-white">
                     <UserRound className="h-4 w-4" /> Profile Photo
                   </h3>
-                  <p className="text-xs text-muted-foreground text-center mt-1 max-w-xs">
+                  <p className="mt-1 max-w-xs text-center text-xs leading-5 text-slate-400">
                     Upload a clear, welcoming, and professional photo of yourself.
                   </p>
 
                   <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-xs">
-                    {profilePhoto && (
-                      <div className="h-16 w-16 border rounded-full overflow-hidden shadow-inner">
-                        <img src={URL.createObjectURL(profilePhoto)} alt="Avatar" className="h-full w-full object-cover" />
+                    {profilePhotoPreview && (
+                      <div className="h-20 w-20 overflow-hidden rounded-2xl border border-emerald-300/25 shadow-lg">
+                        <img src={profilePhotoPreview} alt="Profile photo preview" className="h-full w-full object-cover" />
                       </div>
                     )}
                     <input
@@ -620,23 +651,23 @@ function ArtisanCreatePage() {
                         }
                       }}
                     />
-                    <Button variant="outline" className="w-full" type="button" onClick={() => avatarInputRef.current?.click()}>
-                      {profilePhoto ? "Change Photo" : "Choose Photo"}
+                    <Button variant="outline" className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]" type="button" onClick={() => avatarInputRef.current?.click()}>
+                      {profilePhotoPreview ? "Change Photo" : "Choose Photo"}
                     </Button>
                   </div>
                 </Card>
 
                 {/* Previous Jobs Portfolio Section */}
-                <Card className="p-6 border-dashed border-2 bg-muted/5">
+                <Card className="rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
                   <div className="text-center max-w-md mx-auto mb-4">
-                    <h3 className="font-semibold text-sm flex items-center justify-center gap-2">
+                    <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-white">
                       <Images className="h-4 w-4" /> Previous Jobs
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
                       Upload between 3 and 8 clear photos of real setup jobs or projects you have personally completed.
                     </p>
-                    <p className="text-xs font-semibold mt-2 text-primary">
-                      {portfolioImages.length}/8 uploaded
+                    <p className="mt-2 text-xs font-semibold text-emerald-300">
+                      {(portfolioImages.length + (existingArtisan?.portfolio_images?.length ?? 0))}/8 uploaded
                     </p>
                   </div>
 
@@ -650,23 +681,31 @@ function ArtisanCreatePage() {
                       onChange={(e) => {
                         if (!e.target.files) return;
                         const uploaded = Array.from(e.target.files);
-                        setPortfolioImages((prev) => [...prev, ...uploaded].slice(0, 8));
+                        const existingCount = existingArtisan?.portfolio_images?.length ?? 0;
+                        setPortfolioImages((prev) => [...prev, ...uploaded].slice(0, Math.max(0, 8 - existingCount)));
                       }}
                     />
-                    <Button variant="outline" className="w-full max-w-xs" type="button" onClick={() => portfolioInputRef.current?.click()}>
+                    <Button variant="outline" className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]" type="button" onClick={() => portfolioInputRef.current?.click()} disabled={(existingArtisan?.portfolio_images?.length ?? 0) + portfolioImages.length >= 8}>
                       Add Portfolio Photos
                     </Button>
                   </div>
 
-                  {portfolioImages.length > 0 && (
-                    <div className="grid grid-cols-4 gap-3 mt-5">
+                  {((existingArtisan?.portfolio_images?.length ?? 0) > 0 || portfolioImages.length > 0) && (
+                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {existingArtisan?.portfolio_images?.map((url, idx) => (
+                        <div key={url} className="relative aspect-square overflow-hidden rounded-xl border border-emerald-300/15 bg-[#07150e]">
+                          <img src={url} alt={`Existing portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
+                          <span className="absolute bottom-0 w-full bg-black/65 py-1 text-center text-[10px] font-semibold text-white">Current work</span>
+                        </div>
+                      ))}
                       {portfolioImages.map((file, idx) => (
-                        <div key={idx} className="relative rounded-lg overflow-hidden border aspect-square bg-background">
-                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                        <div key={idx} className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-[#07150e]">
+                          <img src={portfolioPreviews[idx]} alt={`New portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
                           <button
                             type="button"
                             onClick={() => setPortfolioImages((p) => p.filter((_, i) => i !== idx))}
-                            className="absolute top-1 right-1 bg-black/80 text-white rounded-full p-1 hover:bg-black transition-colors"
+                            aria-label={`Remove portfolio photo ${idx + 1}`}
+                            className="absolute right-2 top-2 rounded-full border border-white/15 bg-black/75 p-2 text-white opacity-100 transition-colors hover:bg-rose-500 sm:opacity-0 sm:group-hover:opacity-100"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -677,9 +716,9 @@ function ArtisanCreatePage() {
                 </Card>
 
                 {/* Starting Price Field */}
-                <div className="space-y-2 max-w-sm">
-                  <Label htmlFor="starting_price" className="font-semibold text-sm flex items-center gap-2">
-                    <BadgeDollarSign className="h-5 w-5 text-muted-foreground" /> Starting Price (Optional)
+                <div className="max-w-sm space-y-2">
+                  <Label htmlFor="starting_price" className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                    <BadgeDollarSign className="h-5 w-5 text-emerald-300" /> Starting Price (Optional)
                   </Label>
                   <div className="relative rounded-md shadow-sm">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -688,25 +727,25 @@ function ArtisanCreatePage() {
                     <Input
                       id="starting_price"
                       type="number"
-                      className="pl-7"
+                      className="h-11 rounded-xl border-white/10 bg-[#08150f] pl-7 text-white placeholder:text-slate-600"
                       placeholder="e.g. 15,000"
                       {...form.register("starting_price")}
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] leading-5 text-slate-500">
                     Example: Starting from ₦15,000 per square meter or project base rate.
                   </p>
                 </div>
 
                 {/* Dynamic Network Availability Grid */}
                 <div className="space-y-4 pt-2">
-                  <Label className="font-semibold text-sm block border-b pb-2">
+                  <Label className="block border-b border-white/[0.07] pb-2 text-sm font-semibold text-white">
                     Service Terms & Availability Settings
                   </Label>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Available for Work */}
-                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                    <div className="flex items-start space-x-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3.5 transition-colors hover:border-emerald-300/20">
                       <Controller
                         name="is_available"
                         control={form.control}
@@ -716,14 +755,14 @@ function ArtisanCreatePage() {
                       />
                       <div className="grid gap-1.5 leading-none">
                         <Label htmlFor="is_available" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
-                          <UserRound className="h-3.5 w-3.5 text-muted-foreground" /> Available for work
+                          <UserRound className="h-3.5 w-3.5 text-emerald-300" /> Available for work
                         </Label>
-                        <p className="text-xs text-muted-foreground">Instantly show up in customer matching queues.</p>
+                        <p className="text-xs leading-5 text-slate-400">Instantly show up in customer matching queues.</p>
                       </div>
                     </div>
 
                     {/* Home Service */}
-                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                    <div className="flex items-start space-x-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3.5 transition-colors hover:border-emerald-300/20">
                       <Controller
                         name="offers_home_service"
                         control={form.control}
@@ -733,14 +772,14 @@ function ArtisanCreatePage() {
                       />
                       <div className="grid gap-1.5 leading-none">
                         <Label htmlFor="offers_home_service" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
-                          <House className="h-3.5 w-3.5 text-muted-foreground" /> Home service
+                          <House className="h-3.5 w-3.5 text-emerald-300" /> Home service
                         </Label>
-                        <p className="text-xs text-muted-foreground">Open to traveling directly to client construction locations.</p>
+                        <p className="text-xs leading-5 text-slate-400">Open to traveling directly to client construction locations.</p>
                       </div>
                     </div>
 
                     {/* Emergency Support */}
-                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                    <div className="flex items-start space-x-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3.5 transition-colors hover:border-emerald-300/20">
                       <Controller
                         name="offers_emergency_service"
                         control={form.control}
@@ -750,14 +789,14 @@ function ArtisanCreatePage() {
                       />
                       <div className="grid gap-1.5 leading-none">
                         <Label htmlFor="offers_emergency_service" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
-                          <Zap className="h-3.5 w-3.5 text-muted-foreground" /> Emergency service
+                          <Zap className="h-3.5 w-3.5 text-amber-200" /> Emergency service
                         </Label>
-                        <p className="text-xs text-muted-foreground">Available for urgent repairs callouts outside standard hours.</p>
+                        <p className="text-xs leading-5 text-slate-400">Available for urgent repairs callouts outside standard hours.</p>
                       </div>
                     </div>
 
                     {/* Weekends */}
-                    <div className="flex items-start space-x-3 rounded-lg border p-3 shadow-sm bg-background">
+                    <div className="flex items-start space-x-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3.5 transition-colors hover:border-emerald-300/20">
                       <Controller
                         name="available_weekends"
                         control={form.control}
@@ -767,20 +806,20 @@ function ArtisanCreatePage() {
                       />
                       <div className="grid gap-1.5 leading-none">
                         <Label htmlFor="available_weekends" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
-                          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" /> Weekend Availability
+                          <CalendarDays className="h-3.5 w-3.5 text-emerald-300" /> Weekend Availability
                         </Label>
-                        <p className="text-xs text-muted-foreground">Accept appointments over Saturdays and Sundays.</p>
+                        <p className="text-xs leading-5 text-slate-400">Accept appointments over Saturdays and Sundays.</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between pt-4 border-t">
-                  <Button variant="outline" onClick={() => setStep(2)} type="button">
+                <div className="flex justify-between border-t border-white/[0.07] pt-4">
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(2)} type="button">
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="button" onClick={handleAdvanceToReview} disabled={portfolioImages.length < 3}>
+                  <Button type="button" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" onClick={handleAdvanceToReview} disabled={portfolioImages.length < 3 || !profilePhoto}>
                     Continue to Review
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -790,39 +829,39 @@ function ArtisanCreatePage() {
 
             {/* STEP 4: Premium Live Profile Card Review Layout */}
             {step === 4 && (
-              <div className="p-8 space-y-6">
+              <div className="space-y-6 p-5 sm:p-8">
                 <div>
-                  <h2 className="text-2xl font-bold">Review Profile Card</h2>
-                  <p className="text-muted-foreground mt-1 text-sm">
+                  <h2 className="text-2xl font-bold text-white">Preview your profile</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-400">
                     {isPrelaunch
                       ? "Review the information you are submitting to Admin. Your profile will remain private until launch."
                       : "Review your professional profile before publishing it publicly."}
                   </p>
                 </div>
 
-                <div className="max-w-md mx-auto w-full border rounded-xl shadow-lg bg-card overflow-hidden">
-                  <div className="bg-primary/5 p-6 flex flex-col items-center text-center relative border-b">
+                <div className="mx-auto w-full max-w-md overflow-hidden rounded-3xl border border-emerald-300/15 bg-[#0b1912] shadow-[0_22px_55px_rgba(0,0,0,0.32)]">
+                  <div className="relative flex flex-col items-center border-b border-white/[0.07] bg-[radial-gradient(ellipse_at_50%_0%,rgba(52,211,153,0.12),transparent_65%)] p-6 text-center">
                     {watch.is_available && (
-                      <span className="absolute top-4 right-4 bg-green-500/10 text-green-700 text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                      <span className="absolute right-4 top-4 flex items-center gap-1 rounded-full border border-emerald-300/15 bg-emerald-300/[0.08] px-2.5 py-1 text-xs font-semibold text-emerald-100">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300"></span>
                         Available Today
                       </span>
                     )}
 
-                    <div className="h-24 w-24 rounded-full border-4 border-background overflow-hidden bg-muted shadow-md mb-3">
-                      {profilePhoto ? (
-                        <img src={URL.createObjectURL(profilePhoto)} alt="Avatar Preview" className="h-full w-full object-cover" />
+                    <div className="mb-3 h-24 w-24 overflow-hidden rounded-2xl border-4 border-[#0b1912] bg-white/[0.05] shadow-lg">
+                      {profilePhotoPreview ? (
+                        <img src={profilePhotoPreview} alt="Avatar preview" className="h-full w-full object-cover" />
                       ) : (
-                        <div className="h-full w-full flex items-center justify-center bg-muted">
-                          <UserRound className="h-8 w-8 text-muted-foreground" />
+                        <div className="flex h-full w-full items-center justify-center bg-white/[0.04]">
+                          <UserRound className="h-8 w-8 text-slate-500" />
                         </div>
                       )}
                     </div>
 
-                    <h3 className="text-xl font-bold text-foreground flex items-center gap-1.5">
+                    <h3 className="flex items-center gap-1.5 text-xl font-bold text-white">
                       {watch.full_name || "John Doe"}
                     </h3>
-                    <p className="text-sm font-medium text-primary mt-0.5">{watch.profession || "Verified Installer"}</p>
+                    <p className="mt-0.5 text-sm font-medium text-emerald-300">{watch.profession || "Verified Installer"}</p>
 
                     <div className="flex items-center gap-0.5 mt-2">
                       {[...Array(5)].map((_, i) => (
@@ -831,60 +870,65 @@ function ArtisanCreatePage() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-4 text-xs font-medium text-muted-foreground">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-slate-400">
                         <Briefcase className="h-3.5 w-3.5" /> {watch.years_experience || 0} years experience
                       </span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-slate-400">
                         <MapPin className="h-3.5 w-3.5" /> {selectedStateName || "Lagos"} • {selectedLgaName || "Ikeja"}
                       </span>
                     </div>
 
                     {watch.starting_price && (
-                      <div className="mt-4 bg-background border rounded-lg px-4 py-1.5 text-xs font-bold text-foreground shadow-sm">
+                      <div className="mt-4 rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-4 py-1.5 text-xs font-bold text-emerald-100">
                         Starting From ₦{Number(watch.starting_price).toLocaleString()}
                       </div>
                     )}
                   </div>
 
-                  <div className="p-5 space-y-4 text-sm">
+                  <div className="space-y-4 p-5 text-sm">
                     <div>
-                      <h4 className="text-xs font-bold tracking-wider text-muted-foreground uppercase mb-1.5">About</h4>
-                      <p className="text-muted-foreground leading-relaxed italic">
+                      <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">About</h4>
+                      <p className="leading-relaxed text-slate-300 italic">
                         "{watch.bio || "No profile bio written yet..."}"
                       </p>
                     </div>
 
                     <div>
-                      <h4 className="text-xs font-bold tracking-wider text-muted-foreground uppercase mb-2">Portfolio Showcase</h4>
+                      <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Portfolio showcase</h4>
                       <div className="grid grid-cols-4 gap-2">
+                        {(existingArtisan?.portfolio_images ?? []).map((url, idx) => (
+                          <div key={url} className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+                            <img src={url} alt={`Portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
+                          </div>
+                        ))}
                         {portfolioImages.map((file, idx) => (
-                          <div key={idx} className="aspect-square rounded-md overflow-hidden border bg-muted shadow-sm">
-                            <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                          <div key={`${file.name}-${idx}`} className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+                            <img src={portfolioPreviews[idx]} alt={`New portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t grid grid-cols-3 gap-2 text-center text-[11px] font-semibold text-muted-foreground">
-                      <div className={`p-2 rounded-md border ${watch.offers_home_service ? "bg-green-500/5 text-green-700 border-green-200/50" : "opacity-40"}`}>
+                    <div className="grid grid-cols-3 gap-2 border-t border-white/[0.07] pt-3 text-center text-[10px] font-semibold text-slate-500 sm:text-[11px]">
+                      <div className={`rounded-lg border p-2 ${watch.offers_home_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}>
                         Home Service {watch.offers_home_service ? "✓" : "✗"}
                       </div>
-                      <div className={`p-2 rounded-md border ${watch.offers_emergency_service ? "bg-green-500/5 text-green-700 border-green-200/50" : "opacity-40"}`}>
+                      <div className={`rounded-lg border p-2 ${watch.offers_emergency_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}>
                         Emergency {watch.offers_emergency_service ? "✓" : "✗"}
                       </div>
-                      <div className={`p-2 rounded-md border ${watch.available_weekends ? "bg-green-500/5 text-green-700 border-green-200/50" : "opacity-40"}`}>
+                      <div className={`rounded-lg border p-2 ${watch.available_weekends ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}>
                         Weekends {watch.available_weekends ? "✓" : "✗"}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between pt-4 border-t">
-                  <Button variant="outline" onClick={() => setStep(3)} type="button" disabled={submitting}>
+                <div className="flex justify-between border-t border-white/[0.07] pt-4">
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(3)} type="button" disabled={submitting}>
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="submit" disabled={submitting || postingDisabled}>
+                  <Button type="submit" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" disabled={submitting || postingDisabled}>
                     {submitting
                       ? "Submitting Profile..."
                       : isPrelaunch
