@@ -77,132 +77,144 @@ export function HeroSearch({ initialQ = "", initialLoc = "all" }: { initialQ?: s
 
  return (
   <div className="w-full max-w-3xl mx-auto px-2 sm:px-0">
-    <form
-      onSubmit={submit}
+   <form
+  onSubmit={submit}
+  className="
+    flex items-center
+    gap-1.5
+    rounded-2xl
+    border
+    border-white/10
+    bg-background/95
+    p-1.5
+    shadow-2xl
+    backdrop-blur
+    sm:gap-2
+    sm:p-2
+  "
+>
+  {/* Search input */}
+  <div className="relative min-w-0 flex-1">
+    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-300" />
+
+    <input
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      placeholder={ROTATING[placeholderIdx]}
+      aria-label="Search Tile"
       className="
+        h-10
         w-full
-        rounded-2xl
-        bg-background/95
-        backdrop-blur
-        border
-        shadow-2xl
-        p-1.5
-        sm:p-2
-        flex
-        flex-col
-        gap-1.5
-        sm:flex-row
-        sm:gap-2
+        min-w-0
+        rounded-xl
+        border-0
+        bg-transparent
+        pl-10
+        pr-2
+        text-sm
+        text-white
+        shadow-none
+        placeholder:text-slate-400
+        focus:outline-none
+        sm:h-12
+        sm:pr-3
+      "
+    />
+  </div>
+
+  {/* Location */}
+  <Select value={loc} onValueChange={setLoc}>
+    <SelectTrigger
+      className="
+        h-10
+        w-[82px]
+        shrink-0
+        rounded-xl
+        border-white/10
+        bg-white/5
+        px-2
+        text-xs
+        text-white
+        [&>span]:text-white
+        sm:h-12
+        sm:w-[150px]
+        sm:px-3
+        sm:text-sm
       "
     >
-      {/* Search input */}
-      <div className="relative flex-1 min-w-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <SelectValue placeholder="All Nigeria" />
+    </SelectTrigger>
 
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={ROTATING[placeholderIdx]}
-          className="
-            w-full
-            h-9
-            sm:h-10
-            rounded-xl
-            bg-transparent
-            pl-9
-            pr-3
-            text-sm
-            text-foreground
-            placeholder:text-muted-foreground/70
-            focus:outline-none
-            truncate
-          "
-          aria-label="Search Tile"
-        />
-      </div>
+    <SelectContent className="bg-background text-white">
+      <SelectItem
+        value="all"
+        className="text-white focus:text-white data-[highlighted]:text-white"
+      >
+        All Nigeria
+      </SelectItem>
 
-      {/* Controls */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        <Select value={loc} onValueChange={setLoc}>
-          <SelectTrigger
-            className="
-              flex-1
-              sm:flex-none
-              w-auto
-              sm:w-[150px]
-              h-9
-              sm:h-10
-              rounded-xl
-              text-white
-              [&>span]:text-white
-              min-w-0
-            "
-          >
-            <SelectValue placeholder="All Nigeria" />
-          </SelectTrigger>
-
-          <SelectContent className="bg-background text-white">
-            <SelectItem
-              value="all"
-              className="text-white focus:text-white data-[highlighted]:text-white"
-            >
-              All Nigeria
-            </SelectItem>
-
-            {LOCATIONS.map((l) => (
-              <SelectItem
-                key={l}
-                value={l}
-                className="text-white focus:text-white data-[highlighted]:text-white"
-              >
-                {l}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={useNearMe}
-          className="
-            h-9
-            w-9
-            sm:h-10
-            sm:w-10
-            rounded-xl
-            shrink-0
-            text-white
-            border-white/50
-            hover:text-white
-            hover:border-white
-          "
-          title="Use my location"
+      {LOCATIONS.map((l) => (
+        <SelectItem
+          key={l}
+          value={l}
+          className="text-white focus:text-white data-[highlighted]:text-white"
         >
-          <MapPin className="h-4 w-4 text-white" />
-        </Button>
+          {l}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
 
-        <Button
-          type="submit"
-          className="
-            h-9
-            sm:h-10
-            rounded-xl
-            font-bold
-            bg-accent
-            hover:bg-accent/90
-            text-accent-foreground
-            px-4
-            sm:px-6
-            shrink-0
-          "
-        >
-          <Search className="h-4 w-4 sm:hidden" />
-          <span className="hidden sm:inline">Search</span>
-        </Button>
-      </div>
-    </form>
+  {/* Near me */}
+  <Button
+    type="button"
+    variant="outline"
+    size="icon"
+    onClick={useNearMe}
+    title="Use my location"
+    className="
+      h-10
+      w-10
+      shrink-0
+      rounded-xl
+      border-white/20
+      bg-white/5
+      text-white
+      hover:border-white/30
+      hover:bg-white/10
+      hover:text-white
+      sm:h-12
+      sm:w-12
+    "
+  >
+    <MapPin className="h-4 w-4 text-emerald-300" />
+  </Button>
+
+  {/* Search */}
+  <Button
+    type="submit"
+    className="
+      h-10
+      w-10
+      shrink-0
+      rounded-xl
+      bg-[#35d879]
+      px-0
+      font-bold
+      text-[#04120a]
+      hover:bg-[#52e98f]
+      sm:h-12
+      sm:w-auto
+      sm:px-6
+    "
+    aria-label="Search"
+  >
+    <Search className="h-4 w-4 sm:hidden" />
+    <span className="hidden sm:inline">
+      Search
+    </span>
+  </Button>
+</form>
 
     {chips.length > 0 && (
       <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-1.5 sm:gap-2 justify-center">
