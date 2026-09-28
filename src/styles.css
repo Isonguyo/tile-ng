@@ -544,15 +544,57 @@
   .tile-artisan-copy, .tile-market-copy { max-width: 760px; margin-inline: auto; }
 }
 
+@media (max-width: 767px) {
+  .tile-market-copy .max-w-3xl { width: 100%; }
+  .tile-market-copy .max-w-3xl > form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .35rem;
+    padding: .4rem;
+    border-radius: 20px;
+  }
+  .tile-market-copy .max-w-3xl > form > div:first-child { min-width: 0; }
+  .tile-market-copy .max-w-3xl > form > div:first-child input {
+    min-width: 0;
+    min-height: 44px;
+    height: 44px;
+    padding-left: 2.35rem;
+    font-size: .875rem;
+  }
+  .tile-market-copy .max-w-3xl > form > div:first-child svg {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .tile-market-copy .max-w-3xl > form > div:last-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .4rem;
+    min-width: 0;
+  }
+  .tile-market-copy .max-w-3xl > form [role="combobox"] {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding-inline: .75rem;
+    font-size: .8rem;
+  }
+  .tile-market-copy .max-w-3xl > form button[type="submit"] {
+    grid-column: auto;
+    min-height: 40px;
+    height: 40px;
+    padding-inline: 1rem;
+    font-size: .85rem;
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 640px) {
   .tile-market-hero .container, .tile-artisan-hero .container { padding-top: 2.5rem; padding-bottom: 2.5rem; }
   .tile-market-copy, .tile-artisan-copy { gap: 1.1rem; }
   .tile-market-copy h1, .tile-artisan-copy h1 { font-size: clamp(2.25rem, 11vw, 3.3rem); }
   .tile-trust-pill { min-height: 38px; gap: .45rem; padding-inline: .8rem; font-size: .72rem; }
-  .tile-market-copy .max-w-3xl > form { flex-direction: column; align-items: stretch; border-radius: 22px; }
-  .tile-market-copy .max-w-3xl > form > div:last-child { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  .tile-market-copy .max-w-3xl > form [role="combobox"] { width: 100%; min-width: 0; }
-  .tile-market-copy .max-w-3xl > form button[type="submit"] { grid-column: 1 / -1; }
+  .tile-market-copy .max-w-3xl > form { border-radius: 18px; }
   .tile-market-copy .max-w-3xl > div:last-child { flex-wrap: nowrap; overflow: auto; padding-bottom: .25rem; }
   .tile-market-copy .max-w-3xl > div:last-child button { flex: 0 0 auto; }
   .tile-market-showcase { height: 410px; margin-top: .3rem; }
