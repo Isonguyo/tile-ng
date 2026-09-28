@@ -20,6 +20,14 @@ import { Loader2, ShoppingBag, Store, Wrench, Eye, EyeOff, Phone, Briefcase } fr
 import { useAuth } from "@/lib/auth-context";
 import { siteUrl } from "@/lib/site-url";
 
+/**
+ * Instant-access signup is active. To restore email verification later, set this
+ * to true and turn Email > Confirm email back on in hosted Supabase Auth. The
+ * /verify-email route and verification notice remain available. While this is
+ * false, Confirm email must be off or signUp() will not return a dashboard session.
+ */
+const SIGNUP_EMAIL_VERIFICATION_ENABLED = false;
+
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 type WaitlistContext = {
@@ -157,12 +165,13 @@ function SignupPage() {
     }
 
     setBusy(true);
-    const redirectTo = siteUrl("/verify-email");
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
-        emailRedirectTo: redirectTo,
+        ...(SIGNUP_EMAIL_VERIFICATION_ENABLED
+          ? { emailRedirectTo: siteUrl("/verify-email") }
+          : {}),
         data: {
           full_name: values.full_name,
           account_type: values.account_type,
@@ -183,6 +192,7 @@ function SignupPage() {
 
     if (data.session) {
       await linkWaitlistIfNeeded();
+
       toast.success(
         fromWaitlist
           ? "Account created. Your early-access setup is ready."
@@ -192,8 +202,21 @@ function SignupPage() {
       return;
     }
 
-    setEmailSent(true);
-    toast.success("Account created. Please verify your email to continue.");
+    if (SIGNUP_EMAIL_VERIFICATION_ENABLED) {
+      setEmailSent(true);
+      toast.success("Account created. Please verify your email to continue.");
+      return;
+    }
+
+    // The hosted Auth provider still requires confirmation if it returns no
+    // session. Do not send users into the verification flow while instant-access
+    // mode is active; the project setting needs to be corrected by an admin.
+    console.error(
+      "Instant-access signup returned no session. Disable Confirm Email in the hosted Supabase Auth provider.",
+    );
+    toast.error(
+      "Your account was created, but Tile couldn't sign you in yet. Please contact support before trying again.",
+    );
   };
 
   const resendEmail = async () => {
@@ -216,7 +239,7 @@ function SignupPage() {
 
   return (
     <AuthLayout title="Create your account" description="Join Tile to buy, sell, and discover trusted goods and services across Nigeria." backTo="/" backLabel="Back home" compact>
-      {emailSent ? (
+      {SIGNUP_EMAIL_VERIFICATION_ENABLED && emailSent ? (
         <EmailVerificationNotice email={email} onResend={resendEmail} busy={busy} cooldown={cooldown} />
       ) : (
         <>

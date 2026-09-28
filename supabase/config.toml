@@ -1,1 +1,6 @@
 project_id = "xhhyfpfizzrffbdyykra"
+
+# Local Auth mirrors Tile's instant-access signup mode. Hosted Supabase projects
+# have a separate Email > Confirm email setting in the Supabase dashboard.
+[auth.email]
+enable_confirmations = false
