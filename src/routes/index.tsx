@@ -400,8 +400,8 @@ function Index() {
           <section className="tile-market-hero relative isolate overflow-hidden text-white">
             <div className="tile-market-backdrop" aria-hidden="true" />
             <div className="container relative z-10 mx-auto px-4 py-12 sm:py-16 lg:py-20">
-              <div className="grid items-center gap-10 lg:grid-cols-[1.14fr_.86fr] xl:gap-14">
-                <div className="tile-market-copy space-y-6">
+              <div className="grid min-w-0 grid-cols-1 items-center gap-10 lg:grid-cols-[1.14fr_.86fr] xl:gap-14">
+                <div className="tile-market-copy min-w-0 w-full space-y-6">
                   <div className="tile-trust-pill"><Icons.BadgeCheck className="h-4 w-4 fill-emerald-400 text-emerald-400" /> Verified Businesses <span>&#8226;</span> Safe <span>&#8226;</span> Reliable</div>
                   <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl md:text-6xl xl:text-[4.4rem]">
                     Find Trusted Stores,<br /><span>Products &amp; Services</span><br />Near You
@@ -412,7 +412,7 @@ function Index() {
                   <HeroSearch initialQ={q ?? ""} initialLoc={loc ?? "all"} />
                 </div>
 
-                <div className="tile-market-showcase" role="group" aria-label="Featured local products, stores and artisans">
+                <div className="tile-market-showcase min-w-0" role="group" aria-label="Featured local products, stores and artisans">
                   <div className="tile-map-glow" aria-hidden="true"><span /><span /><span /><i /></div>
                   <article className="tile-feature-product">
                     <div className="tile-card-ribbon">&#10024; {featuredListing ? "Trending" : "Popular Finds"}</div>

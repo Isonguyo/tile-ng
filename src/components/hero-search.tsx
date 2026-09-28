@@ -75,149 +75,63 @@ export function HeroSearch({ initialQ = "", initialLoc = "all" }: { initialQ?: s
     "iPhone", "generator", "tailor", "mechanic", "laptop", "makeup artist",
   ]).filter(Boolean);
 
- return (
-  <div className="w-full max-w-3xl mx-auto px-2 sm:px-0">
-   <form
-  onSubmit={submit}
-  className="
-    flex items-center
-    gap-1.5
-    rounded-2xl
-    border
-    border-white/10
-    bg-background/95
-    p-1.5
-    shadow-2xl
-    backdrop-blur
-    sm:gap-2
-    sm:p-2
-  "
->
-  {/* Search input */}
-  <div className="relative min-w-0 flex-1">
-    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-300" />
-
-    <input
-      value={q}
-      onChange={(e) => setQ(e.target.value)}
-      placeholder={ROTATING[placeholderIdx]}
-      aria-label="Search Tile"
-      className="
-        h-10
-        w-full
-        min-w-0
-        rounded-xl
-        border-0
-        bg-transparent
-        pl-10
-        pr-2
-        text-sm
-        text-white
-        shadow-none
-        placeholder:text-slate-400
-        focus:outline-none
-        sm:h-12
-        sm:pr-3
-      "
-    />
-  </div>
-
-  {/* Location */}
-  <Select value={loc} onValueChange={setLoc}>
-    <SelectTrigger
-      className="
-        h-10
-        w-[82px]
-        shrink-0
-        rounded-xl
-        border-white/10
-        bg-white/5
-        px-2
-        text-xs
-        text-white
-        [&>span]:text-white
-        sm:h-12
-        sm:w-[150px]
-        sm:px-3
-        sm:text-sm
-      "
+  return (
+  <div className="tile-market-search w-full max-w-3xl min-w-0">
+    <form
+      onSubmit={submit}
+      className="tile-market-search-form flex w-full min-w-0 flex-col gap-2 rounded-2xl border border-white/10 bg-background/95 p-2 shadow-2xl backdrop-blur sm:flex-row sm:items-center"
     >
-      <SelectValue placeholder="All Nigeria" />
-    </SelectTrigger>
+      <div className="tile-market-search-input relative min-w-0 flex-1">
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-300" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={ROTATING[placeholderIdx]}
+          aria-label="Search Tile"
+          className="h-12 w-full min-w-0 rounded-xl border-0 bg-transparent pl-10 pr-2 text-sm text-white shadow-none placeholder:text-slate-400 focus:outline-none sm:pr-3"
+        />
+      </div>
 
-    <SelectContent className="bg-background text-white">
-      <SelectItem
-        value="all"
-        className="text-white focus:text-white data-[highlighted]:text-white"
-      >
-        All Nigeria
-      </SelectItem>
+      <div className="tile-market-search-actions grid min-w-0 grid-cols-2 gap-2 sm:flex sm:shrink-0">
+        <Select value={loc} onValueChange={setLoc}>
+          <SelectTrigger className="tile-market-search-location h-12 w-full min-w-0 flex-1 rounded-xl border-white/10 bg-white/5 px-3 text-sm text-white [&>span]:text-white sm:w-[150px] sm:flex-none">
+            <SelectValue placeholder="All Nigeria" />
+          </SelectTrigger>
+          <SelectContent className="bg-background text-white">
+            <SelectItem value="all" className="text-white focus:text-white data-[highlighted]:text-white">
+              All Nigeria
+            </SelectItem>
+            {LOCATIONS.map((l) => (
+              <SelectItem key={l} value={l} className="text-white focus:text-white data-[highlighted]:text-white">
+                {l}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {LOCATIONS.map((l) => (
-        <SelectItem
-          key={l}
-          value={l}
-          className="text-white focus:text-white data-[highlighted]:text-white"
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={useNearMe}
+          title="Use my location"
+          className="tile-market-search-near hidden h-12 w-12 shrink-0 rounded-xl border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10 hover:text-white sm:inline-flex"
         >
-          {l}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
+          <MapPin className="h-4 w-4 text-emerald-300" />
+        </Button>
 
-  {/* Near me */}
-  <Button
-    type="button"
-    variant="outline"
-    size="icon"
-    onClick={useNearMe}
-    title="Use my location"
-    className="
-      h-10
-      w-10
-      shrink-0
-      rounded-xl
-      border-white/20
-      bg-white/5
-      text-white
-      hover:border-white/30
-      hover:bg-white/10
-      hover:text-white
-      sm:h-12
-      sm:w-12
-    "
-  >
-    <MapPin className="h-4 w-4 text-emerald-300" />
-  </Button>
-
-  {/* Search */}
-  <Button
-    type="submit"
-    className="
-      h-10
-      w-10
-      shrink-0
-      rounded-xl
-      bg-[#35d879]
-      px-0
-      font-bold
-      text-[#04120a]
-      hover:bg-[#52e98f]
-      sm:h-12
-      sm:w-auto
-      sm:px-6
-    "
-    aria-label="Search"
-  >
-    <Search className="h-4 w-4 sm:hidden" />
-    <span className="hidden sm:inline">
-      Search
-    </span>
-  </Button>
-</form>
+        <Button
+          type="submit"
+          className="tile-market-search-submit h-12 min-w-0 flex-1 rounded-xl bg-[#35d879] px-4 font-bold text-[#04120a] hover:bg-[#52e98f] sm:flex-none sm:px-6"
+        >
+          <Search className="mr-2 h-4 w-4" />
+          Search
+        </Button>
+      </div>
+    </form>
 
     {chips.length > 0 && (
-      <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-1.5 sm:gap-2 justify-center">
+      <div className="tile-market-search-trending mt-3 flex flex-wrap items-center justify-center gap-1.5 sm:mt-4 sm:gap-2">
         <span className="text-[10px] sm:text-xs uppercase tracking-wider text-primary-foreground/70 font-semibold flex items-center gap-1">
           <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           Trending

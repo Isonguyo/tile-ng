@@ -236,14 +236,14 @@
 .tile-market-copy p,
 .tile-artisan-copy p { text-shadow: 0 1px 18px rgb(0 0 0 / 24%); }
 
-/* Search bar matching the reference's luminous capsule */
-.tile-market-copy .max-w-3xl {
-  max-width: 100%;
-  margin-left: 0;
-  margin-right: 0;
+/* Marketplace hero search */
+.tile-market-search {
+  width: 100%;
+  max-width: 48rem;
+  min-width: 0;
 }
 
-.tile-market-copy .max-w-3xl > form {
+.tile-market-search-form {
   gap: .45rem;
   padding: .5rem;
   border: 2px solid #19df85;
@@ -252,39 +252,38 @@
   box-shadow: 0 0 10px rgb(35 246 143 / 54%), 0 0 35px rgb(23 220 119 / 24%), inset 0 0 20px rgb(35 217 126 / 7%);
 }
 
-.tile-market-copy .max-w-3xl > form > div:first-child input {
+.tile-market-search-input input {
   min-height: 52px;
   color: #fff;
 }
 
-.tile-market-copy .max-w-3xl > form > div:first-child input::placeholder { color: #a9b9b2; }
-.tile-market-copy .max-w-3xl > form > div:last-child { align-items: center; }
-.tile-market-copy .max-w-3xl > form button[title="Use my location"] { display: none; }
-.tile-market-copy .max-w-3xl > form [role="combobox"] {
+.tile-market-search-input input::placeholder { color: #a9b9b2; }
+.tile-market-search-actions { align-items: center; }
+.tile-market-search-location {
   min-width: 150px;
   border-color: rgb(255 255 255 / 7%);
   border-radius: 999px;
   background: #0a2925;
 }
-.tile-market-copy .max-w-3xl > form button[type="submit"] {
+.tile-market-search-submit {
   min-height: 52px;
   border-radius: 999px;
   background: linear-gradient(110deg, #37df91, #1fc978);
   color: #032217;
   box-shadow: 0 0 24px rgb(34 217 126 / 20%);
 }
-.tile-market-copy .max-w-3xl > div:last-child {
+.tile-market-search-trending {
   justify-content: flex-start;
   gap: .55rem;
 }
-.tile-market-copy .max-w-3xl > div:last-child > span { color: #edfff5; }
-.tile-market-copy .max-w-3xl > div:last-child button {
+.tile-market-search-trending > span { color: #edfff5; }
+.tile-market-search-trending button {
   border-color: rgb(32 211 122 / 45%);
   background: rgb(3 53 37 / 55%);
   color: #f1fff7;
   padding: .5rem .85rem;
 }
-.tile-market-copy .max-w-3xl > div:last-child button:hover { background: rgb(15 111 69 / 78%); }
+.tile-market-search-trending button:hover { background: rgb(15 111 69 / 78%); }
 
 /* Product, shop and artisan cards */
 .tile-market-showcase {
@@ -545,46 +544,39 @@
 }
 
 @media (max-width: 767px) {
-  .tile-market-copy .max-w-3xl { width: 100%; }
-  .tile-market-copy .max-w-3xl > form {
-    display: flex;
+  .tile-market-search-form {
     flex-direction: column;
     align-items: stretch;
-    gap: .35rem;
+    gap: .5rem;
     padding: .4rem;
     border-radius: 20px;
   }
-  .tile-market-copy .max-w-3xl > form > div:first-child { min-width: 0; }
-  .tile-market-copy .max-w-3xl > form > div:first-child input {
+  .tile-market-search-input { min-width: 0; }
+  .tile-market-search-input input {
     min-width: 0;
-    min-height: 44px;
-    height: 44px;
-    padding-left: 2.35rem;
+    min-height: 48px;
+    height: 48px;
+    padding-left: 2.5rem;
     font-size: .875rem;
   }
-  .tile-market-copy .max-w-3xl > form > div:first-child svg {
+  .tile-market-search-input svg {
     top: 50%;
     transform: translateY(-50%);
   }
-  .tile-market-copy .max-w-3xl > form > div:last-child {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: .4rem;
-    min-width: 0;
-  }
-  .tile-market-copy .max-w-3xl > form [role="combobox"] {
+  .tile-market-search-actions { gap: .5rem; }
+  .tile-market-search-location {
     width: 100%;
     min-width: 0;
-    height: 40px;
+    height: 48px;
     padding-inline: .75rem;
-    font-size: .8rem;
+    font-size: .875rem;
   }
-  .tile-market-copy .max-w-3xl > form button[type="submit"] {
-    grid-column: auto;
-    min-height: 40px;
-    height: 40px;
-    padding-inline: 1rem;
-    font-size: .85rem;
+  .tile-market-search-near { display: none; }
+  .tile-market-search-submit {
+    width: 100%;
+    min-height: 48px;
+    height: 48px;
+    padding-inline: .75rem;
     white-space: nowrap;
   }
 }
@@ -594,9 +586,17 @@
   .tile-market-copy, .tile-artisan-copy { gap: 1.1rem; }
   .tile-market-copy h1, .tile-artisan-copy h1 { font-size: clamp(2.25rem, 11vw, 3.3rem); }
   .tile-trust-pill { min-height: 38px; gap: .45rem; padding-inline: .8rem; font-size: .72rem; }
-  .tile-market-copy .max-w-3xl > form { border-radius: 18px; }
-  .tile-market-copy .max-w-3xl > div:last-child { flex-wrap: nowrap; overflow: auto; padding-bottom: .25rem; }
-  .tile-market-copy .max-w-3xl > div:last-child button { flex: 0 0 auto; }
+  .tile-market-search-form { border-radius: 18px; }
+  .tile-market-search-trending {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: .25rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tile-market-search-trending::-webkit-scrollbar { display: none; }
+  .tile-market-search-trending button { flex: 0 0 auto; }
   .tile-market-showcase { height: 410px; margin-top: .3rem; }
   .tile-feature-product { left: 0; width: 43%; border-radius: 15px; }
   .tile-feature-product > img { height: 150px; padding: 10px 10px 0; }
