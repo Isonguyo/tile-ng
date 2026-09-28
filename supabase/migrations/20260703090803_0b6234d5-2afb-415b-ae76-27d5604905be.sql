@@ -3,6 +3,9 @@
 ALTER TABLE public.cities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lgas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.states ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "cities public read" ON public.cities;
+DROP POLICY IF EXISTS "lgas public read" ON public.lgas;
+DROP POLICY IF EXISTS "states public read" ON public.states;
 CREATE POLICY "cities public read" ON public.cities FOR SELECT USING (true);
 CREATE POLICY "lgas public read"  ON public.lgas  FOR SELECT USING (true);
 CREATE POLICY "states public read" ON public.states FOR SELECT USING (true);
