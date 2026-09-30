@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fromUntyped } from "@/lib/db-untyped";
 import { ARTISAN_CATEGORIES } from "@/lib/artisan-categories";
 import { toast } from "sonner";
+import { showError } from "@/lib/user-feedback";
 
 import {
   Camera,
@@ -358,7 +359,7 @@ function ArtisanCreatePage() {
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "Could not synchronize profile settings.");
+      showError(err, "We couldn't save your artisan profile. Please check your details and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -426,7 +427,7 @@ function ArtisanCreatePage() {
         </div>
 
         <Card className="overflow-hidden rounded-3xl border border-[#1b3b2a] bg-gradient-to-b from-[#102017] to-[#09150f] text-slate-100 shadow-[0_24px_65px_rgba(0,0,0,0.28)]">
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
             {/* STEP 1: Onboarding Introduction */}
             {step === 1 && (
               <div className="p-5 sm:p-8">

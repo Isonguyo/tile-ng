@@ -36,7 +36,7 @@ export function WaitlistForm({
   onSubmit,
 }: WaitlistFormProps) {
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <fieldset disabled={pending} className="space-y-5">
         <div>
           <h2 className="text-2xl font-black tracking-tight">{formContent.title ?? "Join the waitlist"}</h2>

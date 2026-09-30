@@ -54,6 +54,8 @@ import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
 import { TierBadge } from "@/components/tier-badge";
 import { QRCodeSVG } from "qrcode.react";
+import { useConfirmAction } from "@/components/confirm-action-provider";
+import { showError } from "@/lib/user-feedback";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -433,7 +435,7 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
     setLoading(true); setConfirming(true);
     const { error } = await supabase.rpc("topup_wallet", { _amount: Number(amount), _reference: `paystack-mock-${Date.now()}` });
     setLoading(false); setConfirming(false);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't confirm your top-up. Please try again.");
     toast.success("Payment confirmed — wallet credited");
     setOpen(false); onTopup();
   };
@@ -520,6 +522,15 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
 }
 
 function Row({ label, value, copyable }: { label: string; value: string; copyable?: boolean }) {
+  const copyValue = async () => {
+    try {
+      await navigator.clipboard.writeText(value.replace(/[^\d.]/g, ""));
+      toast.success(`${label} copied to clipboard.`);
+    } catch (error) {
+      showError(error, "We couldn't copy that value. Please try again.");
+    }
+  };
+
   return (
     <div className="flex items-center justify-between gap-3">
       <div>
@@ -527,7 +538,7 @@ function Row({ label, value, copyable }: { label: string; value: string; copyabl
         <p className="mt-1 font-semibold text-slate-100">{value}</p>
       </div>
       {copyable && (
-        <Button size="sm" variant="outline" className="shrink-0 rounded-lg border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white" onClick={() => { navigator.clipboard.writeText(value.replace(/[^\d.]/g, "")); toast.success("Copied"); }}>
+        <Button size="sm" variant="outline" className="shrink-0 rounded-lg border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white" onClick={copyValue}>
           <CopyIcon className="mr-1 h-3 w-3" />Copy
         </Button>
       )}
@@ -548,7 +559,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
       await supabase.from("profiles").update({ kyc_status: "pending", kyc_doc_url: path }).eq("id", user.id);
       toast.success("KYC submitted — awaiting review");
       onUpload();
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
+    } catch (err) { showError(err, "We couldn't upload your verification document. Please try again."); }
     setBusy(false);
   };
 
@@ -587,7 +598,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
       ...form, is_merchant: true, shop_slug: slug,
     }).eq("id", user.id);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't create your shop. Please check your details and try again.");
     toast.success("Your shop is live");
     setOpen(false); onDone();
   };
@@ -637,21 +648,31 @@ function ShopLinkCard({ slug }: { slug: string }) {
 
   const url = `${origin}/shop/${slug}`;
 
-  const copy = async () => { await navigator.clipboard.writeText(url); toast.success("Link copied"); };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Your shop link has been copied.");
+    } catch (error) {
+      showError(error, "We couldn't copy your shop link. Please try again.");
+    }
+  };
   const downloadQr = () => {
     if (!qrRef.current) return;
-
-    const svg = new XMLSerializer().serializeToString(qrRef.current);
-    const file = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-    const objectUrl = URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = `tile-shop-${slug}.svg`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-    toast.success("Shop QR code downloaded");
+    try {
+      const svg = new XMLSerializer().serializeToString(qrRef.current);
+      const file = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const objectUrl = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `tile-shop-${slug}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      toast.success("Your shop QR code has been downloaded.");
+    } catch (error) {
+      showError(error, "We couldn't download your shop QR code. Please try again.");
+    }
   };
 
   return (
@@ -751,7 +772,7 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
     setBusy(t);
     const { error } = await supabase.rpc("activate_subscription", { _tier: t });
     setBusy(null);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't activate that plan. Please try again.");
     toast.success(`${t.toUpperCase()} plan activated`);
     onChange();
   };
@@ -800,6 +821,7 @@ function ListingRow({ l, onChange }: {
   };
   onChange: () => void;
 }) {
+  const confirm = useConfirmAction();
   const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
   const [stats, setStats] = useState<{
@@ -838,15 +860,21 @@ function ListingRow({ l, onChange }: {
   const renew = async () => {
     const wasExpired = (l as { status?: string }).status === "expired";
     const { error } = await supabase.rpc("renew_listing", { _listing_id: l.id });
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't renew this listing. Please try again.");
     toast.success(wasExpired ? "Republished for 30 days (standard visibility)" : "Renewed for 30 days");
     onChange();
   };
 
   const remove = async () => {
-    if (!confirm("Delete this ad permanently?")) return;
+    const confirmed = await confirm({
+      title: "Delete this listing?",
+      description: "This permanently removes the ad from your account and cannot be undone.",
+      confirmLabel: "Delete listing",
+      destructive: true,
+    });
+    if (!confirmed) return;
     const { error } = await supabase.from("listings").delete().eq("id", l.id);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't delete this listing. Please try again.");
     toast.success("Ad deleted");
     onChange();
   };
@@ -864,7 +892,7 @@ function ListingRow({ l, onChange }: {
       price: editForm.price ? Number(editForm.price) : null,
       status: "pending",
     }).eq("id", l.id);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't save your listing changes. Please try again.");
     toast.success("Ad updated — pending re-review");
     setEditOpen(false); onChange();
   };
@@ -885,7 +913,7 @@ function ListingRow({ l, onChange }: {
 
     if (error) {
       console.error(error);
-      toast.error(error.message);
+      showError(error, "We couldn't promote this listing. Please try again.");
       return;
     }
 

@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { friendlyErrorMessage } from "@/lib/user-feedback";
 
 type ArtisanProfile = {
   id: string;
@@ -89,7 +90,7 @@ export const Route = createFileRoute("/artisans/$id")({
       <SiteHeader />
       <div className="container mx-auto max-w-2xl px-4 py-32 text-center">
         <h1 className="text-3xl font-black tracking-tight text-destructive">Something went wrong</h1>
-        <p className="mt-3 text-lg text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+        <p className="mt-3 text-lg text-muted-foreground">{friendlyErrorMessage(error, "We couldn't load this artisan profile. Please try again.")}</p>
       </div>
     </div>
   ),

@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { ConfirmActionProvider } from "@/components/confirm-action-provider";
 
 function NotFoundComponent() {
   return (
@@ -132,15 +133,17 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {/* Add bottom padding so content isn't hidden behind the fixed nav */}
-        <main className={isWaitlist ? undefined : "pb-20 md:pb-0"}>
-          <Outlet />
-        </main>
+        <ConfirmActionProvider>
+          {/* Add bottom padding so content isn't hidden behind the fixed nav */}
+          <main className={isWaitlist ? undefined : "pb-20 md:pb-0"}>
+            <Outlet />
+          </main>
 
-        {/* Mobile Bottom Navigation */}
-        {!isWaitlist && <MobileBottomNav />}
+          {/* Mobile Bottom Navigation */}
+          {!isWaitlist && <MobileBottomNav />}
 
-        <Toaster richColors position="top-right" />
+          <Toaster richColors closeButton position="top-center" duration={4500} />
+        </ConfirmActionProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

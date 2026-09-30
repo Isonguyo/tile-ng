@@ -19,6 +19,7 @@ import { MerchantHealthCard, QuotaBar } from "@/components/merchant-health";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadListingImages } from "@/lib/storage";
 import { toast } from "sonner";
+import { showError } from "@/lib/user-feedback";
 import {
   Upload,
   X,
@@ -294,11 +295,7 @@ function PostAd() {
       toast.success("Listing promoted successfully");
     } catch (e) {
       console.error("PROMOTE LISTING ERROR:", e);
-      if (e && typeof e === "object" && "message" in e) {
-        toast.error(String((e as any).message));
-      } else {
-        toast.error("Unable to promote this listing right now.");
-      }
+      showError(e, "We couldn't promote this listing right now. Please try again.");
     } finally {
       setPromoting(false);
     }
@@ -360,11 +357,7 @@ function PostAd() {
       toast.success("Listing submitted for review");
     } catch (e) {
       console.error("POST AD ERROR:", e);
-      if (e && typeof e === "object" && "message" in e) {
-        toast.error(String((e as any).message));
-      } else {
-        toast.error("Failed to post ad.");
-      }
+      showError(e, "We couldn't post your ad. Please check the details and try again.");
     } finally {
       setSubmitting(false);
       setSubmittingStage("Preparing your listing");
@@ -592,7 +585,7 @@ function PostAd() {
                 })}
               </div>
 
-              <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5">
+              <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5" noValidate>
                 {step === 1 && (
                   <>
                     <h2 className="text-xl font-semibold">Pick a category</h2>

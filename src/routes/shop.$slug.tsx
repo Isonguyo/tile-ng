@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { showError } from "@/lib/user-feedback";
 import {
   Share2, Phone, MessageCircle, MapPin, BadgeCheck, Star, Send,
   Search, SlidersHorizontal, Package, Users, Heart, Eye, TrendingUp,
@@ -236,7 +237,10 @@ function ShopPage() {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied");
       }
-    } catch { /* ignore */ }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      showError(error, "We couldn't share your shop link. Please try again.");
+    }
   };
 
   const mine = user ? reviews.find((r) => r.reviewer_id === user.id) : null;
@@ -248,7 +252,7 @@ function ShopPage() {
     setFollowBusy(true);
     const { data, error } = await supabase.rpc("toggle_follow_shop" as never, { _shop_id: shop.id } as never);
     setFollowBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't update your shop follow. Please try again.");
     setFollowing(!!data);
     qc.invalidateQueries({ queryKey: ["shop-followers", shop.id] });
     toast.success(data ? "You are following this shop" : "Unfollowed");
@@ -266,7 +270,7 @@ function ShopPage() {
     }, { onConflict: "shop_user_id,reviewer_id" });
 
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't save your review. Please try again.");
 
     toast.success(mine ? "Review updated" : "Review posted");
     setRating(0);

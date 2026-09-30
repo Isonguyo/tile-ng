@@ -11,6 +11,7 @@ import { MessageCircle, ImageIcon, Pin, Sparkles } from "lucide-react";
 import { getSignedUrl } from "@/lib/storage";
 import { usePlan, hasCapability } from "@/hooks/use-plan";
 import { toast } from "sonner";
+import { showError } from "@/lib/user-feedback";
 
 export const Route = createFileRoute("/messages/")({
   head: () => ({ meta: [{ title: "Inbox — Tile" }],
@@ -111,7 +112,7 @@ function ChatRowItem({ c }: { c: ChatRow }) {
     e.preventDefault();
     e.stopPropagation();
     const { data, error } = await (supabase.rpc as any)("toggle_chat_pin", { _chat_id: c.id });
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't update this conversation. Please try again.");
     setPinned(Boolean(data));
     toast.success(data ? "Conversation pinned" : "Conversation unpinned");
   };

@@ -186,7 +186,7 @@ function SignupPage() {
     setBusy(false);
 
     if (error) {
-      toast.error(friendlyAuthError(error.message));
+      toast.error(friendlyAuthError(error.message, "We couldn't create your account. Please check your details and try again."));
       return;
     }
 
@@ -228,7 +228,7 @@ function SignupPage() {
     const { error } = await supabase.auth.resend({ type: "signup", email });
     setBusy(false);
     if (error) {
-      toast.error(friendlyAuthError(error.message));
+      toast.error(friendlyAuthError(error.message, "We couldn't send the verification email. Please try again."));
       return;
     }
     toast.success("Verification email sent.");

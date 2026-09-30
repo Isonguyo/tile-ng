@@ -165,7 +165,7 @@ function VerifyEmailPage() {
     setBusy(false);
 
     if (error) {
-      toast.error(friendlyAuthError(error.message));
+      toast.error(friendlyAuthError(error.message, "We couldn't send the verification email. Please try again."));
       return;
     }
 

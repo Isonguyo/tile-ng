@@ -49,7 +49,7 @@ function ForgotPage() {
     const { error } = await supabase.auth.resetPasswordForEmail(values.email, { redirectTo });
     setBusy(false);
     if (error) {
-      toast.error(friendlyAuthError(error.message));
+      toast.error(friendlyAuthError(error.message, "We couldn't send a password reset link. Please try again."));
       return;
     }
     setSent(true);

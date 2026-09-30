@@ -44,6 +44,7 @@ import {
   type WaitlistStatus,
 } from "@/lib/waitlist-utils";
 import { waitlistRpc, rpcUntyped } from "@/lib/waitlist-rpc";
+import { friendlyErrorMessage, showError } from "@/lib/user-feedback";
 
 // Module-level so React Strict Mode's double effect run cannot double-count a visit.
 let visitTracked = false;
@@ -257,7 +258,7 @@ function WaitListPage() {
       toast.success("Wait-list status found.");
     } catch (error) {
       console.error("WAITLIST STATUS ERROR:", error);
-      setStatusError(error instanceof Error ? error.message : "Unable to check your status right now.");
+      setStatusError(friendlyErrorMessage(error, "We couldn't check your status right now. Please try again."));
     } finally {
       setStatusLoading(false);
     }
@@ -337,7 +338,7 @@ function WaitListPage() {
       toast.success("You're in! Your founding-member reward is locked in. 🎉");
       void qc.invalidateQueries({ queryKey: ["waitlist-page-data"] });
     },
-    onError: (e: Error) => toast.error(e.message || "Something went wrong. Please try again."),
+    onError: (error: Error) => showError(error, "We couldn't join the wait-list right now. Please try again."),
   });
 
   const submit = (event: React.FormEvent) => {

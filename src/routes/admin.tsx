@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useConfirmAction } from "@/components/confirm-action-provider";
+import { showError } from "@/lib/user-feedback";
 import { getSignedUrls } from "@/lib/storage";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip, CartesianGrid,
@@ -95,9 +97,14 @@ function getSignupSourceLabel(source: string | null | undefined) {
 }
 
 function Admin() {
+  const confirm = useConfirmAction();
   const { isAdmin, loading } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!loading && !isAdmin) nav({ to: "/" });
+  }, [isAdmin, loading, nav]);
 
   // ─── Mission Control aggregated stats ───────────────────────────
   const { data: dash } = useQuery({
@@ -412,21 +419,19 @@ function Admin() {
     };
   }, [userProfiles.length, users, waitlistEntries]);
 
-  if (!loading && !isAdmin) { nav({ to: "/" }); return null; }
-
   const approve = async (id: string) => {
     const { error } = await supabase.rpc("admin_approve_listing", { _id: id });
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't approve that listing. Please try again.");
     toast.success("Approved"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] }); void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
   };
   const reject = async (id: string, reason: string) => {
     const { error } = await supabase.rpc("admin_reject_listing", { _id: id, _reason: reason });
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't reject that listing. Please try again.");
     toast.success("Rejected"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
   };
   const flag = async (id: string) => {
     const { error } = await supabase.rpc("admin_flag_seller", { _listing_id: id });
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't flag that seller. Please try again.");
     toast.success("Seller flagged & listing removed");
     void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
     void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
@@ -438,7 +443,7 @@ function Admin() {
       .update({ kyc_status: "verified", is_verified: true })
       .eq("id", id);
 
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't verify this vendor. Please try again.");
 
     toast.success("Verified badge granted");
     void qc.invalidateQueries({ queryKey: ["kyc-pending"] });
@@ -450,16 +455,32 @@ function Admin() {
   const toggleSel = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const bulk = async (action: "approve" | "reject" | "flag") => {
     if (!selected.size) return toast.error("Select at least one listing");
-    if (!confirm(`${action.toUpperCase()} ${selected.size} listings?`)) return;
+    const confirmed = await confirm({
+      title: `Confirm bulk ${action}?`,
+      description: `This will ${action} ${selected.size} selected listings.`,
+      confirmLabel: `Yes, ${action}`,
+      destructive: action !== "approve",
+    });
+    if (!confirmed) return;
     const ids = [...selected];
+    let failed = 0;
     for (const id of ids) {
-      if (action === "approve") await supabase.rpc("admin_approve_listing", { _id: id });
-      else if (action === "reject") await supabase.rpc("admin_reject_listing", { _id: id, _reason: "Bulk rejection" });
-      else await supabase.rpc("admin_flag_seller", { _listing_id: id });
+      const result = action === "approve"
+        ? await supabase.rpc("admin_approve_listing", { _id: id })
+        : action === "reject"
+          ? await supabase.rpc("admin_reject_listing", { _id: id, _reason: "Bulk rejection" })
+          : await supabase.rpc("admin_flag_seller", { _listing_id: id });
+      if (result.error) failed += 1;
     }
-    toast.success(`${ids.length} listings ${action}ed`);
+    const completed = ids.length - failed;
+    if (failed === 0) {
+      toast.success(`${completed} listing${completed === 1 ? "" : "s"} ${action === "approve" ? "approved" : action === "reject" ? "rejected" : "flagged"}.`);
+    } else {
+      toast.error(`${completed} listing${completed === 1 ? "" : "s"} updated; ${failed} couldn't be ${action === "approve" ? "approved" : action === "reject" ? "rejected" : "flagged"}. Refresh and review the remaining items.`);
+    }
     setSelected(new Set());
-    qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
+    void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
+    void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
   };
 
   // User inspector drawer
@@ -493,6 +514,10 @@ function Admin() {
     const label = score >= 85 ? "Excellent" : score >= 70 ? "Good" : score >= 50 ? "Needs attention" : "Critical";
     return { score, label };
   }, [dash]);
+
+  if (!loading && !isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950/20 dark:bg-slate-950/40 text-foreground">
@@ -826,7 +851,7 @@ function Admin() {
                             className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
                             onClick={async () => {
                               const { error } = await rpcUntyped("admin_approve_artisan", { _user_id: artisan.user_id });
-                              if (error) return toast.error(error.message);
+                              if (error) return showError(error, "We couldn't approve this artisan. Please try again.");
                               toast.success("Artisan approved");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
                               void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
@@ -841,7 +866,7 @@ function Admin() {
                                 _user_id: artisan.user_id,
                                 _reason: reason,
                               });
-                              if (error) { toast.error(error.message); return; }
+                              if (error) { showError(error, "We couldn't update this artisan. Please try again."); return; }
                               toast.success("Artisan sent back for changes");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
                             }}
@@ -852,9 +877,15 @@ function Admin() {
                             variant="destructive"
                             className="h-8"
                             onClick={async () => {
-                              if (!confirm(`Flag ${artisan.full_name ?? "this artisan"}?`)) return;
+                              const confirmed = await confirm({
+                                title: "Flag this artisan?",
+                                description: `${artisan.full_name ?? "This artisan"} will be flagged for review.`,
+                                confirmLabel: "Flag artisan",
+                                destructive: true,
+                              });
+                              if (!confirmed) return;
                               const { error } = await rpcUntyped("admin_flag_artisan", { _user_id: artisan.user_id });
-                              if (error) return toast.error(error.message);
+                              if (error) return showError(error, "We couldn't flag this artisan. Please try again.");
                               toast.success("Artisan flagged");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
                             }}
@@ -1337,13 +1368,20 @@ function RiskCell({ score, reasons }: { score: number; reasons: string[] }) {
 }
 
 function ReportActions({ report, onDone }: { report: { id: string; entity_type: string; status: string }; onDone: () => void }) {
+  const confirm = useConfirmAction();
   const [open, setOpen] = useState(false);
   const [action, setAction] = useState<string>("dismiss");
   const [note, setNote] = useState("");
   const resolve = async () => {
-    if (!confirm(`Apply "${action}" to this report?`)) return;
+    const confirmed = await confirm({
+      title: "Resolve this report?",
+      description: `The action “${action}” will be applied to this ${report.entity_type} report.`,
+      confirmLabel: "Resolve report",
+      destructive: action !== "dismiss",
+    });
+    if (!confirmed) return;
     const { error } = await supabase.rpc("admin_resolve_report", { _report_id: report.id, _action: action, _note: note || undefined });
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't resolve this report. Please try again.");
     toast.success("Report resolved");
     setOpen(false);
     onDone();
@@ -1379,6 +1417,7 @@ function ReportActions({ report, onDone }: { report: { id: string; entity_type: 
 }
 
 function BroadcastPanel() {
+  const confirm = useConfirmAction();
   const [audience, setAudience] = useState("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -1386,11 +1425,16 @@ function BroadcastPanel() {
   const [sending, setSending] = useState(false);
   const send = async () => {
     if (title.length < 2 || body.length < 2) return toast.error("Title and body required");
-    if (!confirm(`Send broadcast to "${audience}" audience?`)) return;
+    const confirmed = await confirm({
+      title: "Send this announcement?",
+      description: `This announcement will be sent to the ${audience} audience.`,
+      confirmLabel: "Send announcement",
+    });
+    if (!confirmed) return;
     setSending(true);
     const { data, error } = await supabase.rpc("admin_broadcast", { _audience: audience, _title: title, _body: body, _link: link || undefined });
     setSending(false);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't send the announcement. Please try again.");
     toast.success(`Sent broadcast to ${data} users`);
     setTitle(""); setBody(""); setLink("");
   };
@@ -1461,6 +1505,7 @@ function PlatformSettings({
   onLaunchChanged: () => void;
   onSaved: () => void;
 }) {
+  const confirm = useConfirmAction();
   const [s, setS] = useState({
     maintenance_mode: initial?.maintenance_mode ?? false,
     disable_registration: initial?.disable_registration ?? false,
@@ -1487,7 +1532,12 @@ function PlatformSettings({
   }, [initial]);
 
   const save = async () => {
-    if (!confirm("Apply platform settings now?")) return;
+    const confirmed = await confirm({
+      title: "Apply platform settings?",
+      description: "These changes will take effect across Tile immediately.",
+      confirmLabel: "Apply settings",
+    });
+    if (!confirmed) return;
 
     const { error } = await supabase.rpc("admin_update_platform_settings", {
       _maintenance: s.maintenance_mode,
@@ -1499,7 +1549,7 @@ function PlatformSettings({
       _banner: s.emergency_banner,
     });
 
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't update the platform settings. Please try again.");
 
     toast.success("Platform settings updated");
     onSaved();
@@ -1509,17 +1559,18 @@ function PlatformSettings({
     if (initial?.launch_mode === "launched") return;
 
     const approvedCount = prelaunchListingCount;
-    if (!confirm(
-      `Launch Tile Marketplace now?\n\nThis will make ${approvedCount} approved pre-launch listing${approvedCount === 1 ? "" : "s"} publicly visible.\n\nThis action cannot be undone automatically.`,
-    )) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Launch Tile Marketplace?",
+      description: `This will make ${approvedCount} approved pre-launch listing${approvedCount === 1 ? "" : "s"} publicly visible. This action cannot be undone automatically.`,
+      confirmLabel: "Launch marketplace",
+    });
+    if (!confirmed) return;
 
     setLaunching(true);
     const { error } = await rpcUntyped("admin_set_launch_mode", { _launch_mode: "launched" });
     setLaunching(false);
 
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't launch the marketplace. Please try again.");
 
     toast.success("Tile Marketplace has been launched!");
     onLaunchChanged();
@@ -1733,7 +1784,7 @@ function RolesPanel() {
     setBusy(userId + role);
     const { error } = await supabase.rpc("admin_set_user_role", { _user_id: userId, _role: role, _grant: grant });
     setBusy(null);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "We couldn't update this user's role. Please try again.");
     toast.success(grant ? `${role} role granted` : `${role} role removed`);
     qc.invalidateQueries({ queryKey: ["admin-staff"] });
     qc.invalidateQueries({ queryKey: ["admin-user-search"] });

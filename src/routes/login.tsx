@@ -63,7 +63,7 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password });
     setBusy(false);
     if (error) {
-      toast.error(friendlyAuthError(error.message));
+      toast.error(friendlyAuthError(error.message, "We couldn't sign you in. Please check your details and try again."));
       return;
     }
     toast.success("Welcome back to Tile");

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Trash2, Plus, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { showError } from "@/lib/user-feedback";
 
 export const Route = createFileRoute("/artisan/edit")({
     component: EditArtisanProfilePage,
@@ -166,7 +167,7 @@ function EditArtisanProfilePage() {
             toast.success("Profile updated successfully.");
         } catch (err: any) {
             console.error(err);
-            toast.error(err.message || "Could not update profile.");
+            showError(err, "We couldn't update your artisan profile. Please try again.");
         } finally {
             setSaving(false);
         }

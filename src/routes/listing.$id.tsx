@@ -11,6 +11,7 @@ import { getSignedUrls } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { showError } from "@/lib/user-feedback";
 import { Store, ShieldCheck } from "lucide-react";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 
@@ -283,7 +284,7 @@ function ChatWithVendorButton({ listingId, sellerId }: { listingId: string; sell
 
   if (error || !data) {
     setBusy(false);
-    return toast.error(error?.message ?? "Could not open chat");
+    return showError(error, "We couldn't open this conversation. Please try again.");
   }
 
   // ✅ Record chat analytics

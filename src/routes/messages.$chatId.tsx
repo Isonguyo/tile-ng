@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { ArrowLeft, Send, Check, CheckCheck, ImageIcon, Sparkles, Pin } from "lucide-react";
 import { getSignedUrl } from "@/lib/storage";
 import { toast } from "sonner";
+import { showError } from "@/lib/user-feedback";
 import { usePlan, hasCapability } from "@/hooks/use-plan";
 
 export const Route = createFileRoute("/messages/$chatId")({
@@ -146,7 +147,7 @@ function ChatPage() {
     setSending(true);
     const { error } = await supabase.from("messages").insert({ chat_id: chatId, sender_id: user.id, content: body });
     setSending(false);
-    if (error) return toast.error(error.message);
+    if (error) return showError(error, "Your message couldn't be sent. Please try again.");
     setText("");
   };
 
