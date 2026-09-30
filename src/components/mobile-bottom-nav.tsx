@@ -10,6 +10,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 import {
   Sheet,
@@ -49,9 +50,12 @@ function NavItem({
 }
 
 export function MobileBottomNav() {
+  const { user } = useAuth();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  const inboxDestination = user ? "/messages" : "/login";
+  const profileDestination = user ? "/dashboard" : "/login";
 
   return (
     <>
@@ -157,7 +161,7 @@ export function MobileBottomNav() {
 
           {/* Inbox */}
           <NavItem
-            to="/messages"
+            to={inboxDestination}
             label="Inbox"
             active={pathname.startsWith("/messages")}
             icon={<MessageCircle className="h-5 w-5 shrink-0" />}
@@ -165,7 +169,7 @@ export function MobileBottomNav() {
 
           {/* Profile */}
           <NavItem
-            to="/dashboard"
+            to={profileDestination}
             label="Profile"
             active={
               pathname.startsWith("/profile") ||
