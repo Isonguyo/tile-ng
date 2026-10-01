@@ -1,6 +1,6 @@
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import { usePlan, hasCapability } from "@/hooks/use-plan";
 import { MerchantHealthCard, QuotaBar } from "@/components/merchant-health";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadListingImages } from "@/lib/storage";
+import { optimizeListingImage } from "@/lib/listing-image";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
 import {
@@ -33,6 +34,7 @@ import {
   ArrowUp,
   ArrowDown,
   BadgeCheck,
+  Loader2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/post-ad")({
@@ -62,8 +64,10 @@ const schema = z.object({
 type FormVals = z.infer<typeof schema>;
 
 type Mode = "home" | "sell";
+type ListingPhoto = { id: string; file: File; previewUrl: string };
 
 const DRAFT_KEY = "tile-post-ad-draft";
+const MAX_PHOTO_SIZE = 30 * 1024 * 1024;
 const CATEGORY_META: Record<string, { icon: string; subtitle: string }> = {
   phones: { icon: "📱", subtitle: "Electronics, mobile and accessories" },
   fashion: { icon: "👗", subtitle: "Style, wearables and beauty" },
@@ -79,8 +83,10 @@ function PostAd() {
 
   const [mode, setMode] = useState<Mode>("home");
   const [step, setStep] = useState(1);
-  const [files, setFiles] = useState<File[]>([]);
-  const [coverIndex, setCoverIndex] = useState<number | null>(null);
+  const [photos, setPhotos] = useState<ListingPhoto[]>([]);
+  const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
+  const [isPreparingPhotos, setIsPreparingPhotos] = useState(false);
+  const [photoPreparation, setPhotoPreparation] = useState<{ completed: number; total: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittingStage, setSubmittingStage] = useState("Preparing your listing");
   const [submitted, setSubmitted] = useState(false);
@@ -92,6 +98,13 @@ function PostAd() {
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const ownedPreviewUrls = useRef(new Set<string>());
+  const isPreparingPhotosRef = useRef(false);
+
+  useEffect(() => () => {
+    ownedPreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    ownedPreviewUrls.current.clear();
+  }, []);
 
   const form = useForm<FormVals>({
     resolver: zodResolver(schema),
@@ -146,10 +159,10 @@ function PostAd() {
     if (watch.price) score += 15;
     if (watch.brand) score += 10;
     if (watch.condition) score += 10;
-    if (files.length >= 2) score += 10;
-    if (files.length >= 4) score += 10;
+    if (photos.length >= 2) score += 10;
+    if (photos.length >= 4) score += 10;
     return Math.min(score, 100);
-  }, [files.length, watch.brand, watch.condition, watch.description, watch.price, watch.title]);
+  }, [photos.length, watch.brand, watch.condition, watch.description, watch.price, watch.title]);
 
   useEffect(() => {
     if (!user) return;
@@ -205,16 +218,74 @@ function PostAd() {
     if (step > 1) setStep((s) => s - 1);
   };
 
-  const addFiles = (incoming: FileList | File[]) => {
+  const addPhotos = async (incoming: FileList | File[]) => {
+    if (isPreparingPhotosRef.current || submitting) return;
+
     const selected = Array.from(incoming);
-    const filtered = selected.filter((file) => file.type.startsWith("image/"));
-    if (!filtered.length) return;
-    setFiles((prev) => [...prev, ...filtered].slice(0, 8));
-    if (coverIndex === null) setCoverIndex(0);
+    const imageFiles = selected.filter((file) => file.type.startsWith("image/"));
+    if (!imageFiles.length) {
+      toast.error("Choose one or more image files to add photos.");
+      return;
+    }
+    if (imageFiles.length < selected.length) {
+      toast.error("Some files weren't images and were skipped.");
+    }
+    const supportedFiles = imageFiles.filter((file) =>
+      ["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type) ||
+      /\.(jpe?g|png|webp|avif)$/i.test(file.name),
+    );
+    if (supportedFiles.length < imageFiles.length) {
+      toast.error("Export Photoshop or RAW photos as JPG, PNG, WebP, or AVIF before adding them.");
+    }
+    if (!supportedFiles.length) return;
+
+    const remaining = Math.max(0, 8 - photos.length);
+    if (!remaining) {
+      toast.error("You can add up to 8 photos to a listing.");
+      return;
+    }
+    if (supportedFiles.length > remaining) {
+      toast.error(`You can add ${remaining} more photo${remaining === 1 ? "" : "s"}.`);
+    }
+
+    const candidates = supportedFiles.slice(0, remaining);
+    const manageableFiles = candidates.filter((file) => file.size <= MAX_PHOTO_SIZE);
+    if (manageableFiles.length < candidates.length) {
+      toast.error("Photos must be 30 MB or smaller. Export or resize the larger files, then try again.");
+    }
+    if (!manageableFiles.length) return;
+
+    isPreparingPhotosRef.current = true;
+    setIsPreparingPhotos(true);
+    setPhotoPreparation({ completed: 0, total: manageableFiles.length });
+    const prepared: ListingPhoto[] = [];
+
+    try {
+      for (const [index, file] of manageableFiles.entries()) {
+        const optimizedFile = await optimizeListingImage(file);
+        const previewUrl = URL.createObjectURL(optimizedFile);
+        ownedPreviewUrls.current.add(previewUrl);
+        prepared.push({ id: crypto.randomUUID(), file: optimizedFile, previewUrl });
+        setPhotoPreparation({ completed: index + 1, total: manageableFiles.length });
+      }
+
+      setPhotos((current) => [...current, ...prepared].slice(0, 8));
+      setCoverPhotoId((current) => current ?? prepared[0]?.id ?? null);
+    } catch {
+      prepared.forEach(({ previewUrl }) => {
+        URL.revokeObjectURL(previewUrl);
+        ownedPreviewUrls.current.delete(previewUrl);
+      });
+      toast.error("We couldn't prepare one of those photos. Try a JPG, PNG, or WebP image.");
+    } finally {
+      isPreparingPhotosRef.current = false;
+      setIsPreparingPhotos(false);
+      setPhotoPreparation(null);
+    }
   };
 
-  const moveFile = (from: number, direction: -1 | 1) => {
-    setFiles((prev) => {
+  const movePhoto = (from: number, direction: -1 | 1) => {
+    setPhotos((prev) => {
       const next = [...prev];
       const target = from + direction;
       if (target < 0 || target >= next.length) return prev;
@@ -222,6 +293,18 @@ function PostAd() {
       next.splice(target, 0, item);
       return next;
     });
+  };
+
+  const removePhoto = (photoId: string) => {
+    const photo = photos.find((item) => item.id === photoId);
+    if (photo) {
+      URL.revokeObjectURL(photo.previewUrl);
+      ownedPreviewUrls.current.delete(photo.previewUrl);
+    }
+    setPhotos((current) => current.filter((item) => item.id !== photoId));
+    if (coverPhotoId === photoId) {
+      setCoverPhotoId(photos.find((item) => item.id !== photoId)?.id ?? null);
+    }
   };
 
   const handleDetectLocation = async () => {
@@ -303,6 +386,10 @@ function PostAd() {
 
   const onSubmit = async (vals: FormVals) => {
     if (!user) return;
+    if (isPreparingPhotosRef.current) {
+      toast.error("Please wait while your photos are being prepared.");
+      return;
+    }
 
     if (postingDisabled) {
       toast.error("Posting is temporarily disabled by Tile.");
@@ -321,7 +408,17 @@ function PostAd() {
 
       setSubmittingStage("Uploading photos");
       let imagePaths: string[] = [];
-      if (files.length) imagePaths = await uploadListingImages(user.id, files);
+      if (photos.length) {
+        const coverIndex = photos.findIndex((photo) => photo.id === coverPhotoId);
+        const orderedPhotos = coverIndex > 0
+          ? [photos[coverIndex], ...photos.filter((_, index) => index !== coverIndex)]
+          : photos;
+        imagePaths = await uploadListingImages(
+          user.id,
+          orderedPhotos.map((photo) => photo.file),
+          (uploaded, total) => setSubmittingStage(`Uploading photo ${uploaded} of ${total}`),
+        );
+      }
 
       const selectedState = states.find((s) => s.id === vals.state_id);
       const selectedLga = lgas.find((l) => l.id === vals.lga_id);
@@ -693,33 +790,68 @@ function PostAd() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label>Photos</Label>
-                        <span className="text-sm text-muted-foreground">{files.length}/8 images</span>
+                        <span className="text-sm text-muted-foreground">{photos.length}/8 images</span>
                       </div>
-                      <div className={`rounded-2xl border-2 border-dashed p-6 text-center transition-all ${dragActive ? "border-accent bg-accent/10" : "border-border"}`} onDragOver={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={(e) => { e.preventDefault(); setDragActive(false); addFiles(e.dataTransfer.files); }}>
-                        <input id="listing-images" type="file" multiple accept="image/*" className="hidden" onChange={(e) => { if (e.target.files) addFiles(e.target.files); }} />
-                        <label htmlFor="listing-images" className="flex cursor-pointer flex-col items-center gap-3">
-                          <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                      <div
+                        className={`rounded-2xl border-2 border-dashed p-5 text-center transition-all sm:p-6 ${dragActive ? "border-accent bg-accent/10" : "border-border"} ${isPreparingPhotos || submitting ? "opacity-70" : ""}`}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          if (!isPreparingPhotos && !submitting) setDragActive(true);
+                        }}
+                        onDragLeave={() => setDragActive(false)}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          setDragActive(false);
+                          if (!isPreparingPhotos && !submitting) void addPhotos(event.dataTransfer.files);
+                        }}
+                      >
+                        <input
+                          id="listing-images"
+                          type="file"
+                          multiple
+                          accept="image/jpeg,image/png,image/webp,image/avif"
+                          className="hidden"
+                          disabled={isPreparingPhotos || submitting}
+                          onChange={(event) => {
+                            if (event.target.files) void addPhotos(Array.from(event.target.files));
+                            event.target.value = "";
+                          }}
+                        />
+                        <label
+                          htmlFor="listing-images"
+                          aria-disabled={isPreparingPhotos || submitting}
+                          className={`flex flex-col items-center gap-3 ${isPreparingPhotos || submitting ? "cursor-not-allowed" : "cursor-pointer"}`}
+                        >
+                          {isPreparingPhotos
+                            ? <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                            : <ImagePlus className="h-8 w-8 text-muted-foreground" />}
                           <div>
-                            <p className="font-semibold">Drag photos here or browse</p>
-                            <p className="text-sm text-muted-foreground">Use clear images to improve trust and buyer interest.</p>
+                            <p className="font-semibold">
+                              {isPreparingPhotos ? "Optimizing your photos…" : "Drag photos here or browse"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {isPreparingPhotos && photoPreparation
+                                ? `Preparing photo ${photoPreparation.completed} of ${photoPreparation.total}`
+                                : "Photos are resized for faster uploads and smoother browsing on mobile."}
+                            </p>
                           </div>
                         </label>
                       </div>
-                      {files.length > 0 && (
-                        <div className="grid gap-3 md:grid-cols-2">
-                          {files.map((file, index) => (
-                            <div key={`${file.name}-${index}`} className="rounded-2xl border p-3">
-                              <div className="relative overflow-hidden rounded-xl border aspect-square bg-muted">
-                                <img src={URL.createObjectURL(file)} alt="" className="h-full w-full object-cover" />
-                                {coverIndex === index && <div className="absolute left-2 top-2 rounded-full bg-accent px-2 py-1 text-[10px] font-semibold text-accent-foreground">Cover</div>}
+                      {photos.length > 0 && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {photos.map((photo, index) => (
+                            <div key={photo.id} className="min-w-0 rounded-2xl border p-2.5 sm:p-3">
+                              <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-muted">
+                                <img src={photo.previewUrl} alt="" decoding="async" loading="lazy" className="h-full w-full object-cover" />
+                                {coverPhotoId === photo.id && <div className="absolute left-2 top-2 rounded-full bg-accent px-2 py-1 text-[10px] font-semibold text-accent-foreground">Cover photo</div>}
                               </div>
                               <div className="mt-2 flex items-center justify-between gap-2">
-                                <p className="truncate text-sm font-medium">{file.name}</p>
-                                <div className="flex gap-1">
-                                  <Button type="button" size="sm" variant="outline" onClick={() => moveFile(index, -1)}><ArrowUp className="h-3 w-3" /></Button>
-                                  <Button type="button" size="sm" variant="outline" onClick={() => moveFile(index, 1)}><ArrowDown className="h-3 w-3" /></Button>
-                                  <Button type="button" size="sm" variant="outline" onClick={() => setCoverIndex(index)}>Cover</Button>
-                                  <Button type="button" size="sm" variant="outline" onClick={() => setFiles((prev) => prev.filter((_, i) => i !== index))}><X className="h-3 w-3" /></Button>
+                                <p className="min-w-0 truncate text-xs font-medium text-muted-foreground" title={photo.file.name}>{photo.file.name}</p>
+                                <div className="flex shrink-0 gap-1">
+                                  <Button type="button" size="icon" variant="outline" className="h-8 w-8" aria-label={`Move ${photo.file.name} earlier`} disabled={index === 0 || isPreparingPhotos || submitting} onClick={() => movePhoto(index, -1)}><ArrowUp className="h-3 w-3" /></Button>
+                                  <Button type="button" size="icon" variant="outline" className="h-8 w-8" aria-label={`Move ${photo.file.name} later`} disabled={index === photos.length - 1 || isPreparingPhotos || submitting} onClick={() => movePhoto(index, 1)}><ArrowDown className="h-3 w-3" /></Button>
+                                  <Button type="button" size="sm" variant={coverPhotoId === photo.id ? "secondary" : "outline"} className="h-8 px-2 text-xs" disabled={isPreparingPhotos || submitting} onClick={() => setCoverPhotoId(photo.id)}>{coverPhotoId === photo.id ? "Cover" : "Set cover"}</Button>
+                                  <Button type="button" size="icon" variant="outline" className="h-8 w-8" aria-label={`Remove ${photo.file.name}`} disabled={isPreparingPhotos || submitting} onClick={() => removePhoto(photo.id)}><X className="h-3 w-3" /></Button>
                                 </div>
                               </div>
                             </div>
@@ -735,7 +867,7 @@ function PostAd() {
 
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-                      <Button type="button" onClick={nextStep}>Preview <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                      <Button type="button" onClick={nextStep} disabled={isPreparingPhotos || submitting}>Preview <ChevronRight className="ml-2 h-4 w-4" /></Button>
                     </div>
                   </>
                 )}
@@ -769,7 +901,7 @@ function PostAd() {
                     </div>
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-                      <Button type="submit" disabled={submitting || postingDisabled} className="bg-accent text-accent-foreground">
+                      <Button type="submit" disabled={submitting || postingDisabled || isPreparingPhotos} className="bg-accent text-accent-foreground">
                         <Check className="mr-2 h-4 w-4" />
                         {submitting
                           ? submittingStage

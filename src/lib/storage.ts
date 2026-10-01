@@ -1,13 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export async function uploadListingImages(userId: string, files: File[]): Promise<string[]> {
+export async function uploadListingImages(
+  userId: string,
+  files: File[],
+  onProgress?: (uploaded: number, total: number) => void,
+): Promise<string[]> {
   const paths: string[] = [];
-  for (const file of files) {
+  for (const [index, file] of files.entries()) {
     const ext = file.name.split(".").pop() ?? "jpg";
     const path = `${userId}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from("listings").upload(path, file, { upsert: false });
     if (error) throw error;
     paths.push(path);
+    onProgress?.(index + 1, files.length);
   }
   return paths;
 }

@@ -130,45 +130,45 @@ function ListingDetail() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="container mx-auto px-4 py-6 grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
+      <div className="container mx-auto grid w-full max-w-6xl min-w-0 grid-cols-1 gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <main className="min-w-0 space-y-4">
           {/* Gallery */}
           <Card className="overflow-hidden p-0 relative">
-            <div className="relative aspect-video bg-muted">
+            <div className="relative aspect-[4/3] bg-muted sm:aspect-video">
               {imgUrls.length ? (
-                <img src={imgUrls[imgIdx]} alt={listing.title} className="w-full h-full object-cover" />
+                <img src={imgUrls[imgIdx]} alt={listing.title} decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
               ) : (
                 <div className="w-full h-full grid place-items-center text-muted-foreground">No images</div>
               )}
               {imgUrls.length > 1 && (
                 <>
-                  <button onClick={() => setImgIdx((i) => Math.max(0, i - 1))} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white rounded-full p-2"><ChevronLeft /></button>
-                  <button onClick={() => setImgIdx((i) => Math.min(imgUrls.length - 1, i + 1))} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white rounded-full p-2"><ChevronRight /></button>
+                  <button type="button" aria-label="Previous photo" onClick={() => setImgIdx((i) => Math.max(0, i - 1))} className="absolute left-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur-sm"><ChevronLeft className="h-5 w-5" /></button>
+                  <button type="button" aria-label="Next photo" onClick={() => setImgIdx((i) => Math.min(imgUrls.length - 1, i + 1))} className="absolute right-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur-sm"><ChevronRight className="h-5 w-5" /></button>
                 </>
               )}
             </div>
             {imgUrls.length > 1 && (
-              <div className="flex gap-2 p-2 overflow-x-auto">
+              <div className="flex min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto p-2">
                 {imgUrls.map((u, i) => (
-                  <button key={i} onClick={() => setImgIdx(i)} className={`h-16 w-16 shrink-0 rounded border-2 ${i === imgIdx ? "border-accent" : "border-transparent"}`}>
-                    <img src={u} alt="" className="w-full h-full object-cover rounded" />
+                  <button key={i} type="button" aria-label={`Show photo ${i + 1}`} onClick={() => setImgIdx(i)} className={`h-14 w-14 shrink-0 snap-start rounded-lg border-2 sm:h-16 sm:w-16 ${i === imgIdx ? "border-accent" : "border-transparent"}`}>
+                    <img src={u} alt="" loading="lazy" decoding="async" className="h-full w-full rounded-md object-cover" />
                   </button>
                 ))}
               </div>
             )}
           </Card>
 
-          <Card className="p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
+          <Card className="min-w-0 p-4 sm:p-6">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="min-w-0">
                 <Badge className="bg-primary text-primary-foreground capitalize mb-2">{listing.type}</Badge>
-                <h1 className="text-2xl font-bold">{listing.title}</h1>
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="h-4 w-4" />{listing.location}</p>
+                <h1 className="break-words text-xl font-bold sm:text-2xl">{listing.title}</h1>
+                <p className="mt-1 flex min-w-0 items-start gap-1 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span className="min-w-0 break-words">{listing.location}</span></p>
               </div>
-              <p className="text-3xl font-extrabold text-accent">{formatNaira(listing.price)}</p>
+              <p className="shrink-0 text-2xl font-extrabold text-accent sm:text-3xl">{formatNaira(listing.price)}</p>
             </div>
-            <p className="mt-4 whitespace-pre-wrap text-foreground/90">{listing.description}</p>
-            <div className="grid grid-cols-2 gap-3 mt-5 text-sm">
+            <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-foreground/90 sm:text-base">{listing.description}</p>
+            <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
               {listing.type === "goods" ? (
                 <>
                   <Spec label="Brand" value={listing.brand} />
@@ -184,32 +184,32 @@ function ListingDetail() {
           </Card>
 
           {/* Milestone reviews */}
-          <Card className="p-5">
-            <h2 className="text-lg font-semibold mb-3">Milestone reviews</h2>
+          <Card className="min-w-0 p-4 sm:p-5">
+            <h2 className="mb-3 text-lg font-semibold">Milestone reviews</h2>
             {avg ? (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:gap-3">
                 <Metric label="Communication" value={avg.comm} />
                 <Metric label="Timeliness" value={avg.time} />
                 <Metric label="Work quality" value={avg.qual} />
               </div>
             ) : <p className="text-muted-foreground text-sm">No reviews yet.</p>}
           </Card>
-        </div>
+        </main>
 
         {/* Sticky sidebar */}
-        <aside className="lg:sticky lg:top-24 h-fit space-y-3">
-          <Card className="p-5 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold">
+        <aside className="h-fit min-w-0 space-y-3 lg:sticky lg:top-24">
+          <Card className="space-y-3 p-4 sm:p-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary font-bold text-primary-foreground">
                 {(listing.profile?.full_name ?? "U")[0]}
               </div>
-              <div>
-                <p className="font-semibold flex items-center gap-1">
-                  {listing.profile?.full_name ?? "Vendor"}
-                  {listing.profile?.is_verified && <Badge className="bg-accent text-accent-foreground ml-1">Verified</Badge>}
+              <div className="min-w-0">
+                <p className="flex min-w-0 flex-wrap items-center gap-1 font-semibold">
+                  <span className="break-words">{listing.profile?.full_name ?? "Vendor"}</span>
+                  {listing.profile?.is_verified && <Badge className="bg-accent text-accent-foreground">Verified</Badge>}
                 </p>
                 {typeof listing.trust_score === "number" && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                     <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Trust score <span className="font-semibold text-foreground">{listing.trust_score}/100</span>
                   </p>
                 )}
@@ -225,8 +225,8 @@ function ListingDetail() {
                     p_event_type: "phone",
                   });
                 }
-              }} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              <Phone className="h-4 w-4 mr-2" />{showPhone ? listing.phone : "Reveal phone number"}
+              }} className="min-h-11 w-full whitespace-normal break-all bg-accent text-accent-foreground hover:bg-accent/90">
+              <Phone className="mr-2 h-4 w-4 shrink-0" />{showPhone ? listing.phone || "Phone unavailable" : "Reveal phone number"}
             </Button>
             {listing.profile?.shop_slug && (
               <Button asChild variant="outline" className="w-full">
@@ -252,9 +252,9 @@ function Spec({ label, value }: { label: string; value: string | null | undefine
 }
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="text-center p-3 rounded-lg bg-muted">
-      <p className="text-xs text-muted-foreground uppercase">{label}</p>
-      <p className="text-2xl font-bold text-accent flex items-center justify-center gap-1"><Star className="h-4 w-4 fill-current" />{value.toFixed(1)}</p>
+    <div className="min-w-0 rounded-lg bg-muted p-3 text-center">
+      <p className="break-words text-[10px] uppercase text-muted-foreground sm:text-xs">{label}</p>
+      <p className="mt-1 flex items-center justify-center gap-1 text-2xl font-bold text-accent"><Star className="h-4 w-4 fill-current" />{value.toFixed(1)}</p>
     </div>
   );
 }
