@@ -325,7 +325,7 @@ function ArtisanCreatePage() {
           is_available: values.is_available,
           is_artisan: true,
           is_prelaunch: isPrelaunch,
-          artisan_status: isPrelaunch ? "pending" : "approved",
+          artisan_status: "pending",
           starting_price: values.starting_price || null,
           offers_home_service: values.offers_home_service,
           offers_emergency_service: values.offers_emergency_service,
@@ -351,10 +351,8 @@ function ArtisanCreatePage() {
 
       toast.success(
         isPrelaunch
-          ? "Profile submitted for Admin review. It will remain private until Tile launches."
-          : existingArtisan?.is_artisan
-            ? "Artisan profile updated successfully."
-            : "Your artisan profile is now available on Tile."
+          ? "Your artisan profile has been submitted for review and will remain private until approved and the marketplace launches."
+          : "Your artisan profile has been submitted for review and will remain private until it is approved."
       );
       navigate({ to: "/dashboard" });
     } catch (err: any) {
@@ -391,7 +389,7 @@ function ArtisanCreatePage() {
           <div className="mb-5 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4 sm:p-5">
             <p className="font-semibold text-emerald-200">Tile is currently in pre-launch.</p>
             <p className="mt-1 text-sm leading-6 text-slate-400">
-              You can complete your artisan profile now. It will be reviewed by Admin and remain private until the marketplace launches.
+              You can complete your artisan profile now. It will stay private until it is approved and the marketplace launches.
             </p>
           </div>
         )}
@@ -835,8 +833,8 @@ function ArtisanCreatePage() {
                   <h2 className="text-2xl font-bold text-white">Preview your profile</h2>
                   <p className="mt-1 text-sm leading-6 text-slate-400">
                     {isPrelaunch
-                      ? "Review the information you are submitting to Admin. Your profile will remain private until launch."
-                      : "Review your professional profile before publishing it publicly."}
+                      ? "Review the information you are submitting to Admin. Your profile will remain private until it is approved and the marketplace launches."
+                      : "Review the information you are submitting. Your profile will remain private until it is approved."}
                   </p>
                 </div>
 
@@ -932,9 +930,7 @@ function ArtisanCreatePage() {
                   <Button type="submit" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" disabled={submitting || postingDisabled}>
                     {submitting
                       ? "Submitting Profile..."
-                      : isPrelaunch
-                        ? "Submit Profile for Admin Review"
-                        : "Publish Profile Now"}
+                      : "Submit Profile for Admin Review"}
                   </Button>
                 </div>
               </div>

@@ -74,6 +74,17 @@ type WaitlistMatchRow = {
   queue_position?: number | null;
 };
 
+const PUBLIC_MARKETPLACE_QUERY_KEYS = [
+  ["listings"],
+  ["public-marketplace-catalog"],
+  ["platform-stats"],
+  ["featured-artisans"],
+  ["featured-shops"],
+  ["artisans-ranked"],
+  ["shop-listings"],
+  ["listing"],
+] as const;
+
 function normalizeLookupValue(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase();
 }
@@ -101,6 +112,11 @@ function Admin() {
   const { isAdmin, loading } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const invalidatePublicMarketplace = () => {
+    PUBLIC_MARKETPLACE_QUERY_KEYS.forEach((queryKey) => {
+      void qc.invalidateQueries({ queryKey });
+    });
+  };
 
   useEffect(() => {
     if (!loading && !isAdmin) nav({ to: "/" });
@@ -320,16 +336,20 @@ function Admin() {
     enabled: isAdmin,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await fromUntyped("listings")
-        .select("id,title,price,category,created_at,user_id,is_prelaunch,status")
-        .eq("status", "approved")
-        .eq("is_prelaunch", true)
-        .order("created_at", { ascending: false })
-        .limit(200);
-
+      const { data, error } = await rpcUntyped("admin_list_prelaunch_listings");
       if (error) throw error;
 
-      const rows = (data ?? []) as Array<{ id: string; title: string; price: number | null; category: string; created_at: string; user_id: string; status: string }>;
+      const rows = (data ?? []) as Array<{
+        id: string;
+        title: string;
+        price: number | null;
+        category: string;
+        created_at: string;
+        user_id: string;
+        seller_name?: string | null;
+        business_name?: string | null;
+        status?: string;
+      }>;
       const ids = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
       let profileMap = new Map<string, { full_name: string | null }>();
 
@@ -346,8 +366,30 @@ function Admin() {
 
       return rows.map((row) => ({
         ...row,
-        seller_name: profileMap.get(row.user_id)?.full_name ?? "Unknown seller",
+        seller_name: row.seller_name ?? row.business_name ?? profileMap.get(row.user_id)?.full_name ?? "Unknown seller",
       }));
+    },
+  });
+
+  const { data: prelaunchArtisans = [], isFetching: prelaunchArtisansFetching } = useQuery({
+    queryKey: ["admin-prelaunch-approved-artisans"],
+    enabled: isAdmin,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data, error } = await rpcUntyped("admin_list_prelaunch_artisans");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        user_id?: string | null;
+        full_name: string | null;
+        profession: string | null;
+        state?: string | null;
+        lga?: string | null;
+        location?: string | null;
+        artisan_status?: string | null;
+        is_prelaunch?: boolean | null;
+        created_at: string;
+      }>;
     },
   });
 
@@ -422,12 +464,12 @@ function Admin() {
   const approve = async (id: string) => {
     const { error } = await supabase.rpc("admin_approve_listing", { _id: id });
     if (error) return showError(error, "We couldn't approve that listing. Please try again.");
-    toast.success("Approved"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] }); void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
+    toast.success("Approved"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] }); void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] }); invalidatePublicMarketplace();
   };
   const reject = async (id: string, reason: string) => {
     const { error } = await supabase.rpc("admin_reject_listing", { _id: id, _reason: reason });
     if (error) return showError(error, "We couldn't reject that listing. Please try again.");
-    toast.success("Rejected"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+    toast.success("Rejected"); void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] }); void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] }); void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] }); invalidatePublicMarketplace();
   };
   const flag = async (id: string) => {
     const { error } = await supabase.rpc("admin_flag_seller", { _listing_id: id });
@@ -436,6 +478,7 @@ function Admin() {
     void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
     void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
     void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
+    invalidatePublicMarketplace();
   };
   const grantVerified = async (id: string) => {
     const { error } = await supabase
@@ -481,6 +524,8 @@ function Admin() {
     setSelected(new Set());
     void qc.invalidateQueries({ queryKey: ["admin-mod-queue"] });
     void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+    void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
+    invalidatePublicMarketplace();
   };
 
   // User inspector drawer
@@ -839,7 +884,9 @@ function Admin() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[10px] font-mono">{artisan.is_prelaunch ? "Private" : "Public"}</Badge>
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {artisan.artisan_status === "approved" && (!artisan.is_prelaunch || (platform as { launch_mode?: string } | null)?.launch_mode === "launched") ? "Public" : "Private"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-wrap justify-end gap-1.5">
@@ -854,7 +901,9 @@ function Admin() {
                               if (error) return showError(error, "We couldn't approve this artisan. Please try again.");
                               toast.success("Artisan approved");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
+                              void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-artisans"] });
                               void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+                              invalidatePublicMarketplace();
                             }}
                           >
                             <Check className="h-3.5 w-3.5 mr-1" />Approve
@@ -869,6 +918,8 @@ function Admin() {
                               if (error) { showError(error, "We couldn't update this artisan. Please try again."); return; }
                               toast.success("Artisan sent back for changes");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
+                              void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-artisans"] });
+                              invalidatePublicMarketplace();
                             }}
                           />
 
@@ -888,6 +939,8 @@ function Admin() {
                               if (error) return showError(error, "We couldn't flag this artisan. Please try again.");
                               toast.success("Artisan flagged");
                               void qc.invalidateQueries({ queryKey: ["admin-pending-artisans"] });
+                              void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-artisans"] });
+                              invalidatePublicMarketplace();
                             }}
                           >
                             <Flag className="h-3.5 w-3.5 mr-1" />Flag
@@ -1112,10 +1165,10 @@ function Admin() {
                 <div>
                   <div className="flex items-center gap-2">
                     <Rocket className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-base">Pre-launch Approved Listings</h3>
+                    <h3 className="font-bold text-base">Pre-Launch Content</h3>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    These listings are approved by moderation but hidden from the public marketplace until launch.
+                    Approved marketplace content remains private until launch.
                   </p>
                 </div>
                 <Badge variant="outline" className="w-fit text-xs font-bold font-mono">
@@ -1124,7 +1177,14 @@ function Admin() {
               </div>
             </Card>
 
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Card className="p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Listings</p><p className="mt-1 text-2xl font-black">{prelaunchFetching ? "…" : prelaunchListings.length}</p><p className="text-xs text-muted-foreground">Approved and waiting for launch</p></Card>
+              <Card className="p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Artisan Profiles</p><p className="mt-1 text-2xl font-black">{prelaunchArtisansFetching ? "…" : prelaunchArtisans.length}</p><p className="text-xs text-muted-foreground">Approved and waiting for launch</p></Card>
+              <Card className="border-primary/30 bg-primary/5 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Approved Content</p><p className="mt-1 text-2xl font-black">{prelaunchFetching || prelaunchArtisansFetching ? "…" : prelaunchListings.length + prelaunchArtisans.length}</p><p className="text-xs text-muted-foreground">Private until Marketplace Launch</p></Card>
+            </div>
+
             <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/40">
                   <TableRow>
@@ -1132,8 +1192,8 @@ function Admin() {
                     <TableHead>Seller</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Price</TableHead>
+                    <TableHead>Approval & Visibility</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Inspect</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1157,18 +1217,39 @@ function Admin() {
                       <TableCell className="text-sm">{listing.seller_name}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{listing.category}</TableCell>
                       <TableCell className="font-semibold">{formatNaira(listing.price)}</TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">{timeAgo(listing.created_at)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" asChild className="h-8">
-                          <a href={`/listing/${listing.id}`} target="_blank" rel="noreferrer">
-                            <Eye className="h-3.5 w-3.5 mr-1" /> Inspect
-                          </a>
-                        </Button>
-                      </TableCell>
+                      <TableCell><div className="flex flex-wrap gap-1.5"><Badge>Approved</Badge><Badge variant="outline">Private / Pre-Launch</Badge></div></TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(listing.created_at).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden border-border/50 p-0 shadow-sm">
+              <div className="flex flex-col gap-2 border-b border-border/50 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div><h3 className="font-bold">Approved Artisan Profiles Waiting for Launch</h3><p className="mt-1 text-xs text-muted-foreground">Approved profiles remain private until Marketplace Launch.</p></div>
+                <Badge variant="outline" className="w-fit">{prelaunchArtisansFetching ? "Loading…" : `${prelaunchArtisans.length} profiles`}</Badge>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40"><TableRow><TableHead>Artisan</TableHead><TableHead>Profession</TableHead><TableHead>Location</TableHead><TableHead>Approval Status</TableHead><TableHead>Visibility</TableHead><TableHead>Created</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {prelaunchArtisansFetching && prelaunchArtisans.length === 0 && <TableRow><TableCell colSpan={6} className="py-12 text-center text-muted-foreground">Loading approved artisan profiles…</TableCell></TableRow>}
+                    {!prelaunchArtisansFetching && prelaunchArtisans.length === 0 && <TableRow><TableCell colSpan={6} className="py-12 text-center text-muted-foreground">No approved artisan profiles are waiting for launch.</TableCell></TableRow>}
+                    {prelaunchArtisans.map((artisan) => (
+                      <TableRow key={artisan.id} className="hover:bg-muted/30">
+                        <TableCell className="font-semibold">{artisan.full_name ?? "Unnamed artisan"}</TableCell>
+                        <TableCell>{artisan.profession ?? "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{artisan.location || [artisan.lga, artisan.state].filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell><Badge className="capitalize">{(artisan.artisan_status ?? "approved").replaceAll("_", " ")}</Badge></TableCell>
+                        <TableCell><Badge variant="outline">Private / Pre-Launch</Badge></TableCell>
+                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{new Date(artisan.created_at).toLocaleDateString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </Card>
           </TabsContent>
 
@@ -1178,11 +1259,15 @@ function Admin() {
               initial={platform}
               prelaunchListingCount={prelaunchListings.length}
               prelaunchListingLoading={prelaunchFetching}
+              prelaunchArtisanCount={prelaunchArtisans.length}
+              prelaunchArtisanLoading={prelaunchArtisansFetching}
               onLaunchChanged={() => {
                 void qc.invalidateQueries({ queryKey: ["admin-platform-settings"] });
                 void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-listings"] });
+                void qc.invalidateQueries({ queryKey: ["admin-prelaunch-approved-artisans"] });
                 void qc.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
                 void qc.invalidateQueries({ queryKey: ["admin-stats"] });
+                invalidatePublicMarketplace();
               }}
               onSaved={() => void qc.invalidateQueries({ queryKey: ["admin-platform-settings"] })}
             />
@@ -1484,6 +1569,8 @@ function PlatformSettings({
   initial,
   prelaunchListingCount,
   prelaunchListingLoading,
+  prelaunchArtisanCount,
+  prelaunchArtisanLoading,
   onLaunchChanged,
   onSaved,
 }: {
@@ -1502,6 +1589,8 @@ function PlatformSettings({
     | undefined;
   prelaunchListingCount: number;
   prelaunchListingLoading: boolean;
+  prelaunchArtisanCount: number;
+  prelaunchArtisanLoading: boolean;
   onLaunchChanged: () => void;
   onSaved: () => void;
 }) {
@@ -1558,10 +1647,12 @@ function PlatformSettings({
   const launchMarketplace = async () => {
     if (initial?.launch_mode === "launched") return;
 
-    const approvedCount = prelaunchListingCount;
+    const approvedListingCount = prelaunchListingCount;
+    const approvedArtisanCount = prelaunchArtisanCount;
+    const approvedCount = approvedListingCount + approvedArtisanCount;
     const confirmed = await confirm({
       title: "Launch Tile Marketplace?",
-      description: `This will make ${approvedCount} approved pre-launch listing${approvedCount === 1 ? "" : "s"} publicly visible. This action cannot be undone automatically.`,
+      description: `This will publish ${approvedListingCount} approved listing${approvedListingCount === 1 ? "" : "s"} and ${approvedArtisanCount} approved artisan profile${approvedArtisanCount === 1 ? "" : "s"} (${approvedCount} pieces of approved content). This action cannot be undone automatically.`,
       confirmLabel: "Launch marketplace",
     });
     if (!confirmed) return;
@@ -1597,7 +1688,7 @@ function PlatformSettings({
               <h3 className="font-bold text-lg">Marketplace Launch Control</h3>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Approved waitlist listings remain private until launch is triggered.
+              Approved marketplace content remains private until launch.
             </p>
           </div>
 
@@ -1606,11 +1697,17 @@ function PlatformSettings({
           </Badge>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-border/60 bg-card/60 p-4 shadow-sm">
-            <p className="text-[10px] uppercase font-bold text-muted-foreground">Approved & Waiting</p>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground">Approved Listings</p>
             <p className="mt-1 text-2xl font-black">{prelaunchListingLoading ? "…" : prelaunchListingCount}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Approved pre-launch items ready for public feed.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Waiting for Marketplace Launch.</p>
+          </div>
+
+          <div className="rounded-xl border border-border/60 bg-card/60 p-4 shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground">Approved Artisan Profiles</p>
+            <p className="mt-1 text-2xl font-black">{prelaunchArtisanLoading ? "…" : prelaunchArtisanCount}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Waiting for Marketplace Launch.</p>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-card/60 p-4 shadow-sm">
@@ -1621,6 +1718,12 @@ function PlatformSettings({
             <p className="text-xs text-muted-foreground mt-0.5">Enforced at the database RPC layer.</p>
           </div>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          {prelaunchListingLoading || prelaunchArtisanLoading
+            ? "Loading approved content totals…"
+            : `${prelaunchListingCount + prelaunchArtisanCount} total approved items are waiting for launch.`}
+        </p>
 
         <div className="mt-5">
           {launched ? (

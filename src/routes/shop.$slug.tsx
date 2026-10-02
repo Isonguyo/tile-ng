@@ -91,10 +91,17 @@ function ShopPage() {
     queryKey: ["shop-listings", shop?.id],
     enabled: !!shop?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("listings")
-        .select("id,title,price,type,location,images,is_promoted,category,views_count,clicks_count")
-        .eq("user_id", shop!.id!).eq("status", "approved").order("is_promoted", { ascending: false });
-      return (data ?? []) as ShopListing[];
+      const { data, error } = await rpcUntyped("search_listings", {
+        _q: null,
+        _location: null,
+        _category: null,
+        _type: null,
+        _limit: 300,
+      });
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as Array<ShopListing & { user_id: string }>)
+        .filter((listing) => listing.user_id === shop!.id)
+        .sort((a, b) => Number(b.is_promoted) - Number(a.is_promoted));
     },
   });
 

@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyErrorMessage } from "@/lib/user-feedback";
+import { fromUntyped } from "@/lib/db-untyped";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 
 type ArtisanProfile = {
   id: string;
@@ -42,6 +44,8 @@ type ArtisanProfile = {
   subscription_tier: string;
   avg_rating: number;
   total_sales: number;
+  is_prelaunch?: boolean | null;
+  artisan_status?: string | null;
 };
 
 export const Route = createFileRoute("/artisans/$id")({
@@ -59,16 +63,26 @@ export const Route = createFileRoute("/artisans/$id")({
     };
   },
   loader: async ({ params }) => {
-    const { data, error } = await supabase
-      .from("profiles")
+    const [{ data, error }, { data: platformFlags, error: flagsError }, { data: authData }] = await Promise.all([
+      fromUntyped("profiles")
       .select(
-        "id, full_name, avatar_url, profile_photo, bio, profession, state, lga, years_experience, starting_price, portfolio_images, is_verified, is_artisan, subscription_tier, avg_rating, total_sales"
+        "id, full_name, avatar_url, profile_photo, bio, profession, state, lga, years_experience, starting_price, portfolio_images, is_verified, is_artisan, subscription_tier, avg_rating, total_sales, is_prelaunch, artisan_status"
       )
       .eq("id", params.id)
-      .maybeSingle();
+      .maybeSingle(),
+      rpcUntyped("get_public_platform_flags"),
+      supabase.auth.getUser(),
+    ]);
     if (error) throw error;
+    if (flagsError) throw new Error(flagsError.message);
     if (!data || !data.is_artisan) throw notFound();
-    return data as ArtisanProfile;
+    const artisan = data as ArtisanProfile;
+    const launchMode = (platformFlags as { launch_mode?: string } | null)?.launch_mode;
+    const isOwner = authData.user?.id === artisan.id;
+    const isApproved = artisan.artisan_status === "approved";
+    const isPublic = isApproved && (!artisan.is_prelaunch || launchMode === "launched");
+    if (!isOwner && !isPublic) throw notFound();
+    return artisan;
   },
   notFoundComponent: () => (
     <div className="min-h-screen bg-background">

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
 import { Store, ShieldCheck } from "lucide-react";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
+import { fromUntyped } from "@/lib/db-untyped";
 
 export const Route = createFileRoute("/listing/$id")({
   component: ListingDetail,
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/listing/$id")({
 
 function ListingDetail() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [imgIdx, setImgIdx] = useState(0);
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const [showPhone, setShowPhone] = useState(false);
@@ -29,16 +30,25 @@ function ListingDetail() {
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", id, !!user],
+    enabled: !authLoading,
     queryFn: async () => {
-      const cols = "id,user_id,type,title,description,category,location,price,images,status,is_promoted,condition,brand,years_experience,service_mode,created_at,updated_at";
-      const { data, error } = await supabase
-        .from("listings")
-        .select((user ? cols + ",phone" : cols) as "*")
+      const cols = "id,user_id,type,title,description,category,location,price,images,status,is_prelaunch,is_promoted,condition,brand,years_experience,service_mode,created_at,updated_at";
+      const { data, error } = await fromUntyped("listings")
+        .select(user ? `${cols},phone` : cols)
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
       const row = data as Record<string, unknown> & { user_id: string };
+
+      const { data: platformFlags, error: flagsError } = await rpcUntyped("get_public_platform_flags");
+      if (flagsError) throw new Error(flagsError.message);
+      const launchMode = (platformFlags as { launch_mode?: string } | null)?.launch_mode;
+      const isOwner = user?.id === row.user_id;
+      const isApproved = row.status === "approved";
+      const isStaged = row.is_prelaunch === true;
+      if (!isOwner && (!isApproved || (isStaged && launchMode !== "launched"))) return null;
+
       const { data: prof } = await supabase
         .from("public_profiles")
         .select("full_name, avatar_url, is_verified, shop_slug, subscription_tier")
@@ -116,7 +126,7 @@ function ListingDetail() {
   }
 };
 
-  if (isLoading) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container mx-auto py-12">Loading…</div></div>;
+  if (isLoading || authLoading) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container mx-auto py-12">Loading…</div></div>;
   if (!listing) return <div className="min-h-screen bg-background"><SiteHeader /><div className="container mx-auto py-12">Not found</div></div>;
 
   const avg = reviews.length

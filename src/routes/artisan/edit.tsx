@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Camera } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +13,8 @@ import { Trash2, Plus, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { fromUntyped } from "@/lib/db-untyped";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 
 export const Route = createFileRoute("/artisan/edit")({
     component: EditArtisanProfilePage,
@@ -19,6 +22,16 @@ export const Route = createFileRoute("/artisan/edit")({
 
 function EditArtisanProfilePage() {
     const { profile, loading: authLoading, refreshProfile } = useAuth();
+    const { data: platformSettings } = useQuery({
+        queryKey: ["artisan-edit-platform-settings"],
+        queryFn: async () => {
+            const { data, error } = await rpcUntyped("get_public_platform_flags");
+            if (error) throw new Error(error.message);
+            return data as { launch_mode?: "prelaunch" | "launched" } | null;
+        },
+        staleTime: 30_000,
+    });
+    const isPrelaunch = platformSettings?.launch_mode !== "launched";
 
     const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState("");
@@ -127,8 +140,7 @@ function EditArtisanProfilePage() {
             }
 
             // Update profile
-            const { error } = await supabase
-                .from("profiles")
+            const { error } = await fromUntyped("profiles")
                 .update({
                     full_name: form.full_name,
                     profession: form.profession,
@@ -138,6 +150,9 @@ function EditArtisanProfilePage() {
                     avatar_url: avatarUrl,
                     profile_photo: avatarUrl,
                     portfolio_images: portfolioUrls,
+                    is_artisan: true,
+                    is_prelaunch: isPrelaunch,
+                    artisan_status: "pending",
                 })
                 .eq("id", profile.id);
 
@@ -164,7 +179,11 @@ function EditArtisanProfilePage() {
             setDeletedPortfolio([]);
             await refreshProfile();
 
-            toast.success("Profile updated successfully.");
+            toast.success(
+                isPrelaunch
+                    ? "Your artisan profile has been submitted for review and will remain private until approved and the marketplace launches."
+                    : "Your artisan profile has been submitted for review and will remain private until it is approved."
+            );
         } catch (err: any) {
             console.error(err);
             showError(err, "We couldn't update your artisan profile. Please try again.");
@@ -408,7 +427,7 @@ function EditArtisanProfilePage() {
                     </div>
 
                     <div className="mt-8 flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-xs text-slate-500">Your changes update the information customers see on your public profile.</p>
+                        <p className="text-xs text-slate-500">{isPrelaunch ? "Your updated profile will remain private until approved and the marketplace launches." : "Your updated profile will remain private until it is approved."}</p>
                         <Button onClick={saveProfile} disabled={saving} className="h-11 rounded-xl bg-[#35d879] px-6 font-bold text-[#04120a] hover:bg-[#52e98f]">
                             {saving ? "Saving profile…" : "Save changes"}
                         </Button>

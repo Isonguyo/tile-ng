@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { ListingCard, type ListingCardData } from "@/components/listing-card";
 import { CATEGORIES, LOCATIONS, formatNaira } from "@/lib/categories";
 import { getSignedUrl } from "@/lib/storage";
+import { fromUntyped } from "@/lib/db-untyped";
 import { HeroSearch } from "@/components/hero-search";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { Card } from "@/components/ui/card";
@@ -83,6 +84,16 @@ type ArtisanRow = {
   lga: string | null;
 };
 
+type SearchListingRow = ListingCardData & {
+  user_id: string;
+  created_at: string;
+  trust_score: number | null;
+  seller_tier?: string | null;
+  seller_verified?: boolean | null;
+  seller_name: string | null;
+  seller_shop: string | null;
+};
+
 const POPULAR_SERVICES = [
   { label: "Electricians", slug: "electrician", icon: "Plug" },
   { label: "Plumbers", slug: "plumber", icon: "Droplet" },
@@ -143,10 +154,31 @@ function Index() {
         _limit: 150,
       });
       if (error) throw new Error(error.message);
-      return ((data as Array<ListingCardData & { user_id: string; created_at: string; trust_score: number; seller_name: string | null; seller_shop: string | null }>) || []).map((r) => ({
+      return ((data as SearchListingRow[]) || []).map((r) => ({
         ...r,
         images: r.images ?? [],
         seller_trust: r.trust_score,
+      }));
+    },
+  });
+
+  const { data: publicCatalog = [] } = useQuery({
+    queryKey: ["public-marketplace-catalog"],
+    enabled: !isFiltering,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await rpcUntyped("search_listings", {
+        _q: null,
+        _location: null,
+        _category: null,
+        _type: null,
+        _limit: 300,
+      });
+      if (error) throw new Error(error.message);
+      return ((data as SearchListingRow[]) ?? []).map((row) => ({
+        ...row,
+        images: row.images ?? [],
+        seller_trust: row.trust_score,
       }));
     },
   });
@@ -158,11 +190,20 @@ function Index() {
     queryKey: ["platform-stats"],
     enabled: !isFiltering,
     queryFn: async () => {
-      const [{ count: listingsCount }, { count: shopsCount }, { count: sellersCount }] = await Promise.all([
-        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "approved"),
+      const { data: flags, error: flagsError } = await rpcUntyped("get_public_platform_flags");
+      if (flagsError) throw new Error(flagsError.message);
+      let listingCountQuery = fromUntyped("listings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "approved");
+      if ((flags as { launch_mode?: string } | null)?.launch_mode !== "launched") {
+        listingCountQuery = listingCountQuery.eq("is_prelaunch", false);
+      }
+      const [{ count: listingsCount, error: listingsError }, { count: shopsCount }, { count: sellersCount }] = await Promise.all([
+        listingCountQuery,
         supabase.from("shops").select("*", { count: "exact", head: true }),
         supabase.from("public_profiles").select("*", { count: "exact", head: true }),
       ]);
+      if (listingsError) throw new Error(listingsError.message);
 
       return {
         total_listings: listingsCount ?? 0,
@@ -176,22 +217,13 @@ function Index() {
   // ==========================
   // 3. CATEGORY COUNTS
   // ==========================
-  const { data: catCounts = [] } = useQuery({
-    queryKey: ["category-counts"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("listings").select("category").eq("status", "approved");
-      if (error) throw error;
-
-      const counts: Record<string, number> = {};
-      data?.forEach((item) => {
-        if (item.category) {
-          counts[item.category] = (counts[item.category] || 0) + 1;
-        }
-      });
-
-      return Object.entries(counts).map(([category, count]) => ({ category, count }));
-    },
-  });
+  const catCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    publicCatalog.forEach((item) => {
+      if (item.category) counts[item.category] = (counts[item.category] || 0) + 1;
+    });
+    return Object.entries(counts).map(([category, count]) => ({ category, count }));
+  }, [publicCatalog]);
 
   // ==========================
   // 4. FEATURED SHOPS QUERY
@@ -216,42 +248,12 @@ function Index() {
   // ==========================
   // 4.5 TRENDING LISTINGS QUERY
   // ==========================
-  const { data: trendingListings = [] } = useQuery({
-    queryKey: ["trending-listings"],
-    enabled: !isFiltering,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("listings")
-        .select(`
-          id, title, price, type, location, images, is_promoted, category, description, views_count, clicks_count, user_id, created_at
-        `)
-        .eq("status", "approved")
-        .order("views_count", { ascending: false })
-        .limit(8);
-
-      if (error) throw error;
-
-      const rows = (data as Array<ListingCardData & { user_id: string; created_at: string }>) || [];
-      const userIds = [...new Set(rows.map((r) => r.user_id))];
-
-      if (!userIds.length) return rows;
-
-      const { data: profiles } = await supabase
-        .from("shops")
-        .select(`id, subscription_tier, is_verified, business_name, shop_slug`)
-        .in("id", userIds);
-
-      const profileMap = new Map(((profiles || []) as ProfileRow[]).map((p) => [p.id, p]));
-
-      return rows.map((listing) => ({
-        ...listing,
-        seller_tier: profileMap.get(listing.user_id)?.subscription_tier ?? null,
-        seller_verified: profileMap.get(listing.user_id)?.is_verified ?? false,
-        seller_shop: profileMap.get(listing.user_id)?.shop_slug ?? null,
-        seller_name: profileMap.get(listing.user_id)?.business_name ?? null,
-      }));
-    },
-  });
+  const trendingListings = useMemo(
+    () => [...publicCatalog]
+      .sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0))
+      .slice(0, 8),
+    [publicCatalog],
+  );
 
   const featuredListing = trendingListings[0];
   const featuredImagePath = featuredListing?.images?.[0];
@@ -274,22 +276,14 @@ function Index() {
     queryKey: ["featured-artisans"],
     enabled: !isFiltering,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("public_profiles")
-        .select(`
-          id,
-          full_name,
-          profession,
-          avatar_url,
-          state,
-          lga
-        `)
-        .not("profession", "is", null)
-        .order("full_name")
-        .limit(8);
-
+      const { data, error } = await rpcUntyped("search_artisans", {
+        _q: null,
+        _state: null,
+        _lga: null,
+        _verified_only: false,
+      });
       if (error) throw error;
-      return ((data as unknown) as ArtisanRow[]) ?? [];
+      return ((data as unknown) as ArtisanRow[]).slice(0, 8);
     },
   });
 
