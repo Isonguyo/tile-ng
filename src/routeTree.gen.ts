@@ -9,76 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as MessagesRouteImport } from './routes/messages'
-import { Route as PostAdRouteImport } from './routes/post-ad'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WaitListRouteImport } from './routes/wait-list'
-import { Route as AdminWaitlistRouteImport } from './routes/admin_.waitlist'
-import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
-import { Route as ArtisanEditRouteImport } from './routes/artisan/edit'
-import { Route as ArtisansIndexRouteImport } from './routes/artisans/index'
-import { Route as ArtisansIdRouteImport } from './routes/artisans.$id'
-import { Route as ListingIdRouteImport } from './routes/listing.$id'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PostAdRouteImport } from './routes/post-ad'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
-import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
+import { Route as ArtisansIndexRouteImport } from './routes/artisans/index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
+import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
+import { Route as ListingIdRouteImport } from './routes/listing.$id'
+import { Route as ArtisansIdRouteImport } from './routes/artisans.$id'
+import { Route as ArtisanEditRouteImport } from './routes/artisan/edit'
+import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
+import { Route as AdminWaitlistRouteImport } from './routes/admin_.waitlist'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PostAdRoute = PostAdRouteImport.update({
-  id: '/post-ad',
-  path: '/post-ad',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
+const WaitListRoute = WaitListRouteImport.update({
+  id: '/wait-list',
+  path: '/wait-list',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -86,39 +41,54 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WaitListRoute = WaitListRouteImport.update({
-  id: '/wait-list',
-  path: '/wait-list',
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminWaitlistRoute = AdminWaitlistRouteImport.update({
-  id: '/admin_/waitlist',
-  path: '/admin/waitlist',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArtisanCreateRoute = ArtisanCreateRouteImport.update({
-  id: '/artisan/create',
-  path: '/artisan/create',
+const PostAdRoute = PostAdRouteImport.update({
+  id: '/post-ad',
+  path: '/post-ad',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArtisanEditRoute = ArtisanEditRouteImport.update({
-  id: '/artisan/edit',
-  path: '/artisan/edit',
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArtisansIndexRoute = ArtisansIndexRouteImport.update({
-  id: '/artisans/',
-  path: '/artisans/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArtisansIdRoute = ArtisansIdRouteImport.update({
-  id: '/artisans/$id',
-  path: '/artisans/$id',
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ListingIdRoute = ListingIdRouteImport.update({
-  id: '/listing/$id',
-  path: '/listing/$id',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesIndexRoute = MessagesIndexRouteImport.update({
@@ -126,14 +96,44 @@ const MessagesIndexRoute = MessagesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MessagesRoute,
 } as any)
+const ArtisansIndexRoute = ArtisansIndexRouteImport.update({
+  id: '/artisans/',
+  path: '/artisans/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopSlugRoute = ShopSlugRouteImport.update({
+  id: '/shop/$slug',
+  path: '/shop/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MessagesChatIdRoute = MessagesChatIdRouteImport.update({
   id: '/$chatId',
   path: '/$chatId',
   getParentRoute: () => MessagesRoute,
 } as any)
-const ShopSlugRoute = ShopSlugRouteImport.update({
-  id: '/shop/$slug',
-  path: '/shop/$slug',
+const ListingIdRoute = ListingIdRouteImport.update({
+  id: '/listing/$id',
+  path: '/listing/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArtisansIdRoute = ArtisansIdRouteImport.update({
+  id: '/artisans/$id',
+  path: '/artisans/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArtisanEditRoute = ArtisanEditRouteImport.update({
+  id: '/artisan/edit',
+  path: '/artisan/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArtisanCreateRoute = ArtisanCreateRouteImport.update({
+  id: '/artisan/create',
+  path: '/artisan/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminWaitlistRoute = AdminWaitlistRouteImport.update({
+  id: '/admin_/waitlist',
+  path: '/admin/waitlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -301,74 +301,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/post-ad': {
-      id: '/post-ad'
-      path: '/post-ad'
-      fullPath: '/post-ad'
-      preLoaderRoute: typeof PostAdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
+    '/wait-list': {
+      id: '/wait-list'
+      path: '/wait-list'
+      fullPath: '/wait-list'
+      preLoaderRoute: typeof WaitListRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-email': {
@@ -378,53 +315,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wait-list': {
-      id: '/wait-list'
-      path: '/wait-list'
-      fullPath: '/wait-list'
-      preLoaderRoute: typeof WaitListRouteImport
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin_/waitlist': {
-      id: '/admin_/waitlist'
-      path: '/admin/waitlist'
-      fullPath: '/admin/waitlist'
-      preLoaderRoute: typeof AdminWaitlistRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/artisan/create': {
-      id: '/artisan/create'
-      path: '/artisan/create'
-      fullPath: '/artisan/create'
-      preLoaderRoute: typeof ArtisanCreateRouteImport
+    '/post-ad': {
+      id: '/post-ad'
+      path: '/post-ad'
+      fullPath: '/post-ad'
+      preLoaderRoute: typeof PostAdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/artisan/edit': {
-      id: '/artisan/edit'
-      path: '/artisan/edit'
-      fullPath: '/artisan/edit'
-      preLoaderRoute: typeof ArtisanEditRouteImport
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/artisans/': {
-      id: '/artisans/'
-      path: '/artisans'
-      fullPath: '/artisans/'
-      preLoaderRoute: typeof ArtisansIndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/artisans/$id': {
-      id: '/artisans/$id'
-      path: '/artisans/$id'
-      fullPath: '/artisans/$id'
-      preLoaderRoute: typeof ArtisansIdRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/listing/$id': {
-      id: '/listing/$id'
-      path: '/listing/$id'
-      fullPath: '/listing/$id'
-      preLoaderRoute: typeof ListingIdRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/messages/': {
@@ -434,6 +392,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MessagesIndexRouteImport
       parentRoute: typeof MessagesRoute
     }
+    '/artisans/': {
+      id: '/artisans/'
+      path: '/artisans'
+      fullPath: '/artisans/'
+      preLoaderRoute: typeof ArtisansIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/$slug': {
+      id: '/shop/$slug'
+      path: '/shop/$slug'
+      fullPath: '/shop/$slug'
+      preLoaderRoute: typeof ShopSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/messages/$chatId': {
       id: '/messages/$chatId'
       path: '/$chatId'
@@ -441,11 +413,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MessagesChatIdRouteImport
       parentRoute: typeof MessagesRoute
     }
-    '/shop/$slug': {
-      id: '/shop/$slug'
-      path: '/shop/$slug'
-      fullPath: '/shop/$slug'
-      preLoaderRoute: typeof ShopSlugRouteImport
+    '/listing/$id': {
+      id: '/listing/$id'
+      path: '/listing/$id'
+      fullPath: '/listing/$id'
+      preLoaderRoute: typeof ListingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artisans/$id': {
+      id: '/artisans/$id'
+      path: '/artisans/$id'
+      fullPath: '/artisans/$id'
+      preLoaderRoute: typeof ArtisansIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artisan/edit': {
+      id: '/artisan/edit'
+      path: '/artisan/edit'
+      fullPath: '/artisan/edit'
+      preLoaderRoute: typeof ArtisanEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artisan/create': {
+      id: '/artisan/create'
+      path: '/artisan/create'
+      fullPath: '/artisan/create'
+      preLoaderRoute: typeof ArtisanCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/waitlist': {
+      id: '/admin_/waitlist'
+      path: '/admin/waitlist'
+      fullPath: '/admin/waitlist'
+      preLoaderRoute: typeof AdminWaitlistRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
