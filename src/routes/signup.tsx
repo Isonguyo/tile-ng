@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { signupSchema, accountTypes, type AccountType } from "@/lib/auth-schemas
 import { Loader2, ShoppingBag, Store, Wrench, Eye, EyeOff, Phone, Briefcase } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { siteUrl } from "@/lib/site-url";
+import { focusFormField } from "@/lib/form-navigation";
 
 /**
  * Instant-access signup is active. To restore email verification later, set this
@@ -68,13 +69,15 @@ function SignupPage() {
   const [cooldown, setCooldown] = useState(0);
   const [waitlistContext, setWaitlistContext] = useState<WaitlistContext | null>(null);
   const [fromWaitlist, setFromWaitlist] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isValid },
+    setError,
+    formState: { errors },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     mode: "onChange",
@@ -160,7 +163,9 @@ function SignupPage() {
     if (busy) return;
     const strength = scorePassword(values.password);
     if (strength.score < 3) {
+      setError("password", { type: "validate", message: "Choose a stronger password before continuing." });
       toast.error("Choose a stronger password before continuing.");
+      focusFormField(formRef.current, "password");
       return;
     }
 
@@ -219,6 +224,13 @@ function SignupPage() {
     );
   };
 
+  const onInvalid = (invalid: FieldErrors<SignupFormValues>) => {
+    const first = Object.keys(invalid)[0] as keyof SignupFormValues | undefined;
+    if (!first) return;
+    toast.error(invalid[first]?.message ?? "Please complete the required fields to create your account.");
+    focusFormField(formRef.current, first);
+  };
+
   const resendEmail = async () => {
     if (!email) {
       toast.error("Enter your email before requesting another verification link.");
@@ -234,8 +246,6 @@ function SignupPage() {
     toast.success("Verification email sent.");
     setCooldown(60);
   };
-
-  const canSubmit = useMemo(() => Boolean(watch("full_name") && watch("email") && password && watch("confirm_password") && isValid), [isValid, password, watch]);
 
   return (
     <AuthLayout title="Create your account" description="Join Tile to buy, sell, and discover trusted goods and services across Nigeria." backTo="/" backLabel="Back home" compact>
@@ -256,7 +266,7 @@ function SignupPage() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <form ref={formRef} onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label>I’m signing up as</Label>
               <RadioGroup
@@ -279,14 +289,14 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="full_name">Full name</Label>
-              <Input id="full_name" autoComplete="name" {...register("full_name")} />
+              <Label htmlFor="full_name">Full name <span className="text-destructive">*</span></Label>
+              <Input id="full_name" autoComplete="name" aria-invalid={Boolean(errors.full_name)} {...register("full_name")} />
               {errors.full_name ? <p className="text-sm text-red-600">{errors.full_name.message}</p> : null}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input id="email" type="email" autoComplete="email" {...register("email")} />
+              <Label htmlFor="email">Email address <span className="text-destructive">*</span></Label>
+              <Input id="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} {...register("email")} />
               {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : null}
             </div>
 
@@ -308,9 +318,9 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" {...register("password")} />
+                  <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" aria-invalid={Boolean(errors.password)} {...register("password")} />
                 <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -320,9 +330,9 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm_password">Confirm password</Label>
+              <Label htmlFor="confirm_password">Confirm password <span className="text-destructive">*</span></Label>
               <div className="relative">
-                <Input id="confirm_password" type={showConfirm ? "text" : "password"} autoComplete="new-password" {...register("confirm_password")} />
+                <Input id="confirm_password" type={showConfirm ? "text" : "password"} autoComplete="new-password" aria-invalid={Boolean(errors.confirm_password)} {...register("confirm_password")} />
                 <button type="button" aria-label={showConfirm ? "Hide confirmation password" : "Show confirmation password"} onClick={() => setShowConfirm((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -330,7 +340,7 @@ function SignupPage() {
               {errors.confirm_password ? <p className="text-sm text-red-600">{errors.confirm_password.message}</p> : null}
             </div>
 
-            <Button type="submit" disabled={busy || !canSubmit} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button type="submit" disabled={busy} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {busy ? "Creating account…" : "Create account"}
             </Button>

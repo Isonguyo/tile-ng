@@ -54,6 +54,7 @@ import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
 import { TierBadge } from "@/components/tier-badge";
 import { QRCodeSVG } from "qrcode.react";
+import { scrollPageToTop } from "@/lib/form-navigation";
 import { useConfirmAction } from "@/components/confirm-action-provider";
 import { showError } from "@/lib/user-feedback";
 
@@ -205,7 +206,7 @@ function Dashboard() {
           </section>
 
           <div className="mt-8 sm:mt-10">
-            <Tabs defaultValue="buyer" className="w-full">
+        <Tabs defaultValue="buyer" onValueChange={scrollPageToTop} className="w-full">
           <TabsList className="flex h-auto w-full max-w-full items-center justify-start gap-1 overflow-x-auto rounded-2xl border border-[#1b3b2a] bg-[#09170f]/90 p-1.5 shadow-lg shadow-black/20 sm:w-fit [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <TabsTrigger
               value="buyer"

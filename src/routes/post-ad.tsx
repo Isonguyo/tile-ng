@@ -1,7 +1,7 @@
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -21,6 +21,7 @@ import { uploadListingImages } from "@/lib/storage";
 import { optimizeListingImage } from "@/lib/listing-image";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { focusFormField, focusFormFieldAfterRender, scrollPageToTop } from "@/lib/form-navigation";
 import {
   Upload,
   X,
@@ -55,8 +56,11 @@ const schema = z.object({
   description: z.string().min(20, "Tell buyers more").max(2000),
   state_id: z.string().min(1, "Please select a state"),
   lga_id: z.string().min(1, "Please select an LGA"),
-  phone: z.string().min(7),
-  price: z.coerce.number().positive().optional(),
+  phone: z.string().min(7, "Enter a phone number with at least 7 digits"),
+  price: z.preprocess(
+    (value) => value === "" || value === null || value === undefined ? undefined : value,
+    z.coerce.number().positive("Enter a price greater than zero").optional(),
+  ),
   condition: z.enum(["new", "used_like_new", "used_good", "used_fair"]).optional(),
   brand: z.string().optional(),
 });
@@ -98,6 +102,7 @@ function PostAd() {
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const ownedPreviewUrls = useRef(new Set<string>());
   const isPreparingPhotosRef = useRef(false);
 
@@ -210,12 +215,49 @@ function PostAd() {
     return () => window.clearTimeout(timer);
   }, [form, user, watch.category, watch.title, watch.description, watch.state_id, watch.lga_id, watch.phone, watch.price, watch.condition, watch.brand]);
 
-  const nextStep = () => {
-    if (step < 4) setStep((s) => s + 1);
+  const goToStep = (next: number) => {
+    setStep(next);
+    scrollPageToTop();
   };
 
   const prevStep = () => {
-    if (step > 1) setStep((s) => s - 1);
+    if (step > 1) goToStep(step - 1);
+  };
+
+  const validateStepFields = async (fields: Array<keyof FormVals>, message: string) => {
+    if (await form.trigger(fields)) return true;
+
+    const firstInvalid = fields.find((field) => form.getFieldState(field).error);
+    const fieldError = firstInvalid ? form.getFieldState(firstInvalid).error?.message : undefined;
+    toast.error(fieldError ?? message);
+    if (firstInvalid) focusFormField(formRef.current, firstInvalid);
+    return false;
+  };
+
+  const handleCategoryNext = async () => {
+    if (await validateStepFields(["category"], "Choose a category before continuing.")) goToStep(2);
+  };
+
+  const handleDetailsNext = async () => {
+    if (await validateStepFields(["title", "description", "price"], "Add a title and description before continuing.")) goToStep(3);
+  };
+
+  const handlePreviewNext = async () => {
+    if (isPreparingPhotos) {
+      toast.error("Please wait while your photos are being prepared.");
+      return;
+    }
+    if (submitting) return;
+    if (await validateStepFields(["state_id", "lga_id", "phone"], "Add your location and contact number before previewing.")) goToStep(4);
+  };
+
+  const returnToChoice = () => {
+    setMode("home");
+    setStep(1);
+    setSubmitted(false);
+    setSubmittedListingId(null);
+    setPromotionStats(null);
+    scrollPageToTop();
   };
 
   const addPhotos = async (incoming: FileList | File[]) => {
@@ -461,11 +503,23 @@ function PostAd() {
     }
   };
 
-  const onInvalid = (errors: Record<string, { message?: string }>) => {
-    const first = Object.keys(errors)[0];
-    if (first) {
-      toast.error(`Please complete: ${first}`);
+  const onInvalid = (errors: FieldErrors<FormVals>) => {
+    const first = Object.keys(errors)[0] as keyof FormVals | undefined;
+    if (!first) return;
+    const message = errors[first]?.message;
+    toast.error(typeof message === "string" ? message : "Please complete the required listing fields before publishing.");
+    const isDetailsField = (["title", "description", "price", "condition", "brand"] as (keyof FormVals)[]).includes(first);
+    const targetStep = first === "category"
+      ? 1
+      : isDetailsField
+        ? 2
+        : 3;
+    if (targetStep !== step) {
+      setStep(targetStep);
+      focusFormFieldAfterRender(formRef.current, first);
+      return;
     }
+    focusFormField(formRef.current, first);
   };
 
   if (!loading && !user) {
@@ -538,7 +592,7 @@ function PostAd() {
                   variant="outline"
                   disabled={postingDisabled}
                   className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal"
-                  onClick={() => { setMode("sell"); setStep(1); }}
+                  onClick={() => { setMode("sell"); setStep(1); scrollPageToTop(); }}
                 >
                   <div className="text-left">
                     <h3 className="font-bold text-lg">🛒 Sell Something</h3>
@@ -596,7 +650,7 @@ function PostAd() {
             </p>
             <div className="flex justify-center gap-3">
               <Button asChild variant="outline"><Link to="/dashboard">View dashboard</Link></Button>
-              <Button className="bg-accent text-accent-foreground" onClick={() => setMode("home")}>Create another</Button>
+              <Button className="bg-accent text-accent-foreground" onClick={returnToChoice}>Create another</Button>
             </div>
             {submittedListingId && (
               <div className="rounded-2xl border bg-muted/20 p-5 text-left">
@@ -682,12 +736,12 @@ function PostAd() {
                 })}
               </div>
 
-              <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5" noValidate>
+              <form ref={formRef} onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5" noValidate>
                 {step === 1 && (
                   <>
-                    <h2 className="text-xl font-semibold">Pick a category</h2>
+                    <h2 className="text-xl font-semibold">Pick a category <span className="text-destructive">*</span></h2>
                     <p className="text-sm text-muted-foreground">Cards feel more premium and make it easier to browse your listing.</p>
-                    <div className="grid gap-3 md:grid-cols-2 mt-4">
+                    <div data-field="category" className="grid gap-3 md:grid-cols-2 mt-4">
                       {CATEGORIES.filter((c) => c.type === "goods").map((c) => {
                         const isSelected = watch.category === c.slug;
                         const meta = CATEGORY_META[c.slug] ?? { icon: "📦", subtitle: "Popular listing" };
@@ -704,9 +758,10 @@ function PostAd() {
                         );
                       })}
                     </div>
+                    {form.formState.errors.category && <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>}
                     <div className="flex justify-between pt-4 border-t">
-                      <Button type="button" variant="outline" onClick={() => setMode("home")}>Cancel</Button>
-                      <Button type="button" disabled={!watch.category} onClick={nextStep}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                      <Button type="button" variant="outline" onClick={returnToChoice}>Cancel</Button>
+                      <Button type="button" onClick={handleCategoryNext}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                     </div>
                   </>
                 )}
@@ -716,12 +771,14 @@ function PostAd() {
                     <h2 className="text-xl font-semibold">Add details that convert</h2>
                     <div className="space-y-4">
                       <div>
-                        <Label>Title</Label>
+                        <Label>Title <span className="text-destructive">*</span></Label>
                         <Input {...form.register("title")} placeholder="iPhone 15 Pro Max 256GB" />
+                        {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}
                       </div>
                       <div>
-                        <Label>Description</Label>
+                        <Label>Description <span className="text-destructive">*</span></Label>
                         <Textarea rows={6} {...form.register("description")} placeholder="Add condition, specs, warranty and why someone should buy it." />
+                        {form.formState.errors.description && <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>}
                       </div>
                       <div className="flex items-center justify-end">
                         <Button type="button" variant="outline" size="sm" onClick={applyAiDescription}><Sparkles className="mr-2 h-4 w-4" /> Generate with AI</Button>
@@ -730,6 +787,7 @@ function PostAd() {
                         <div>
                           <Label>Price (₦)</Label>
                           <Input type="number" {...form.register("price")} placeholder="420000" />
+                          {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
                           {priceHint && <p className="mt-2 text-sm text-muted-foreground">{priceHint}</p>}
                         </div>
                         <div>
@@ -752,7 +810,7 @@ function PostAd() {
                     </div>
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-                      <Button type="button" onClick={nextStep}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                      <Button type="button" onClick={handleDetailsNext}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                     </div>
                   </>
                 )}
@@ -771,19 +829,21 @@ function PostAd() {
                         </Button>
                       </div>
                       {detectedLocation && <p className="text-sm text-accent">Detected: {detectedLocation}</p>}
-                      <div>
-                        <Label>State</Label>
-                        <Select value={watch.state_id} onValueChange={(value) => { form.setValue("state_id", value); form.setValue("lga_id", ""); }}>
+                      <div data-field="state_id">
+                        <Label>State <span className="text-destructive">*</span></Label>
+                        <Select value={watch.state_id} onValueChange={(value) => { form.setValue("state_id", value, { shouldValidate: true }); form.setValue("lga_id", "", { shouldValidate: true }); }}>
                           <SelectTrigger><SelectValue placeholder="Choose state" /></SelectTrigger>
                           <SelectContent>{states.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                         </Select>
+                        {form.formState.errors.state_id && <p className="mt-1 text-sm text-destructive">{form.formState.errors.state_id.message}</p>}
                       </div>
-                      <div>
-                        <Label>Local government area</Label>
-                        <Select disabled={!watch.state_id} value={watch.lga_id} onValueChange={(value) => form.setValue("lga_id", value)}>
+                      <div data-field="lga_id">
+                        <Label>Local government area <span className="text-destructive">*</span></Label>
+                        <Select disabled={!watch.state_id} value={watch.lga_id} onValueChange={(value) => form.setValue("lga_id", value, { shouldValidate: true })}>
                           <SelectTrigger><SelectValue placeholder="Choose LGA" /></SelectTrigger>
                           <SelectContent>{lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
                         </Select>
+                        {form.formState.errors.lga_id && <p className="mt-1 text-sm text-destructive">{form.formState.errors.lga_id.message}</p>}
                       </div>
                     </div>
 
@@ -861,13 +921,14 @@ function PostAd() {
                     </div>
 
                     <div>
-                      <Label>Contact phone number</Label>
+                      <Label>Contact phone number <span className="text-destructive">*</span></Label>
                       <Input {...form.register("phone")} placeholder="08012345678" />
+                      {form.formState.errors.phone && <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>}
                     </div>
 
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-                      <Button type="button" onClick={nextStep} disabled={isPreparingPhotos || submitting}>Preview <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                      <Button type="button" onClick={handlePreviewNext}>Preview <ChevronRight className="ml-2 h-4 w-4" /></Button>
                     </div>
                   </>
                 )}

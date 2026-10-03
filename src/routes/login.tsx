@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { focusFormField } from "@/lib/form-navigation";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
@@ -38,20 +39,17 @@ function LoginPage() {
   const { user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
-    watch,
+    formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: "onChange",
     defaultValues: { email: "", password: "" },
   });
-
-  const email = watch("email");
-  const password = watch("password");
 
   useEffect(() => {
     if (!loading && user) nav({ to: "/dashboard" });
@@ -70,7 +68,12 @@ function LoginPage() {
     nav({ to: "/dashboard" });
   };
 
-  const canSubmit = useMemo(() => Boolean(email && password && isValid), [email, password, isValid]);
+  const onInvalid = (invalid: FieldErrors<LoginFormValues>) => {
+    const first = Object.keys(invalid)[0] as keyof LoginFormValues | undefined;
+    if (!first) return;
+    toast.error(invalid[first]?.message ?? "Please complete the required sign-in fields.");
+    focusFormField(formRef.current, first);
+  };
 
   return (
     <AuthLayout title="Welcome back" description="Sign in to continue managing your listings, messages, and profile on Tile." backTo="/" backLabel="Back home">
@@ -78,24 +81,24 @@ function LoginPage() {
         <p className="text-sm text-muted-foreground">Access your trusted marketplace workspace</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form ref={formRef} onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4" noValidate>
         <div className="space-y-2">
-          <Label htmlFor="email">Email address</Label>
+          <Label htmlFor="email">Email address <span className="text-destructive">*</span></Label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input id="email" type="email" autoComplete="email" className="pl-9" {...register("email")} />
+            <Input id="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} className="pl-9" {...register("email")} />
           </div>
           {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : <p className="text-xs text-muted-foreground">We’ll keep your account secure with Supabase auth.</p>}
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
             <Link to="/forgot-password" className="text-xs font-semibold text-primary hover:underline">Forgot password?</Link>
           </div>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password" className="pl-9 pr-10" {...register("password")} />
+            <Input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password" aria-invalid={Boolean(errors.password)} className="pl-9 pr-10" {...register("password")} />
             <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -103,7 +106,7 @@ function LoginPage() {
           {errors.password ? <p className="text-sm text-red-600">{errors.password.message}</p> : null}
         </div>
 
-        <Button type="submit" disabled={busy || !canSubmit} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button type="submit" disabled={busy} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {busy ? "Signing in…" : "Sign in"}
         </Button>
