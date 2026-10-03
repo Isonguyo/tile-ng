@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
@@ -593,6 +593,9 @@ function Admin() {
               <p className="text-sm text-muted-foreground max-w-md">
                 Real-time operational overview, moderation queue, user intelligence, and platform governance for Tile marketplace.
               </p>
+              <Link to="/admin/directory" className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-accent">
+                Open full directory: users, all ads, artisans →
+              </Link>
             </div>
 
             <div className="flex items-center gap-3 bg-background/60 backdrop-blur-md border border-border/60 p-3.5 rounded-xl shadow-sm self-start md:self-auto">
