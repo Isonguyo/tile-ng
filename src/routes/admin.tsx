@@ -23,6 +23,7 @@ import {
   Users, Tag, Banknote, ShieldAlert, Check, X, Flag, BadgeCheck, AlertTriangle,
   Activity, Bell, Search, Megaphone, Settings2, Gauge, TrendingUp, FileWarning, Sparkles,
   UserSearch, LifeBuoy, ShieldCheck, Rocket, Eye, LockKeyhole, RefreshCw, Loader2, Wrench, ChevronRight,
+  ArrowUpRight,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -593,9 +594,25 @@ function Admin() {
               <p className="text-sm text-muted-foreground max-w-md">
                 Real-time operational overview, moderation queue, user intelligence, and platform governance for Tile marketplace.
               </p>
-              <Link to="/admin/directory" className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-accent">
-                Open full directory: users, all ads, artisans →
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  to="/admin/directory"
+                  className="group inline-flex min-h-10 items-center gap-2 rounded-xl border border-border/60 bg-background/55 px-3 py-2 text-xs font-semibold shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <Users className="h-4 w-4 text-primary" />
+                  <span>Full directory</span>
+                  <span className="hidden text-muted-foreground sm:inline">Users, ads & artisans</span>
+                  <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </Link>
+                <Link
+                  to="/admin/waitlist"
+                  className="group inline-flex min-h-10 items-center gap-2 rounded-xl border border-border/60 bg-background/55 px-3 py-2 text-xs font-semibold shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <Rocket className="h-4 w-4 text-primary" />
+                  <span>Waitlist analytics</span>
+                  <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </Link>
+              </div>
             </div>
 
             <div className="flex items-center gap-3 bg-background/60 backdrop-blur-md border border-border/60 p-3.5 rounded-xl shadow-sm self-start md:self-auto">
