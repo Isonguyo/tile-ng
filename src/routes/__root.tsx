@@ -17,6 +17,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ConfirmActionProvider } from "@/components/confirm-action-provider";
 
+const TILE_FAVICON_URL = "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -95,10 +97,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Tile" },
       { name: "twitter:title", content: "Tile" },
       { name: "twitter:description", content: "Tile is a dual-sided marketplace for buying and selling goods, and hiring services." },
-      { property: "og:image", content: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
-      { name: "twitter:image", content: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg" },
+      { property: "og:image", content: TILE_FAVICON_URL },
+      { name: "twitter:image", content: TILE_FAVICON_URL },
     ],
     links: [
+      { rel: "icon", href: TILE_FAVICON_URL },
+      { rel: "apple-touch-icon", href: TILE_FAVICON_URL },
       {
         rel: "stylesheet",
         href: appCss,

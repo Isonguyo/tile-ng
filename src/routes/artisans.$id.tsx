@@ -24,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyErrorMessage } from "@/lib/user-feedback";
-import { fromUntyped } from "@/lib/db-untyped";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 
 type ArtisanProfile = {
@@ -63,26 +62,18 @@ export const Route = createFileRoute("/artisans/$id")({
     };
   },
   loader: async ({ params }) => {
-    const [{ data, error }, { data: platformFlags, error: flagsError }, { data: authData }] = await Promise.all([
-      fromUntyped("profiles")
-      .select(
-        "id, full_name, avatar_url, profile_photo, bio, profession, state, lga, years_experience, starting_price, portfolio_images, is_verified, is_artisan, subscription_tier, avg_rating, total_sales, is_prelaunch, artisan_status"
-      )
-      .eq("id", params.id)
-      .maybeSingle(),
-      rpcUntyped("get_public_platform_flags"),
-      supabase.auth.getUser(),
-    ]);
-    if (error) throw error;
-    if (flagsError) throw new Error(flagsError.message);
-    if (!data || !data.is_artisan) throw notFound();
-    const artisan = data as ArtisanProfile;
-    const launchMode = (platformFlags as { launch_mode?: string } | null)?.launch_mode;
-    const isOwner = authData.user?.id === artisan.id;
-    const isApproved = artisan.artisan_status === "approved";
-    const isPublic = isApproved && (!artisan.is_prelaunch || launchMode === "launched");
-    if (!isOwner && !isPublic) throw notFound();
-    return artisan;
+    const { data, error } = await rpcUntyped("get_artisan_profile", {
+      _id: params.id,
+    });
+
+    if (error) throw new Error(error.message);
+
+    // The RPC is the authorization boundary for public, owner, and admin access.
+    // It returns one profile; normalize set-returning RPC responses as a single row too.
+    const profile = (Array.isArray(data) ? data[0] : data) as ArtisanProfile | null;
+    if (!profile) throw notFound();
+
+    return profile;
   },
   notFoundComponent: () => (
     <div className="min-h-screen bg-background">
