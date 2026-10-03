@@ -10,6 +10,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
 import {
@@ -51,6 +52,7 @@ function NavItem({
 
 export function MobileBottomNav() {
   const { user } = useAuth();
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -79,7 +81,7 @@ export function MobileBottomNav() {
 
           {/* Center Create Button */}
           <div className="relative flex h-full w-full items-center justify-center">
-            <Sheet>
+            <Sheet open={createSheetOpen} onOpenChange={setCreateSheetOpen}>
               <SheetTrigger asChild>
                 <button
                   type="button"
@@ -104,6 +106,7 @@ export function MobileBottomNav() {
                   {/* Sell Product */}
                   <Link
                     to="/post-ad"
+                    onClick={() => setCreateSheetOpen(false)}
                     className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
                   >
                     <Package className="h-6 w-6 shrink-0 text-primary" />
@@ -122,6 +125,7 @@ export function MobileBottomNav() {
                   {/* Open Shop */}
                   <Link
                     to="/dashboard"
+                    onClick={() => setCreateSheetOpen(false)}
                     className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
                   >
                     <Store className="h-6 w-6 shrink-0 text-primary" />
@@ -140,6 +144,7 @@ export function MobileBottomNav() {
                   {/* Become Artisan */}
                   <Link
                     to="/artisan/create"
+                    onClick={() => setCreateSheetOpen(false)}
                     className="flex items-center gap-4 rounded-xl border p-4 transition hover:bg-muted"
                   >
                     <Briefcase className="h-6 w-6 shrink-0 text-primary" />
