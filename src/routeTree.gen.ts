@@ -30,6 +30,7 @@ import { Route as ArtisansIdRouteImport } from './routes/artisans.$id'
 import { Route as ArtisanEditRouteImport } from './routes/artisan/edit'
 import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
 import { Route as AdminWaitlistRouteImport } from './routes/admin_.waitlist'
+import { Route as AdminDirectoryRouteImport } from './routes/admin_.directory'
 
 const WaitListRoute = WaitListRouteImport.update({
   id: '/wait-list',
@@ -136,6 +137,11 @@ const AdminWaitlistRoute = AdminWaitlistRouteImport.update({
   path: '/admin/waitlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDirectoryRoute = AdminDirectoryRouteImport.update({
+  id: '/admin_/directory',
+  path: '/admin/directory',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wait-list': typeof WaitListRoute
+  '/admin/directory': typeof AdminDirectoryRoute
   '/admin/waitlist': typeof AdminWaitlistRoute
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wait-list': typeof WaitListRoute
+  '/admin/directory': typeof AdminDirectoryRoute
   '/admin/waitlist': typeof AdminWaitlistRoute
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wait-list': typeof WaitListRoute
+  '/admin_/directory': typeof AdminDirectoryRoute
   '/admin_/waitlist': typeof AdminWaitlistRoute
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/wait-list'
+    | '/admin/directory'
     | '/admin/waitlist'
     | '/artisan/create'
     | '/artisan/edit'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/wait-list'
+    | '/admin/directory'
     | '/admin/waitlist'
     | '/artisan/create'
     | '/artisan/edit'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/wait-list'
+    | '/admin_/directory'
     | '/admin_/waitlist'
     | '/artisan/create'
     | '/artisan/edit'
@@ -290,6 +302,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WaitListRoute: typeof WaitListRoute
+  AdminDirectoryRoute: typeof AdminDirectoryRoute
   AdminWaitlistRoute: typeof AdminWaitlistRoute
   ArtisanCreateRoute: typeof ArtisanCreateRoute
   ArtisanEditRoute: typeof ArtisanEditRoute
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWaitlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/directory': {
+      id: '/admin_/directory'
+      path: '/admin/directory'
+      fullPath: '/admin/directory'
+      preLoaderRoute: typeof AdminDirectoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -478,6 +498,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WaitListRoute: WaitListRoute,
+  AdminDirectoryRoute: AdminDirectoryRoute,
   AdminWaitlistRoute: AdminWaitlistRoute,
   ArtisanCreateRoute: ArtisanCreateRoute,
   ArtisanEditRoute: ArtisanEditRoute,
