@@ -68,6 +68,8 @@ function SignupPage() {
   const [cooldown, setCooldown] = useState(0);
   const [waitlistContext, setWaitlistContext] = useState<WaitlistContext | null>(null);
   const [fromWaitlist, setFromWaitlist] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [marketing, setMarketing] = useState(false);
 
   const {
     register,
@@ -173,6 +175,9 @@ function SignupPage() {
           ? { emailRedirectTo: siteUrl("/verify-email") }
           : {}),
         data: {
+          accepted_terms_version: "1.0",
+          accepted_terms_at: new Date().toISOString(),
+          marketing_opt_in: marketing,
           full_name: values.full_name,
           account_type: values.account_type,
           phone_number: values.phone_number || null,
@@ -330,7 +335,15 @@ function SignupPage() {
               {errors.confirm_password ? <p className="text-sm text-red-600">{errors.confirm_password.message}</p> : null}
             </div>
 
-            <Button type="submit" disabled={busy || !canSubmit} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+              <span>I agree to Tile's <Link to="/terms" className="text-primary underline">Terms of Service</Link> and acknowledge the <Link to="/privacy" className="text-primary underline">Privacy Policy</Link>.{accountType === "merchant" && <> I also agree to the <Link to="/seller-terms" className="text-primary underline">Seller Terms</Link>.</>}{accountType === "artisan" && <> I also agree to the <Link to="/artisan-terms" className="text-primary underline">Artisan Terms</Link>.</>}</span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-muted-foreground">
+              <input type="checkbox" className="mt-1" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
+              <span>I would like to receive promotional messages from Tile. (Optional)</span>
+            </label>
+            <Button type="submit" disabled={busy || !canSubmit || !agreed} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {busy ? "Creating account…" : "Create account"}
             </Button>
