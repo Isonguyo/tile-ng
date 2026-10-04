@@ -158,6 +158,7 @@ function Index() {
         ...r,
         images: r.images ?? [],
         seller_trust: r.trust_score,
+        seller_id: r.user_id,
       }));
     },
   });
@@ -179,6 +180,7 @@ function Index() {
         ...row,
         images: row.images ?? [],
         seller_trust: row.trust_score,
+        seller_id: row.user_id,
       }));
     },
   });

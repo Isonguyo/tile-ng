@@ -65,7 +65,8 @@ const schema = z.object({
   brand: z.string().optional(),
 });
 
-type FormVals = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormVals = z.output<typeof schema>;
 
 type Mode = "home" | "sell";
 type ListingPhoto = { id: string; file: File; previewUrl: string };
@@ -96,9 +97,6 @@ function PostAd() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedListingId, setSubmittedListingId] = useState<string | null>(null);
   const [draftStatus, setDraftStatus] = useState("Draft ready");
-  const [promotionState, setPromotionState] = useState<"idle" | "promoted">("idle");
-  const [promoting, setPromoting] = useState(false);
-  const [promotionStats, setPromotionStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -111,7 +109,7 @@ function PostAd() {
     ownedPreviewUrls.current.clear();
   }, []);
 
-  const form = useForm<FormVals>({
+  const form = useForm<FormInput, unknown, FormVals>({
     resolver: zodResolver(schema),
     defaultValues: { category: "", title: "", description: "", state_id: "", lga_id: "", phone: profile?.phone ?? "", price: undefined, condition: undefined, brand: "" },
   });
@@ -154,7 +152,6 @@ function PostAd() {
 
   const tier = (plan?.tier ?? profile?.subscription_tier ?? "free").toLowerCase();
   const canOpenShop = hasCapability(plan, "shop") || tier !== "free";
-  const canPromote = hasCapability(plan, "promote");
   const planLabel = tier === "free" ? "Free" : tier.charAt(0).toUpperCase() + tier.slice(1);
 
   const qualityScore = useMemo(() => {
@@ -256,7 +253,6 @@ function PostAd() {
     setStep(1);
     setSubmitted(false);
     setSubmittedListingId(null);
-    setPromotionStats(null);
     scrollPageToTop();
   };
 
@@ -395,37 +391,6 @@ function PostAd() {
     toast.success("AI description drafted");
   };
 
-  const loadListingStats = async (listingId: string) => {
-    const { data } = await supabase.rpc("owner_listing_stats", { _id: listingId });
-    const row = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
-    if (row) {
-      setPromotionStats({ views_count: row.views_count, clicks_count: row.clicks_count, favorites_count: Number(row.favorites_count) });
-    }
-  };
-
-  const handlePromoteListing = async () => {
-    if (!user || !submittedListingId) return;
-    setPromoting(true);
-    try {
-      const { data, error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: { message: string } | null }>)("promote_listing", {
-        p_listing_id: submittedListingId,
-        p_user_id: user.id,
-      });
-
-      if (error) throw error;
-      if (!data) throw new Error("Promotion was not accepted.");
-
-      setPromotionState("promoted");
-      await loadListingStats(submittedListingId);
-      toast.success("Listing promoted successfully");
-    } catch (e) {
-      console.error("PROMOTE LISTING ERROR:", e);
-      showError(e, "We couldn't promote this listing right now. Please try again.");
-    } finally {
-      setPromoting(false);
-    }
-  };
-
   const onSubmit = async (vals: FormVals) => {
     if (!user) return;
     if (isPreparingPhotosRef.current) {
@@ -490,8 +455,6 @@ function PostAd() {
 
       window.localStorage.removeItem(DRAFT_KEY);
       setSubmittedListingId(data.id);
-      setPromotionState("idle");
-      setPromotionStats(null);
       setSubmitted(true);
       toast.success("Listing submitted for review");
     } catch (e) {
@@ -503,12 +466,12 @@ function PostAd() {
     }
   };
 
-  const onInvalid = (errors: FieldErrors<FormVals>) => {
-    const first = Object.keys(errors)[0] as keyof FormVals | undefined;
+  const onInvalid = (errors: FieldErrors<FormInput>) => {
+    const first = Object.keys(errors)[0] as keyof FormInput | undefined;
     if (!first) return;
     const message = errors[first]?.message;
     toast.error(typeof message === "string" ? message : "Please complete the required listing fields before publishing.");
-    const isDetailsField = (["title", "description", "price", "condition", "brand"] as (keyof FormVals)[]).includes(first);
+    const isDetailsField = (["title", "description", "price", "condition", "brand"] as (keyof FormInput)[]).includes(first);
     const targetStep = first === "category"
       ? 1
       : isDetailsField
@@ -656,44 +619,15 @@ function PostAd() {
               <div className="rounded-2xl border bg-muted/20 p-5 text-left">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="font-semibold">Boost visibility</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Promotion is available after Admin approval{isPrelaunch ? " and marketplace launch" : ""}.
+                    <h3 className="font-semibold">Top Ads after approval</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Once approved, manage this listing and check your Top Ad allowance in the Merchant Hub.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    className="bg-accent text-accent-foreground"
-                    onClick={handlePromoteListing}
-                    disabled={
-                      promoting ||
-                      promotionState === "promoted" ||
-                      !canPromote ||
-                      true
-                    }
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    {promoting ? "Promoting..." : promotionState === "promoted" ? "Promoted" : "Promote after approval"}
+                  <Button asChild variant="outline" className="shrink-0">
+                    <Link to="/dashboard">Open Merchant Hub</Link>
                   </Button>
                 </div>
-                {!canPromote && (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Upgrade to Lite or above to unlock promotions and stronger visibility.
-                  </p>
-                )}
-                {canPromote && (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    This listing is awaiting moderation, so promotion is locked until it is approved
-                    {isPrelaunch ? " and the marketplace is launched" : ""}.
-                  </p>
-                )}
-                {promotionStats && (
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm text-muted-foreground">
-                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.views_count}</p><p>views</p></div>
-                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.clicks_count}</p><p>clicks</p></div>
-                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.favorites_count}</p><p>saves</p></div>
-                  </div>
-                )}
               </div>
             )}
           </Card>
@@ -948,17 +882,12 @@ function PostAd() {
                           <span>{watch.condition ? watch.condition.replace(/_/g, " ") : "Condition pending"}</span>
                         </div>
                       </div>
-                      {canPromote ? (
-                        <div className="rounded-2xl border bg-background p-4">
-                          <h4 className="font-semibold">Want more buyers?</h4>
-                          <p className="text-sm text-muted-foreground mt-1">Promote this listing after publishing to increase visibility.</p>
-                          <p className="mt-3 text-sm text-muted-foreground">Your promotion will be activated once the listing is submitted and approved.</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-dashed border-accent/30 bg-accent/5 p-4 text-sm text-muted-foreground">
-                          Upgrade to Lite to unlock promotions, a store and richer analytics.
-                        </div>
-                      )}
+                      <div className="rounded-2xl border border-dashed border-accent/30 bg-accent/5 p-4">
+                        <h4 className="font-semibold">After admin review</h4>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          When this listing is approved, you can manage it and check Top Ad access in your Merchant Hub.
+                        </p>
+                      </div>
                     </div>
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
@@ -978,13 +907,11 @@ function PostAd() {
 
             <div className="space-y-4">
               <Card className="p-5">
-                <h3 className="font-semibold">Subscription-aware features</h3>
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  <li>• Free: 3 active listings, no promotions.</li>
-                  <li>• Lite: shop enabled, 1 weekly promotion.</li>
-                  <li>• Pro: priority search, promotions and analytics.</li>
-                  <li>• VIP: priority placement and multi-staff support.</li>
-                </ul>
+                <h3 className="font-semibold">Manage your business</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Your active plan features and Top Ad allowance are shown in your Merchant Hub.
+                </p>
+                <Button asChild size="sm" variant="outline" className="mt-3"><Link to="/dashboard">Open Merchant Hub</Link></Button>
               </Card>
               <Card className="p-5">
                 <h3 className="font-semibold">Trust signals</h3>
