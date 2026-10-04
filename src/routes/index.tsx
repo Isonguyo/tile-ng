@@ -856,9 +856,7 @@ function Index() {
       </div>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/[0.07] bg-[#050f0a] px-4 py-7 text-center text-xs text-slate-500">
-        <p>&copy; {new Date().getFullYear()} Tile Marketplace. Connecting trustworthy commercial hubs safely across Nigeria.</p>
-      </footer>
+      <LegalFooter />
     </div>
   );
 }
