@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type FieldErrors } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { PasswordStrength, scorePassword } from "@/components/auth/password-stre
 import { resetPasswordSchema } from "@/lib/auth-schemas";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { Loader2, Lock, Eye, EyeOff } from "lucide-react";
-import { focusFormField } from "@/lib/form-navigation";
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
@@ -36,14 +35,12 @@ function ResetPage() {
   const [ready, setReady] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
   const {
     register,
     handleSubmit,
     watch,
-    setError,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     mode: "onChange",
@@ -65,12 +62,14 @@ function ResetPage() {
   const submit = async (values: ResetPasswordFormValues) => {
     const strength = scorePassword(values.password);
     if (strength.score < 3) {
+<<<<<<< HEAD
       setError("password", {
         type: "validate",
         message: "Choose a stronger password before continuing.",
       });
+=======
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
       toast.error("Choose a stronger password before continuing.");
-      focusFormField(formRef.current, "password");
       return;
     }
 
@@ -85,13 +84,6 @@ function ResetPage() {
     }
     toast.success("Password updated successfully.");
     nav({ to: "/login" });
-  };
-
-  const onInvalid = (invalid: FieldErrors<ResetPasswordFormValues>) => {
-    const first = Object.keys(invalid)[0] as keyof ResetPasswordFormValues | undefined;
-    if (!first) return;
-    toast.error(invalid[first]?.message ?? "Complete both password fields before continuing.");
-    focusFormField(formRef.current, first);
   };
 
   return (
@@ -109,16 +101,21 @@ function ResetPage() {
         </div>
       ) : null}
 
+<<<<<<< HEAD
       <form
         ref={formRef}
         onSubmit={handleSubmit(submit, onInvalid)}
         className="mt-6 space-y-4"
         noValidate
       >
+=======
+      <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4" noValidate>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
         <div className="space-y-2">
           <Label htmlFor="password">New password</Label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+<<<<<<< HEAD
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -133,6 +130,10 @@ function ResetPage() {
               onClick={() => setShowPassword((value) => !value)}
               className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground"
             >
+=======
+            <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" className="pl-9 pr-10" {...register("password")} />
+            <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
@@ -146,6 +147,7 @@ function ResetPage() {
           <Label htmlFor="confirm_password">Confirm password</Label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+<<<<<<< HEAD
             <Input
               id="confirm_password"
               type={showConfirm ? "text" : "password"}
@@ -160,6 +162,10 @@ function ResetPage() {
               onClick={() => setShowConfirm((value) => !value)}
               className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground"
             >
+=======
+            <Input id="confirm_password" type={showConfirm ? "text" : "password"} autoComplete="new-password" className="pl-9 pr-10" {...register("confirm_password")} />
+            <button type="button" aria-label={showConfirm ? "Hide confirmation password" : "Show confirmation password"} onClick={() => setShowConfirm((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
               {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
@@ -168,7 +174,7 @@ function ResetPage() {
           ) : null}
         </div>
 
-        <Button type="submit" disabled={busy || !ready} className="w-full">
+        <Button type="submit" disabled={busy || !ready || !isValid} className="w-full">
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {busy ? "Updating password…" : "Update password"}
         </Button>

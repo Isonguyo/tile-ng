@@ -10,15 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcceptableUseRouteImport } from './routes/acceptable-use'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ArtisanTermsRouteImport } from './routes/artisan-terms'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BillingTermsRouteImport } from './routes/billing-terms'
+import { Route as ComplaintsRouteImport } from './routes/complaints'
+import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as PostAdRouteImport } from './routes/post-ad'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SellerTermsRouteImport } from './routes/seller-terms'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WaitListRouteImport } from './routes/wait-list'
 import { Route as AdminDirectoryRouteImport } from './routes/admin_.directory'
@@ -38,14 +46,39 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcceptableUseRoute = AcceptableUseRouteImport.update({
+  id: '/acceptable-use',
+  path: '/acceptable-use',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtisanTermsRoute = ArtisanTermsRouteImport.update({
+  id: '/artisan-terms',
+  path: '/artisan-terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillingTermsRoute = BillingTermsRouteImport.update({
+  id: '/billing-terms',
+  path: '/billing-terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComplaintsRoute = ComplaintsRouteImport.update({
+  id: '/complaints',
+  path: '/complaints',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -73,14 +106,29 @@ const PostAdRoute = PostAdRouteImport.update({
   path: '/post-ad',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SellerTermsRoute = SellerTermsRouteImport.update({
+  id: '/seller-terms',
+  path: '/seller-terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -151,15 +199,23 @@ const StaffAcceptRoute = StaffAcceptRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acceptable-use': typeof AcceptableUseRoute
   '/admin': typeof AdminRoute
+  '/artisan-terms': typeof ArtisanTermsRoute
   '/auth': typeof AuthRoute
+  '/billing-terms': typeof BillingTermsRoute
+  '/complaints': typeof ComplaintsRoute
+  '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRouteWithChildren
   '/post-ad': typeof PostAdRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/seller-terms': typeof SellerTermsRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wait-list': typeof WaitListRoute
   '/admin/directory': typeof AdminDirectoryRoute
@@ -176,14 +232,22 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acceptable-use': typeof AcceptableUseRoute
   '/admin': typeof AdminRoute
+  '/artisan-terms': typeof ArtisanTermsRoute
   '/auth': typeof AuthRoute
+  '/billing-terms': typeof BillingTermsRoute
+  '/complaints': typeof ComplaintsRoute
+  '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/post-ad': typeof PostAdRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/seller-terms': typeof SellerTermsRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wait-list': typeof WaitListRoute
   '/admin/directory': typeof AdminDirectoryRoute
@@ -201,15 +265,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acceptable-use': typeof AcceptableUseRoute
   '/admin': typeof AdminRoute
+  '/artisan-terms': typeof ArtisanTermsRoute
   '/auth': typeof AuthRoute
+  '/billing-terms': typeof BillingTermsRoute
+  '/complaints': typeof ComplaintsRoute
+  '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRouteWithChildren
   '/post-ad': typeof PostAdRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/seller-terms': typeof SellerTermsRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wait-list': typeof WaitListRoute
   '/admin_/directory': typeof AdminDirectoryRoute
@@ -228,15 +300,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acceptable-use'
     | '/admin'
+    | '/artisan-terms'
     | '/auth'
+    | '/billing-terms'
+    | '/complaints'
+    | '/cookies'
     | '/dashboard'
     | '/forgot-password'
     | '/login'
     | '/messages'
     | '/post-ad'
+    | '/privacy'
     | '/reset-password'
+    | '/seller-terms'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/wait-list'
     | '/admin/directory'
@@ -253,14 +333,22 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acceptable-use'
     | '/admin'
+    | '/artisan-terms'
     | '/auth'
+    | '/billing-terms'
+    | '/complaints'
+    | '/cookies'
     | '/dashboard'
     | '/forgot-password'
     | '/login'
     | '/post-ad'
+    | '/privacy'
     | '/reset-password'
+    | '/seller-terms'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/wait-list'
     | '/admin/directory'
@@ -277,15 +365,23 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/acceptable-use'
     | '/admin'
+    | '/artisan-terms'
     | '/auth'
+    | '/billing-terms'
+    | '/complaints'
+    | '/cookies'
     | '/dashboard'
     | '/forgot-password'
     | '/login'
     | '/messages'
     | '/post-ad'
+    | '/privacy'
     | '/reset-password'
+    | '/seller-terms'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/wait-list'
     | '/admin_/directory'
@@ -303,15 +399,23 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcceptableUseRoute: typeof AcceptableUseRoute
   AdminRoute: typeof AdminRoute
+  ArtisanTermsRoute: typeof ArtisanTermsRoute
   AuthRoute: typeof AuthRoute
+  BillingTermsRoute: typeof BillingTermsRoute
+  ComplaintsRoute: typeof ComplaintsRoute
+  CookiesRoute: typeof CookiesRoute
   DashboardRoute: typeof DashboardRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   MessagesRoute: typeof MessagesRouteWithChildren
   PostAdRoute: typeof PostAdRoute
+  PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SellerTermsRoute: typeof SellerTermsRoute
   SignupRoute: typeof SignupRoute
+  TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WaitListRoute: typeof WaitListRoute
   AdminDirectoryRoute: typeof AdminDirectoryRoute
@@ -334,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/acceptable-use': {
+      id: '/acceptable-use'
+      path: '/acceptable-use'
+      fullPath: '/acceptable-use'
+      preLoaderRoute: typeof AcceptableUseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -341,11 +452,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/artisan-terms': {
+      id: '/artisan-terms'
+      path: '/artisan-terms'
+      fullPath: '/artisan-terms'
+      preLoaderRoute: typeof ArtisanTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/billing-terms': {
+      id: '/billing-terms'
+      path: '/billing-terms'
+      fullPath: '/billing-terms'
+      preLoaderRoute: typeof BillingTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/complaints': {
+      id: '/complaints'
+      path: '/complaints'
+      fullPath: '/complaints'
+      preLoaderRoute: typeof ComplaintsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -383,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostAdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -390,11 +536,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/seller-terms': {
+      id: '/seller-terms'
+      path: '/seller-terms'
+      fullPath: '/seller-terms'
+      preLoaderRoute: typeof SellerTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-email': {
@@ -507,15 +667,23 @@ const MessagesRouteWithChildren = MessagesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcceptableUseRoute: AcceptableUseRoute,
   AdminRoute: AdminRoute,
+  ArtisanTermsRoute: ArtisanTermsRoute,
   AuthRoute: AuthRoute,
+  BillingTermsRoute: BillingTermsRoute,
+  ComplaintsRoute: ComplaintsRoute,
+  CookiesRoute: CookiesRoute,
   DashboardRoute: DashboardRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MessagesRoute: MessagesRouteWithChildren,
   PostAdRoute: PostAdRoute,
+  PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SellerTermsRoute: SellerTermsRoute,
   SignupRoute: SignupRoute,
+  TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WaitListRoute: WaitListRoute,
   AdminDirectoryRoute: AdminDirectoryRoute,

@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type FieldErrors } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,6 @@ import { friendlyAuthError } from "@/lib/auth-errors";
 import { forgotPasswordSchema } from "@/lib/auth-schemas";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
-import { focusFormField } from "@/lib/form-navigation";
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
@@ -32,12 +31,11 @@ export const Route = createFileRoute("/forgot-password")({
 function ForgotPage() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
     mode: "onChange",
@@ -64,12 +62,6 @@ function ForgotPage() {
     setSent(true);
   };
 
-  const onInvalid = (invalid: FieldErrors<ForgotPasswordFormValues>) => {
-    const message = invalid.email?.message;
-    toast.error(message ?? "Enter your email address to request a reset link.");
-    focusFormField(formRef.current, "email");
-  };
-
   return (
     <AuthLayout
       title="Forgot password?"
@@ -91,16 +83,21 @@ function ForgotPage() {
           </div>
         </div>
       ) : (
+<<<<<<< HEAD
         <form
           ref={formRef}
           onSubmit={handleSubmit(submit, onInvalid)}
           className="space-y-4"
           noValidate
         >
+=======
+        <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+<<<<<<< HEAD
               <Input
                 id="email"
                 type="email"
@@ -109,6 +106,9 @@ function ForgotPage() {
                 className="pl-9"
                 {...register("email")}
               />
+=======
+              <Input id="email" type="email" autoComplete="email" className="pl-9" {...register("email")} />
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
             </div>
             {errors.email ? (
               <p className="text-sm text-red-600">{errors.email.message}</p>
@@ -119,7 +119,7 @@ function ForgotPage() {
             )}
           </div>
 
-          <Button type="submit" disabled={busy} className="w-full">
+          <Button type="submit" disabled={busy || !isValid} className="w-full">
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {busy ? "Sending reset link…" : "Send reset link"}
           </Button>

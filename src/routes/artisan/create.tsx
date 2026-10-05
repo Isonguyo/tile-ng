@@ -1,7 +1,7 @@
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { useForm, Controller, type FieldErrors } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -29,7 +29,6 @@ import { fromUntyped } from "@/lib/db-untyped";
 import { ARTISAN_CATEGORIES } from "@/lib/artisan-categories";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
-import { focusFormField, focusFormFieldAfterRender, scrollPageToTop } from "@/lib/form-navigation";
 
 import {
   Camera,
@@ -130,8 +129,6 @@ function ArtisanCreatePage() {
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [portfolioPreviews, setPortfolioPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [photoErrors, setPhotoErrors] = useState<{ profile?: string; portfolio?: string }>({});
-  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!profilePhoto) {
@@ -232,11 +229,6 @@ function ArtisanCreatePage() {
     },
   });
 
-  const goToStep = (next: number) => {
-    setStep(next);
-    scrollPageToTop();
-  };
-
   const handleValidateBasicInfo = async () => {
     const isStep2Valid = await form.trigger([
       "full_name",
@@ -249,8 +241,9 @@ function ArtisanCreatePage() {
     ]);
 
     if (isStep2Valid) {
-      goToStep(3);
+      setStep(3);
     } else {
+<<<<<<< HEAD
       const fields = [
         "full_name",
         "profession",
@@ -264,10 +257,19 @@ function ArtisanCreatePage() {
       const message = firstInvalid ? form.getFieldState(firstInvalid).error?.message : undefined;
       toast.error(message ?? "Please complete all required fields correctly.");
       if (firstInvalid) focusFormField(formRef.current, firstInvalid);
+=======
+      const errors = form.formState.errors;
+      if (errors.bio) {
+        toast.error("Please tell customers more about yourself. Your bio needs at least 30 characters.");
+      } else {
+        toast.error("Please complete all required fields correctly.");
+      }
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
     }
   };
 
   const handleAdvanceToReview = () => {
+<<<<<<< HEAD
     const missingProfilePhoto =
       !profilePhoto && !existingArtisan?.profile_photo && !existingArtisan?.avatar_url;
     const existingPortfolioCount = existingArtisan?.portfolio_images?.length ?? 0;
@@ -309,6 +311,18 @@ function ArtisanCreatePage() {
       return;
     }
     focusFormField(formRef.current, first);
+=======
+    if (!profilePhoto && !existingArtisan?.profile_photo && !existingArtisan?.avatar_url) {
+      toast.error("Please attach a professional profile photo.");
+      return;
+    }
+    const existingPortfolioCount = existingArtisan?.portfolio_images?.length ?? 0;
+    if (portfolioImages.length + existingPortfolioCount < 3) {
+      toast.error("Please upload at least 3 samples of your previous work.");
+      return;
+    }
+    setStep(4);
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
   };
 
   const selectedStateName =
@@ -492,7 +506,7 @@ function ArtisanCreatePage() {
         </div>
 
         <Card className="overflow-hidden rounded-3xl border border-[#1b3b2a] bg-gradient-to-b from-[#102017] to-[#09150f] text-slate-100 shadow-[0_24px_65px_rgba(0,0,0,0.28)]">
-          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit, onInvalid)} noValidate>
+          <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
             {/* STEP 1: Onboarding Introduction */}
             {step === 1 && (
               <div className="p-5 sm:p-8">
@@ -539,6 +553,7 @@ function ArtisanCreatePage() {
                   </div>
                 </div>
 
+<<<<<<< HEAD
                 <Button
                   className="mt-7 h-12 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"
                   size="lg"
@@ -546,6 +561,9 @@ function ArtisanCreatePage() {
                   onClick={() => goToStep(2)}
                   disabled={postingDisabled}
                 >
+=======
+                <Button className="mt-7 h-12 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" size="lg" type="button" onClick={() => setStep(2)} disabled={postingDisabled}>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   Create My Profile
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -563,6 +581,7 @@ function ArtisanCreatePage() {
                 </div>
 
                 <div className="space-y-2">
+<<<<<<< HEAD
                   <Label htmlFor="artisan-full-name">
                     Full Name <span className="text-rose-300">*</span>
                   </Label>
@@ -583,6 +602,15 @@ function ArtisanCreatePage() {
                   <Label>
                     Profession <span className="text-rose-300">*</span>
                   </Label>
+=======
+                  <Label>Full Name</Label>
+                  <Input placeholder="John Doe" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("full_name")} />
+                  {form.formState.errors.full_name && <p className="text-xs text-rose-300">{form.formState.errors.full_name.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Profession</Label>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   <Select
                     value={watch.profession}
                     onValueChange={(value) =>
@@ -610,6 +638,7 @@ function ArtisanCreatePage() {
                   </p>
                 )}
 
+<<<<<<< HEAD
                 <div data-field="phone" className="space-y-2">
                   <Label>
                     Phone Number <span className="text-rose-300">*</span>
@@ -623,6 +652,12 @@ function ArtisanCreatePage() {
                   {form.formState.errors.phone && (
                     <p className="text-xs text-rose-300">{form.formState.errors.phone.message}</p>
                   )}
+=======
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input type="tel" placeholder="08012345678" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("phone")} />
+                  {form.formState.errors.phone && <p className="text-xs text-rose-300">{form.formState.errors.phone.message}</p>}
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                 </div>
 
                 <div className="space-y-2">
@@ -635,10 +670,15 @@ function ArtisanCreatePage() {
                   />
                 </div>
 
+<<<<<<< HEAD
                 <div data-field="state" className="space-y-2">
                   <Label>
                     State <span className="text-rose-300">*</span>
                   </Label>
+=======
+                <div className="space-y-2">
+                  <Label>State</Label>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   <Select
                     value={watch.state}
                     onValueChange={(value) => {
@@ -657,6 +697,7 @@ function ArtisanCreatePage() {
                       ))}
                     </SelectContent>
                   </Select>
+<<<<<<< HEAD
                   {form.formState.errors.state && (
                     <p className="text-xs text-rose-300">{form.formState.errors.state.message}</p>
                   )}
@@ -666,6 +707,12 @@ function ArtisanCreatePage() {
                   <Label>
                     Local Government Area <span className="text-rose-300">*</span>
                   </Label>
+=======
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Local Government Area</Label>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   <Select
                     disabled={!watch.state}
                     value={watch.lga}
@@ -684,13 +731,17 @@ function ArtisanCreatePage() {
                       ))}
                     </SelectContent>
                   </Select>
+<<<<<<< HEAD
                   {form.formState.errors.lga && (
                     <p className="text-xs text-rose-300">{form.formState.errors.lga.message}</p>
                   )}
+=======
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                 </div>
 
-                <div data-field="years_experience" className="space-y-2">
+                <div className="space-y-2">
                   <Label>Years of Experience</Label>
+<<<<<<< HEAD
                   <Input
                     type="number"
                     min="0"
@@ -704,13 +755,20 @@ function ArtisanCreatePage() {
                       {form.formState.errors.years_experience.message}
                     </p>
                   )}
+=======
+                  <Input type="number" min="0" max="80" placeholder="5" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("years_experience")} />
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                 </div>
 
-                <div data-field="bio" className="space-y-2">
+                <div className="space-y-2">
                   <div className="flex justify-between items-center">
+<<<<<<< HEAD
                     <Label>
                       Professional Bio <span className="text-rose-300">*</span>
                     </Label>
+=======
+                    <Label>Professional Bio</Label>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                     <span
                       className={`text-xs ${
                         (watch.bio?.length ?? 0) >= 30
@@ -728,6 +786,7 @@ function ArtisanCreatePage() {
                     className="rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                     {...form.register("bio")}
                   />
+<<<<<<< HEAD
                   {form.formState.errors.bio ? (
                     <p className="text-xs text-rose-300">{form.formState.errors.bio.message}</p>
                   ) : (
@@ -746,6 +805,20 @@ function ArtisanCreatePage() {
                     onClick={() => goToStep(1)}
                     type="button"
                   >
+=======
+                  <p
+                    className={`text-xs ${(watch.bio?.length ?? 0) >= 30
+                      ? "text-emerald-300"
+                      : "font-medium text-amber-200"
+                      }`}
+                  >
+                    Minimum 30 characters required. Tell customers what makes you stand out.
+                  </p>
+                </div>
+
+                <div className="flex justify-between border-t border-white/[0.07] pt-4">
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(1)} type="button">
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
@@ -779,10 +852,14 @@ function ArtisanCreatePage() {
                 </div>
 
                 {/* Profile Photo Section */}
+<<<<<<< HEAD
                 <Card
                   data-field="profile_photo"
                   className="flex flex-col items-center rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6"
                 >
+=======
+                <Card className="flex flex-col items-center rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   <Camera className="mb-3 h-8 w-8 text-emerald-300" />
                   <h3 className="flex items-center gap-2 text-center text-sm font-semibold text-white">
                     <UserRound className="h-4 w-4" /> Profile Photo
@@ -809,9 +886,7 @@ function ArtisanCreatePage() {
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           setProfilePhoto(e.target.files[0]);
-                          setPhotoErrors((current) => ({ ...current, profile: undefined }));
                         }
-                        e.target.value = "";
                       }}
                     />
                     <Button
@@ -822,19 +897,26 @@ function ArtisanCreatePage() {
                     >
                       {profilePhotoPreview ? "Change Photo" : "Choose Photo"}
                     </Button>
+<<<<<<< HEAD
                     {photoErrors.profile && (
                       <p className="text-center text-xs font-medium text-rose-300">
                         {photoErrors.profile}
                       </p>
                     )}
+=======
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   </div>
                 </Card>
 
                 {/* Previous Jobs Portfolio Section */}
+<<<<<<< HEAD
                 <Card
                   data-field="portfolio_images"
                   className="rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6"
                 >
+=======
+                <Card className="rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   <div className="text-center max-w-md mx-auto mb-4">
                     <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-white">
                       <Images className="h-4 w-4" /> Previous Jobs
@@ -847,11 +929,14 @@ function ArtisanCreatePage() {
                       {portfolioImages.length + (existingArtisan?.portfolio_images?.length ?? 0)}/8
                       uploaded
                     </p>
+<<<<<<< HEAD
                     {photoErrors.portfolio && (
                       <p className="mt-2 text-xs font-medium text-rose-300">
                         {photoErrors.portfolio}
                       </p>
                     )}
+=======
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   </div>
 
                   <div className="flex flex-col items-center">
@@ -865,6 +950,7 @@ function ArtisanCreatePage() {
                         if (!e.target.files) return;
                         const uploaded = Array.from(e.target.files);
                         const existingCount = existingArtisan?.portfolio_images?.length ?? 0;
+<<<<<<< HEAD
                         const next = [...portfolioImages, ...uploaded].slice(
                           0,
                           Math.max(0, 8 - existingCount),
@@ -880,6 +966,9 @@ function ArtisanCreatePage() {
                                 : undefined,
                         }));
                         e.target.value = "";
+=======
+                        setPortfolioImages((prev) => [...prev, ...uploaded].slice(0, Math.max(0, 8 - existingCount)));
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                       }}
                     />
                     <Button
@@ -1079,6 +1168,7 @@ function ArtisanCreatePage() {
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
+<<<<<<< HEAD
                   <Button
                     variant="outline"
                     className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]"
@@ -1093,6 +1183,13 @@ function ArtisanCreatePage() {
                     className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"
                     onClick={handleAdvanceToReview}
                   >
+=======
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(2)} type="button">
+                    <ChevronLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button type="button" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" onClick={handleAdvanceToReview} disabled={portfolioImages.length < 3 || !profilePhoto}>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                     Continue to Review
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -1232,6 +1329,7 @@ function ArtisanCreatePage() {
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
+<<<<<<< HEAD
                   <Button
                     variant="outline"
                     className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]"
@@ -1239,6 +1337,9 @@ function ArtisanCreatePage() {
                     type="button"
                     disabled={submitting}
                   >
+=======
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(3)} type="button" disabled={submitting}>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>

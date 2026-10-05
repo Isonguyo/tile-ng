@@ -81,7 +81,6 @@ import { toast } from "sonner";
 import { useConfirmAction } from "@/components/confirm-action-provider";
 import { showError } from "@/lib/user-feedback";
 import { getSignedUrls } from "@/lib/storage";
-import { SupportCenter } from "@/components/support-center";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -656,6 +655,7 @@ function Admin() {
 
   // Bulk moderation
   const [selected, setSelected] = useState<Set<string>>(new Set());
+<<<<<<< HEAD
   const toggleSel = (id: string) =>
     setSelected((current) => {
       const next = new Set(current);
@@ -663,6 +663,9 @@ function Admin() {
       else next.add(id);
       return next;
     });
+=======
+  const toggleSel = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
   const bulk = async (action: "approve" | "reject" | "flag") => {
     if (!selected.size) return toast.error("Select at least one listing");
     const confirmed = await confirm({
@@ -940,6 +943,7 @@ function Admin() {
         <Tabs defaultValue="overview" className="w-full space-y-6">
           <div className="overflow-x-auto scrollbar-hide pb-1">
             <TabsList className="inline-flex h-11 items-center justify-start rounded-xl bg-muted/60 p-1 text-muted-foreground backdrop-blur-md border border-border/40 min-w-max">
+<<<<<<< HEAD
               <TabsTrigger
                 id="tab-overview"
                 value="overview"
@@ -1026,6 +1030,20 @@ function Admin() {
               >
                 🛡 Roles & Access
               </TabsTrigger>
+=======
+              <TabsTrigger id="tab-overview" value="overview" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">📊 Overview</TabsTrigger>
+              <TabsTrigger id="tab-moderation" value="moderation" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🛡 Moderation</TabsTrigger>
+              <TabsTrigger id="tab-artisans" value="artisans" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🧰 Artisans</TabsTrigger>
+              <TabsTrigger id="tab-reports" value="reports" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🚩 Reports</TabsTrigger>
+              <TabsTrigger id="tab-kyc" value="kyc" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">📄 KYC</TabsTrigger>
+              <TabsTrigger id="tab-money" value="money" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">💳 Revenue</TabsTrigger>
+              <TabsTrigger id="tab-users" value="users" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">👥 Users</TabsTrigger>
+              <TabsTrigger value="broadcast" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">📣 Broadcast</TabsTrigger>
+              <TabsTrigger value="waitlist" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🚀 Waitlist</TabsTrigger>
+              <TabsTrigger value="launch" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🌐 Launch Review</TabsTrigger>
+              <TabsTrigger value="settings" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">⚙ Platform</TabsTrigger>
+              <TabsTrigger value="codes" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">🛡 Roles & Access</TabsTrigger>
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
             </TabsList>
           </div>
 
@@ -1667,10 +1685,6 @@ function Admin() {
                 Plan price tiers: Lite ₦5,000 · Pro ₦15,000 · VIP ₦40,000
               </div>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="support" className="space-y-4 mt-0">
-            <SupportCenter mode="admin" />
           </TabsContent>
 
           {/* ═══ USERS ═════════════════════════════════════════ */}

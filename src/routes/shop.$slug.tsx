@@ -11,13 +11,12 @@ import { type ListingCardData } from "@/components/listing-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatNaira } from "@/lib/categories";
 import { QRCodeSVG } from "qrcode.react";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
-import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
 import {
   Share2,
   Phone,
@@ -106,6 +105,7 @@ function ShopPage() {
     },
   });
 
+<<<<<<< HEAD
   const { data: vendorBadges } = useQuery({
     queryKey: ["vendor-badges", shop?.id],
     enabled: !!shop?.id,
@@ -134,6 +134,8 @@ function ShopPage() {
     },
   });
 
+=======
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
   const { data: contact } = useQuery<{ phone: string | null; whatsapp: string | null } | null>({
     queryKey: ["shop-contact", slug, !!user],
     enabled: !!user && !!shop?.id,
@@ -161,7 +163,6 @@ function ShopPage() {
       if (error) throw new Error(error.message);
       return ((data ?? []) as Array<ShopListing & { user_id: string }>)
         .filter((listing) => listing.user_id === shop!.id)
-        .map((listing) => ({ ...listing, seller_id: shop!.id }))
         .sort((a, b) => Number(b.is_promoted) - Number(a.is_promoted));
     },
   });
@@ -260,6 +261,7 @@ function ShopPage() {
 
   const achievements = useMemo(() => {
     const list: { icon: React.ReactNode; label: string; color: string }[] = [];
+<<<<<<< HEAD
     if (vendorBadges === true)
       list.push({
         icon: <BadgeCheck className="h-3.5 w-3.5" />,
@@ -313,6 +315,17 @@ function ShopPage() {
     followerCount,
     featuredListings.length,
   ]);
+=======
+    if (shop?.is_verified) list.push({ icon: <BadgeCheck className="h-3.5 w-3.5" />, label: "Verified", color: "bg-blue-500/10 text-blue-700 border-blue-200" });
+    if ((shop?.subscription_tier ?? "free") !== "free") list.push({ icon: <Trophy className="h-3.5 w-3.5" />, label: "Premium Seller", color: "bg-amber-500/10 text-amber-700 border-amber-200" });
+    if (listings.length >= 20) list.push({ icon: <Package className="h-3.5 w-3.5" />, label: "Stocked Shop", color: "bg-purple-500/10 text-purple-700 border-purple-200" });
+    if (avgRating >= 4.5 && reviews.length >= 3) list.push({ icon: <Star className="h-3.5 w-3.5" />, label: "Top Rated", color: "bg-emerald-500/10 text-emerald-700 border-emerald-200" });
+    if (totalViews >= 500) list.push({ icon: <Flame className="h-3.5 w-3.5" />, label: "Hot Shop", color: "bg-orange-500/10 text-orange-700 border-orange-200" });
+    if (followerCount >= 50) list.push({ icon: <Heart className="h-3.5 w-3.5" />, label: "Fan Favorite", color: "bg-pink-500/10 text-pink-700 border-pink-200" });
+    if (featuredListings.length > 0) list.push({ icon: <Zap className="h-3.5 w-3.5" />, label: "Featured", color: "bg-indigo-500/10 text-indigo-700 border-indigo-200" });
+    return list;
+  }, [shop, listings.length, avgRating, reviews.length, totalViews, followerCount, featuredListings.length]);
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
 
   const { data: trustScore = 0 } = useQuery({
     queryKey: ["seller-trust", shop?.id],
@@ -331,6 +344,7 @@ function ShopPage() {
     return Array.from(cats.entries()).map(([name, count]) => ({ name, count }));
   }, [listings]);
 
+<<<<<<< HEAD
   const applySort = useCallback(
     (arr: ShopListing[]) => {
       const a = [...arr];
@@ -351,6 +365,19 @@ function ShopPage() {
     },
     [sortBy],
   );
+=======
+  const applySort = (arr: ShopListing[]) => {
+    const a = [...arr];
+    switch (sortBy) {
+      case "price-asc": return a.sort((x, y) => (x.price ?? 0) - (y.price ?? 0));
+      case "price-desc": return a.sort((x, y) => (y.price ?? 0) - (x.price ?? 0));
+      case "popular": return a.sort((x, y) => (y.views_count ?? 0) - (x.views_count ?? 0));
+      case "rating": return a; // no per-listing rating column yet
+      case "newest": return a; // no per-listing created ordering column fetched
+      default: return a; // featured (promoted first, from query)
+    }
+  };
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
 
   const filteredGoods = useMemo(() => {
     const base = goods.filter((item) => {
@@ -369,7 +396,7 @@ function ShopPage() {
       return matchesSearch && matchesCategory && matchesPrice;
     });
     return applySort(base);
-  }, [goods, searchQuery, selectedCategory, priceRange, applySort]);
+  }, [goods, searchQuery, selectedCategory, priceRange, sortBy]);
 
   const filteredServices = useMemo(() => {
     const base = services.filter((item) => {
@@ -382,7 +409,7 @@ function ShopPage() {
       return matchesSearch && matchesCategory;
     });
     return applySort(base);
-  }, [services, searchQuery, selectedCategory, applySort]);
+  }, [services, searchQuery, selectedCategory, sortBy]);
 
   if (isLoading)
     return (
@@ -528,6 +555,7 @@ function ShopPage() {
 
             <div className="flex-1 space-y-2 w-full">
               <div className="flex flex-wrap items-center gap-2">
+<<<<<<< HEAD
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
                   {shop.business_name ?? shop.full_name}
                 </h1>
@@ -538,6 +566,11 @@ function ShopPage() {
                   </Badge>
                 )}
                 <TierBadge tier={effectiveTier ?? "free"} />
+=======
+                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{shop.business_name ?? shop.full_name}</h1>
+                {shop.is_verified && <BadgeCheck className="h-6 w-6 text-accent fill-accent/10" />}
+                <TierBadge tier={shop.subscription_tier} />
+>>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
               </div>
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
