@@ -1,7 +1,7 @@
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -29,6 +29,7 @@ import { uploadListingImages } from "@/lib/storage";
 import { optimizeListingImage } from "@/lib/listing-image";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { focusFormField, focusFormFieldAfterRender, scrollPageToTop } from "@/lib/form-navigation";
 import {
   Upload,
   X,
@@ -73,7 +74,8 @@ const schema = z.object({
   brand: z.string().optional(),
 });
 
-type FormVals = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormVals = z.output<typeof schema>;
 
 type Mode = "home" | "sell";
 type ListingPhoto = { id: string; file: File; previewUrl: string };
@@ -112,10 +114,15 @@ function PostAd() {
   const [draftStatus, setDraftStatus] = useState("Draft ready");
   const [promotionState, setPromotionState] = useState<"idle" | "promoted">("idle");
   const [promoting, setPromoting] = useState(false);
-  const [promotionStats, setPromotionStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
+  const [promotionStats, setPromotionStats] = useState<{
+    views_count: number;
+    clicks_count: number;
+    favorites_count: number;
+  } | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const ownedPreviewUrls = useRef(new Set<string>());
   const isPreparingPhotosRef = useRef(false);
 
@@ -127,7 +134,7 @@ function PostAd() {
     [],
   );
 
-  const form = useForm<FormVals>({
+  const form = useForm<FormInput, unknown, FormVals>({
     resolver: zodResolver(schema),
     defaultValues: {
       category: "",
@@ -262,8 +269,13 @@ function PostAd() {
     watch.brand,
   ]);
 
+  const goToStep = (nextStep: number) => {
+    setStep(nextStep);
+    scrollPageToTop();
+  };
+
   const nextStep = () => {
-    if (step < 4) setStep((s) => s + 1);
+    if (step < 4) goToStep(step + 1);
   };
 
   const prevStep = () => {
@@ -475,9 +487,14 @@ function PostAd() {
 
   const loadListingStats = async (listingId: string) => {
     const { data } = await supabase.rpc("owner_listing_stats", { _id: listingId });
-    const row = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
+    const row = (data ?? [])[0] as
+      { views_count: number; clicks_count: number; favorites_count: number } | undefined;
     if (row) {
-      setPromotionStats({ views_count: row.views_count, clicks_count: row.clicks_count, favorites_count: Number(row.favorites_count) });
+      setPromotionStats({
+        views_count: row.views_count,
+        clicks_count: row.clicks_count,
+        favorites_count: Number(row.favorites_count),
+      });
     }
   };
 
@@ -485,7 +502,12 @@ function PostAd() {
     if (!user || !submittedListingId) return;
     setPromoting(true);
     try {
-      const { data, error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: { message: string } | null }>)("promote_listing", {
+      const { data, error } = await (
+        supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: boolean | null; error: { message: string } | null }>
+      )("promote_listing", {
         p_listing_id: submittedListingId,
         p_user_id: user.id,
       });
@@ -819,15 +841,14 @@ function PostAd() {
                     type="button"
                     className="bg-accent text-accent-foreground"
                     onClick={handlePromoteListing}
-                    disabled={
-                      promoting ||
-                      promotionState === "promoted" ||
-                      !canPromote ||
-                      true
-                    }
+                    disabled={promoting || promotionState === "promoted" || !canPromote || true}
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
-                    {promoting ? "Promoting..." : promotionState === "promoted" ? "Promoted" : "Promote after approval"}
+                    {promoting
+                      ? "Promoting..."
+                      : promotionState === "promoted"
+                        ? "Promoted"
+                        : "Promote after approval"}
                   </Button>
                 </div>
                 {!canPromote && (
@@ -843,9 +864,20 @@ function PostAd() {
                 )}
                 {promotionStats && (
                   <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm text-muted-foreground">
-                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.views_count}</p><p>views</p></div>
-                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.clicks_count}</p><p>clicks</p></div>
-                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.favorites_count}</p><p>saves</p></div>
+                    <div className="rounded-xl border bg-background p-3">
+                      <p className="font-semibold text-foreground">{promotionStats.views_count}</p>
+                      <p>views</p>
+                    </div>
+                    <div className="rounded-xl border bg-background p-3">
+                      <p className="font-semibold text-foreground">{promotionStats.clicks_count}</p>
+                      <p>clicks</p>
+                    </div>
+                    <div className="rounded-xl border bg-background p-3">
+                      <p className="font-semibold text-foreground">
+                        {promotionStats.favorites_count}
+                      </p>
+                      <p>saves</p>
+                    </div>
                   </div>
                 )}
               </div>

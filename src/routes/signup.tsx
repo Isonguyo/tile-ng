@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { signupSchema, accountTypes, type AccountType } from "@/lib/auth-schemas
 import { Loader2, ShoppingBag, Store, Wrench, Eye, EyeOff, Phone, Briefcase } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { siteUrl } from "@/lib/site-url";
+import { focusFormField } from "@/lib/form-navigation";
 
 /**
  * Instant-access signup is active. To restore email verification later, set this
@@ -73,12 +74,14 @@ function SignupPage() {
   const [fromWaitlist, setFromWaitlist] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [marketing, setMarketing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    setError,
     formState: { errors, isValid },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -268,7 +271,13 @@ function SignupPage() {
     setCooldown(60);
   };
 
-  const canSubmit = useMemo(() => Boolean(watch("full_name") && watch("email") && password && watch("confirm_password") && isValid), [isValid, password, watch]);
+  const canSubmit = useMemo(
+    () =>
+      Boolean(
+        watch("full_name") && watch("email") && password && watch("confirm_password") && isValid,
+      ),
+    [isValid, password, watch],
+  );
 
   return (
     <AuthLayout
@@ -447,7 +456,8 @@ function SignupPage() {
                 <Link to="/privacy" className="text-primary underline">
                   Privacy Policy
                 </Link>
-                .{accountType === "merchant" && (
+                .
+                {accountType === "merchant" && (
                   <>
                     {" "}
                     I also agree to the{" "}

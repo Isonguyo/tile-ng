@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,7 +103,10 @@ function LoginPage() {
     continueAfterLogin();
   };
 
-  const canSubmit = useMemo(() => Boolean(email && password && isValid), [email, password, isValid]);
+  const canSubmit = useMemo(
+    () => Boolean(email && password && isValid),
+    [email, password, isValid],
+  );
 
   return (
     <AuthLayout
@@ -116,12 +119,7 @@ function LoginPage() {
         <p className="text-sm text-muted-foreground">Access your trusted marketplace workspace</p>
       </div>
 
-      <form
-        ref={formRef}
-        onSubmit={handleSubmit(onSubmit, onInvalid)}
-        className="space-y-4"
-        noValidate
-      >
+      <form ref={formRef} onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="email">
             Email address <span className="text-destructive">*</span>

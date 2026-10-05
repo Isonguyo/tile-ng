@@ -11,12 +11,13 @@ import { type ListingCardData } from "@/components/listing-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatNaira } from "@/lib/categories";
 import { QRCodeSVG } from "qrcode.react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
 import {
   Share2,
   Phone,
@@ -146,7 +147,7 @@ function ShopPage() {
     },
   });
 
-  const { data: listings = [] } = useQuery({
+  const { data: listings = [] } = useQuery<ShopListing[]>({
     queryKey: ["shop-listings", shop?.id],
     enabled: !!shop?.id,
     queryFn: async () => {

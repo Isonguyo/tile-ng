@@ -83,12 +83,7 @@ function ForgotPage() {
           </div>
         </div>
       ) : (
-        <form
-          ref={formRef}
-          onSubmit={handleSubmit(submit, onInvalid)}
-          className="space-y-4"
-          noValidate
-        >
+        <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">

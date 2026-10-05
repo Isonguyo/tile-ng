@@ -40,6 +40,7 @@ function ResetPage() {
     register,
     handleSubmit,
     watch,
+    setError,
     formState: { errors, isValid },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -98,12 +99,7 @@ function ResetPage() {
         </div>
       ) : null}
 
-      <form
-        ref={formRef}
-        onSubmit={handleSubmit(submit, onInvalid)}
-        className="mt-6 space-y-4"
-        noValidate
-      >
+      <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="password">New password</Label>
           <div className="relative">

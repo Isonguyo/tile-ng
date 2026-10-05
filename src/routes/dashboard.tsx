@@ -48,6 +48,8 @@ import {
   Briefcase,
   MessageCircle,
   ArrowRight,
+  CheckCircle2,
+  LockKeyhole,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -78,6 +80,7 @@ import {
   VipStaffSection,
 } from "@/components/vip-merchant-tools";
 import { useMerchantStaffContext } from "@/hooks/use-merchant-staff-context";
+import { scrollPageToTop } from "@/lib/form-navigation";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -1302,8 +1305,23 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
   );
 }
 
-function ShopLinkCard({ slug }: { slug: string }) {
+function ShopLinkCard({
+  slug,
+  entitlements,
+  entitlementsLoading,
+  onSlugChanged,
+}: {
+  slug: string;
+  entitlements: TileEntitlements | null | undefined;
+  entitlementsLoading: boolean;
+  onSlugChanged: () => void | Promise<void>;
+}) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [origin, setOrigin] = useState("");
+  const [currentSlug, setCurrentSlug] = useState(slug);
+  const [customSlug, setCustomSlug] = useState(slug);
+  const [savingSlug, setSavingSlug] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -1618,7 +1636,21 @@ const PLANS: { tier: "lite" | "pro" | "vip"; price: number; perks: string[] }[] 
   },
 ];
 
-function BillingCard({ tier, until, onChange }: { tier: string; until?: string | null; onChange: () => void }) {
+function BillingCard({
+  tier,
+  until,
+  entitlements,
+  entitlementsLoading,
+  onSelectTab,
+  onChange,
+}: {
+  tier: string;
+  until?: string | null;
+  entitlements: TileEntitlements | null | undefined;
+  entitlementsLoading: boolean;
+  onSelectTab: (tab: string) => void;
+  onChange: () => void | Promise<void>;
+}) {
   const [busy, setBusy] = useState<string | null>(null);
   const qc = useQueryClient();
   const { data: storedPlans = [] } = useQuery({
@@ -1885,11 +1917,13 @@ function ListingRow({
     status: string;
     is_promoted?: boolean;
     expires_at?: string | null;
+    promotion_expires_at?: string | null;
   };
   unlimitedPromotions: boolean;
   onChange: () => void;
 }) {
   const confirm = useConfirmAction();
+  const qc = useQueryClient();
   const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
   const [stats, setStats] = useState<{
@@ -2084,9 +2118,9 @@ function ListingRow({
       );
       await Promise.all([
         Promise.resolve(onChange()),
-        qc.invalidateQueries({ queryKey: ["tile-entitlements", user.id] }),
+        qc.invalidateQueries({ queryKey: ["tile-entitlements", userId] }),
         qc.invalidateQueries({ queryKey: ["tile-top-ad-status"] }),
-        qc.invalidateQueries({ queryKey: ["vendor-analytics", user.id] }),
+        qc.invalidateQueries({ queryKey: ["vendor-analytics", userId] }),
         qc.invalidateQueries({ queryKey: ["listings"] }),
         qc.invalidateQueries({ queryKey: ["public-marketplace-catalog"] }),
         qc.invalidateQueries({ queryKey: ["shop-listings"] }),
@@ -2327,10 +2361,8 @@ function ListingRow({
 }
 function ArtisanProfileCard({
   profile,
-  onChange,
 }: {
-  profile: any;
-  onChange: () => void;
+  profile: NonNullable<ReturnType<typeof useAuth>["profile"]>;
 }) {
   return (
     <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>

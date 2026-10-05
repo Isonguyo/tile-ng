@@ -1,7 +1,7 @@
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -29,6 +29,7 @@ import { fromUntyped } from "@/lib/db-untyped";
 import { ARTISAN_CATEGORIES } from "@/lib/artisan-categories";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { focusFormField, focusFormFieldAfterRender, scrollPageToTop } from "@/lib/form-navigation";
 
 import {
   Camera,
@@ -129,6 +130,11 @@ function ArtisanCreatePage() {
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [portfolioPreviews, setPortfolioPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [photoErrors, setPhotoErrors] = useState<{
+    profile?: string;
+    portfolio?: string;
+  }>({});
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!profilePhoto) {
@@ -203,6 +209,10 @@ function ArtisanCreatePage() {
     });
   }, [profile, form]);
   const watch = form.watch();
+  const goToStep = (nextStep: number) => {
+    setStep(nextStep);
+    scrollPageToTop();
+  };
 
   const { data: states = [] } = useQuery({
     queryKey: ["artisan-states"],
@@ -484,7 +494,7 @@ function ArtisanCreatePage() {
         </div>
 
         <Card className="overflow-hidden rounded-3xl border border-[#1b3b2a] bg-gradient-to-b from-[#102017] to-[#09150f] text-slate-100 shadow-[0_24px_65px_rgba(0,0,0,0.28)]">
-          <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
+          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit, onInvalid)} noValidate>
             {/* STEP 1: Onboarding Introduction */}
             {step === 1 && (
               <div className="p-5 sm:p-8">
