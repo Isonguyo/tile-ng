@@ -12,11 +12,8 @@ import {
   ShieldCheck 
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { getSignedUrl } from "@/lib/storage";
 import { formatNaira } from "@/lib/categories";
-import { rpcUntyped } from "@/lib/waitlist-rpc";
-import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
 
 export type ListingCardData = {
   id: string;
@@ -32,24 +29,12 @@ export type ListingCardData = {
   clicks_count?: number | null;
   seller_tier?: string | null;
   seller_verified?: boolean | null;
-  seller_id?: string | null;
   seller_trust?: number | null;
 };
 
 export function ListingCard({ l }: { l: ListingCardData }) {
   const [url, setUrl] = useState<string | null>(null);
-  const [cardVisible, setCardVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const { data: hasVendorBadge = false } = useQuery({
-    queryKey: ["vendor-badges", l.seller_id],
-    enabled: !!l.seller_id && cardVisible,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data, error } = await rpcUntyped("get_vendor_badges", { _user_id: l.seller_id });
-      if (error) throw error;
-      return hasVerifiedVendorBadge(data);
-    },
-  });
 
   useEffect(() => {
     if (l.images[0]) getSignedUrl(l.images[0]).then(setUrl);
@@ -66,7 +51,6 @@ export function ListingCard({ l }: { l: ListingCardData }) {
       (entries) => {
         const entry = entries[0];
         if (tracked) return;
-        if (entry.isIntersecting) setCardVisible(true);
 
         const isVisibleEnough = entry.isIntersecting && entry.intersectionRatio >= 0.5;
 
@@ -142,9 +126,9 @@ export function ListingCard({ l }: { l: ListingCardData }) {
           </Badge>
 
           {/* Verified Seller Tag */}
-          {hasVendorBadge && (
+          {l.seller_tier && l.seller_tier !== "free" && (
             <Badge className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md border border-[#22C55E]/40 text-[#22C55E] font-medium px-2.5 py-1 rounded-md gap-1.5 text-[11px] shadow-sm">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Verified Vendor
+              <CheckCircle2 className="h-3.5 w-3.5" /> Verified {l.seller_tier === "lite" ? "Vendor" : l.seller_tier}
             </Badge>
           )}
         </div>

@@ -1,7 +1,7 @@
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { useForm, Controller, type FieldErrors } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -29,7 +29,6 @@ import { fromUntyped } from "@/lib/db-untyped";
 import { ARTISAN_CATEGORIES } from "@/lib/artisan-categories";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
-import { focusFormField, focusFormFieldAfterRender, scrollPageToTop } from "@/lib/form-navigation";
 
 import {
   Camera,
@@ -119,8 +118,6 @@ function ArtisanCreatePage() {
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [portfolioPreviews, setPortfolioPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [photoErrors, setPhotoErrors] = useState<{ profile?: string; portfolio?: string }>({});
-  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!profilePhoto) {
@@ -226,11 +223,6 @@ function ArtisanCreatePage() {
     },
   });
 
-  const goToStep = (next: number) => {
-    setStep(next);
-    scrollPageToTop();
-  };
-
   const handleValidateBasicInfo = async () => {
     const isStep2Valid = await form.trigger([
       "full_name",
@@ -243,48 +235,28 @@ function ArtisanCreatePage() {
     ]);
 
     if (isStep2Valid) {
-      goToStep(3);
+      setStep(3);
     } else {
-      const fields = ["full_name", "profession", "phone", "state", "lga", "years_experience", "bio"] as const;
-      const firstInvalid = fields.find((field) => form.getFieldState(field).error);
-      const message = firstInvalid ? form.getFieldState(firstInvalid).error?.message : undefined;
-      toast.error(message ?? "Please complete all required fields correctly.");
-      if (firstInvalid) focusFormField(formRef.current, firstInvalid);
+      const errors = form.formState.errors;
+      if (errors.bio) {
+        toast.error("Please tell customers more about yourself. Your bio needs at least 30 characters.");
+      } else {
+        toast.error("Please complete all required fields correctly.");
+      }
     }
   };
 
   const handleAdvanceToReview = () => {
-    const missingProfilePhoto = !profilePhoto && !existingArtisan?.profile_photo && !existingArtisan?.avatar_url;
+    if (!profilePhoto && !existingArtisan?.profile_photo && !existingArtisan?.avatar_url) {
+      toast.error("Please attach a professional profile photo.");
+      return;
+    }
     const existingPortfolioCount = existingArtisan?.portfolio_images?.length ?? 0;
-    const missingPortfolioCount = Math.max(0, 3 - portfolioImages.length - existingPortfolioCount);
-
-    if (missingProfilePhoto || missingPortfolioCount > 0) {
-      const profileError = missingProfilePhoto ? "Add a clear profile photo before continuing." : undefined;
-      const portfolioError = missingPortfolioCount > 0
-        ? `Add at least ${missingPortfolioCount} more portfolio photo${missingPortfolioCount === 1 ? "" : "s"} to continue.`
-        : undefined;
-      setPhotoErrors({ profile: profileError, portfolio: portfolioError });
-      toast.error(missingProfilePhoto && missingPortfolioCount > 0
-        ? `Add a profile photo and ${missingPortfolioCount} portfolio photo${missingPortfolioCount === 1 ? "" : "s"} to continue.`
-        : profileError ?? portfolioError ?? "Complete the required photo fields to continue.");
-      focusFormField(formRef.current, missingProfilePhoto ? "profile_photo" : "portfolio_images");
+    if (portfolioImages.length + existingPortfolioCount < 3) {
+      toast.error("Please upload at least 3 samples of your previous work.");
       return;
     }
-    setPhotoErrors({});
-    goToStep(4);
-  };
-
-  const onInvalid = (invalid: FieldErrors<FormValues>) => {
-    const first = Object.keys(invalid)[0] as keyof FormValues | undefined;
-    if (!first) return;
-    const message = invalid[first]?.message;
-    toast.error(typeof message === "string" ? message : "Please complete the required artisan profile fields.");
-    if (step !== 2) {
-      setStep(2);
-      focusFormFieldAfterRender(formRef.current, first);
-      return;
-    }
-    focusFormField(formRef.current, first);
+    setStep(4);
   };
 
   const selectedStateName = states.find((s: any) => s.id === watch.state)?.name || "";
@@ -453,7 +425,7 @@ function ArtisanCreatePage() {
         </div>
 
         <Card className="overflow-hidden rounded-3xl border border-[#1b3b2a] bg-gradient-to-b from-[#102017] to-[#09150f] text-slate-100 shadow-[0_24px_65px_rgba(0,0,0,0.28)]">
-          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit, onInvalid)} noValidate>
+          <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
             {/* STEP 1: Onboarding Introduction */}
             {step === 1 && (
               <div className="p-5 sm:p-8">
@@ -495,7 +467,7 @@ function ArtisanCreatePage() {
                   </div>
                 </div>
 
-                <Button className="mt-7 h-12 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" size="lg" type="button" onClick={() => goToStep(2)} disabled={postingDisabled}>
+                <Button className="mt-7 h-12 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" size="lg" type="button" onClick={() => setStep(2)} disabled={postingDisabled}>
                   Create My Profile
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -511,13 +483,13 @@ function ArtisanCreatePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="artisan-full-name">Full Name <span className="text-rose-300">*</span></Label>
-                  <Input id="artisan-full-name" placeholder="John Doe" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("full_name")} />
+                  <Label>Full Name</Label>
+                  <Input placeholder="John Doe" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("full_name")} />
                   {form.formState.errors.full_name && <p className="text-xs text-rose-300">{form.formState.errors.full_name.message}</p>}
                 </div>
 
-                <div data-field="profession" className="space-y-2">
-                  <Label>Profession <span className="text-rose-300">*</span></Label>
+                <div className="space-y-2">
+                  <Label>Profession</Label>
                   <Select
                     value={watch.profession}
                     onValueChange={(value) =>
@@ -538,8 +510,8 @@ function ArtisanCreatePage() {
                 </div>
                 {form.formState.errors.profession && <p className="-mt-4 text-xs text-rose-300">{form.formState.errors.profession.message}</p>}
 
-                <div data-field="phone" className="space-y-2">
-                  <Label>Phone Number <span className="text-rose-300">*</span></Label>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
                   <Input type="tel" placeholder="08012345678" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("phone")} />
                   {form.formState.errors.phone && <p className="text-xs text-rose-300">{form.formState.errors.phone.message}</p>}
                 </div>
@@ -549,8 +521,8 @@ function ArtisanCreatePage() {
                   <Input type="tel" placeholder="08012345678" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("whatsapp")} />
                 </div>
 
-                <div data-field="state" className="space-y-2">
-                  <Label>State <span className="text-rose-300">*</span></Label>
+                <div className="space-y-2">
+                  <Label>State</Label>
                   <Select
                     value={watch.state}
                     onValueChange={(value) => {
@@ -569,11 +541,10 @@ function ArtisanCreatePage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {form.formState.errors.state && <p className="text-xs text-rose-300">{form.formState.errors.state.message}</p>}
                 </div>
 
-                <div data-field="lga" className="space-y-2">
-                  <Label>Local Government Area <span className="text-rose-300">*</span></Label>
+                <div className="space-y-2">
+                  <Label>Local Government Area</Label>
                   <Select
                     disabled={!watch.state}
                     value={watch.lga}
@@ -590,18 +561,16 @@ function ArtisanCreatePage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {form.formState.errors.lga && <p className="text-xs text-rose-300">{form.formState.errors.lga.message}</p>}
                 </div>
 
-                <div data-field="years_experience" className="space-y-2">
+                <div className="space-y-2">
                   <Label>Years of Experience</Label>
                   <Input type="number" min="0" max="80" placeholder="5" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("years_experience")} />
-                  {form.formState.errors.years_experience && <p className="text-xs text-rose-300">{form.formState.errors.years_experience.message}</p>}
                 </div>
 
-                <div data-field="bio" className="space-y-2">
+                <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <Label>Professional Bio <span className="text-rose-300">*</span></Label>
+                    <Label>Professional Bio</Label>
                     <span
                       className={`text-xs ${(watch.bio?.length ?? 0) >= 30
                         ? "font-medium text-emerald-300"
@@ -618,17 +587,18 @@ function ArtisanCreatePage() {
                     className="rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
                     {...form.register("bio")}
                   />
-                  {form.formState.errors.bio ? (
-                    <p className="text-xs text-rose-300">{form.formState.errors.bio.message}</p>
-                  ) : (
-                    <p className={`text-xs ${(watch.bio?.length ?? 0) >= 30 ? "text-emerald-300" : "font-medium text-amber-200"}`}>
-                      Minimum 30 characters required. Tell customers what makes you stand out.
-                    </p>
-                  )}
+                  <p
+                    className={`text-xs ${(watch.bio?.length ?? 0) >= 30
+                      ? "text-emerald-300"
+                      : "font-medium text-amber-200"
+                      }`}
+                  >
+                    Minimum 30 characters required. Tell customers what makes you stand out.
+                  </p>
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
-                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => goToStep(1)} type="button">
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(1)} type="button">
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
@@ -654,7 +624,7 @@ function ArtisanCreatePage() {
                 </div>
 
                 {/* Profile Photo Section */}
-                <Card data-field="profile_photo" className="flex flex-col items-center rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
+                <Card className="flex flex-col items-center rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
                   <Camera className="mb-3 h-8 w-8 text-emerald-300" />
                   <h3 className="flex items-center gap-2 text-center text-sm font-semibold text-white">
                     <UserRound className="h-4 w-4" /> Profile Photo
@@ -677,20 +647,17 @@ function ArtisanCreatePage() {
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           setProfilePhoto(e.target.files[0]);
-                          setPhotoErrors((current) => ({ ...current, profile: undefined }));
                         }
-                        e.target.value = "";
                       }}
                     />
                     <Button variant="outline" className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]" type="button" onClick={() => avatarInputRef.current?.click()}>
                       {profilePhotoPreview ? "Change Photo" : "Choose Photo"}
                     </Button>
-                    {photoErrors.profile && <p className="text-center text-xs font-medium text-rose-300">{photoErrors.profile}</p>}
                   </div>
                 </Card>
 
                 {/* Previous Jobs Portfolio Section */}
-                <Card data-field="portfolio_images" className="rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
+                <Card className="rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
                   <div className="text-center max-w-md mx-auto mb-4">
                     <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-white">
                       <Images className="h-4 w-4" /> Previous Jobs
@@ -701,7 +668,6 @@ function ArtisanCreatePage() {
                     <p className="mt-2 text-xs font-semibold text-emerald-300">
                       {(portfolioImages.length + (existingArtisan?.portfolio_images?.length ?? 0))}/8 uploaded
                     </p>
-                    {photoErrors.portfolio && <p className="mt-2 text-xs font-medium text-rose-300">{photoErrors.portfolio}</p>}
                   </div>
 
                   <div className="flex flex-col items-center">
@@ -715,17 +681,7 @@ function ArtisanCreatePage() {
                         if (!e.target.files) return;
                         const uploaded = Array.from(e.target.files);
                         const existingCount = existingArtisan?.portfolio_images?.length ?? 0;
-                        const next = [...portfolioImages, ...uploaded].slice(0, Math.max(0, 8 - existingCount));
-                        setPortfolioImages(next);
-                        setPhotoErrors((current) => ({
-                          ...current,
-                          portfolio: next.length + existingCount >= 3
-                            ? undefined
-                            : current.portfolio
-                              ? `Add at least ${3 - next.length - existingCount} more portfolio photo${3 - next.length - existingCount === 1 ? "" : "s"} to continue.`
-                              : undefined,
-                        }));
-                        e.target.value = "";
+                        setPortfolioImages((prev) => [...prev, ...uploaded].slice(0, Math.max(0, 8 - existingCount)));
                       }}
                     />
                     <Button variant="outline" className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]" type="button" onClick={() => portfolioInputRef.current?.click()} disabled={(existingArtisan?.portfolio_images?.length ?? 0) + portfolioImages.length >= 8}>
@@ -858,11 +814,11 @@ function ArtisanCreatePage() {
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
-                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => goToStep(2)} type="button">
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(2)} type="button">
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="button" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" onClick={handleAdvanceToReview}>
+                  <Button type="button" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" onClick={handleAdvanceToReview} disabled={portfolioImages.length < 3 || !profilePhoto}>
                     Continue to Review
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -967,7 +923,7 @@ function ArtisanCreatePage() {
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
-                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => goToStep(3)} type="button" disabled={submitting}>
+                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => setStep(3)} type="button" disabled={submitting}>
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>

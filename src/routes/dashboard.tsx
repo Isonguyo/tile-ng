@@ -48,22 +48,14 @@ import {
   Briefcase,
   MessageCircle,
   ArrowRight,
-  CheckCircle2,
-  LockKeyhole,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { uploadKyc } from "@/lib/storage";
 import { TierBadge } from "@/components/tier-badge";
 import { QRCodeSVG } from "qrcode.react";
-import { scrollPageToTop } from "@/lib/form-navigation";
 import { useConfirmAction } from "@/components/confirm-action-provider";
 import { showError } from "@/lib/user-feedback";
-import { rpcUntyped } from "@/lib/waitlist-rpc";
-import { useTileEntitlements, isTopAdsEntitled, hasVendorAnalytics, type TileEntitlements } from "@/hooks/use-tile-entitlements";
-import { TopAdUsageCard } from "@/components/top-ad-usage-card";
-import { VendorAnalyticsCard } from "@/components/vendor-analytics";
-import { SupportCenter } from "@/components/support-center";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -85,13 +77,6 @@ function Dashboard() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
-  const [activeDashboardTab, setActiveDashboardTab] = useState("buyer");
-  const {
-    data: entitlements,
-    isLoading: entitlementsLoading,
-    isError: entitlementsError,
-    refetch: refetchEntitlements,
-  } = useTileEntitlements();
 
   const { data: myListings = [] } = useQuery({
     queryKey: ["my-listings", user?.id],
@@ -220,7 +205,7 @@ function Dashboard() {
           </section>
 
           <div className="mt-8 sm:mt-10">
-        <Tabs value={activeDashboardTab} onValueChange={(value) => { setActiveDashboardTab(value); scrollPageToTop(); }} className="w-full">
+            <Tabs defaultValue="buyer" className="w-full">
           <TabsList className="flex h-auto w-full max-w-full items-center justify-start gap-1 overflow-x-auto rounded-2xl border border-[#1b3b2a] bg-[#09170f]/90 p-1.5 shadow-lg shadow-black/20 sm:w-fit [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <TabsTrigger
               value="buyer"
@@ -244,13 +229,6 @@ function Dashboard() {
                 Artisan Hub
               </TabsTrigger>
             )}
-
-            <TabsTrigger
-              value="support"
-              className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/[0.05] hover:text-white data-[state=active]:bg-[#35d879] data-[state=active]:text-[#04120a] data-[state=active]:shadow-[0_4px_16px_rgba(53,216,121,0.18)] sm:px-6"
-            >
-              Support
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="buyer" className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6">
@@ -309,44 +287,8 @@ function Dashboard() {
                 {profile.is_merchant ? "Merchant account active" : "Shop setup available"}
               </span>
             </div>
-            {entitlementsError && (
-              <Card className="flex flex-col gap-3 border-amber-300/20 bg-amber-300/[0.05] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-amber-100">Plan access couldn't be checked, so premium feature availability is temporarily hidden.</p>
-                <Button variant="outline" size="sm" className="shrink-0 border-amber-200/20 bg-transparent text-amber-100 hover:bg-amber-300/10" onClick={() => void refetchEntitlements()}>Try again</Button>
-              </Card>
-            )}
             {!profile.is_merchant && <MerchantOnboarding onDone={refreshProfile} />}
-            {profile.is_merchant && profile.shop_slug && (
-              <ShopLinkCard
-                slug={profile.shop_slug}
-                entitlements={entitlements}
-                entitlementsLoading={entitlementsLoading}
-                onSlugChanged={refreshProfile}
-              />
-            )}
-            {entitlements?.verification_required_for_badge === true &&
-              entitlements.verified_vendor_badge !== true && (
-                <Card className={"flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 " + DASHBOARD_CARD_CLASS}>
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-300/10 text-emerald-300"><ShieldCheck className="h-5 w-5" /></span>
-                    <div>
-                      <p className="font-semibold text-slate-100">Complete verification to unlock your Verified Vendor badge.</p>
-                      <p className="mt-1 text-xs text-slate-400">Submit your verification details in the existing KYC section.</p>
-                    </div>
-                  </div>
-                  <Button asChild variant="outline" className="shrink-0 rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:bg-white/[0.08]">
-                    <a href="#vendor-kyc">Continue verification<ArrowRight className="ml-2 h-4 w-4" /></a>
-                  </Button>
-                </Card>
-              )}
-            <div className="grid gap-4 xl:grid-cols-2">
-              <TopAdUsageCard userId={user!.id} topAds={entitlements?.top_ads} entitlementsLoading={entitlementsLoading} />
-              <VendorAnalyticsCard
-                userId={user!.id}
-                analyticsLevel={entitlements?.analytics_level}
-                entitlementsLoading={entitlementsLoading}
-              />
-            </div>
+            {profile.is_merchant && profile.shop_slug && <ShopLinkCard slug={profile.shop_slug} />}
             <div className="grid gap-4 lg:grid-cols-3">
               <Card className={`p-5 sm:p-6 lg:col-span-2 ${DASHBOARD_CARD_CLASS}`}>
                 <div className="mb-5 flex items-center justify-between gap-3">
@@ -367,30 +309,17 @@ function Dashboard() {
               <WalletCard balance={profile.wallet_balance} onTopup={() => { refreshProfile(); qc.invalidateQueries(); }} />
             </div>
 
-            <BillingCard
-              tier={entitlements?.tier ?? profile.subscription_tier ?? "free"}
-              until={entitlements?.active_until ?? profile.subscription_until}
-              entitlements={entitlements}
-              entitlementsLoading={entitlementsLoading}
-              onSelectTab={setActiveDashboardTab}
-              onChange={async () => {
-                await refreshProfile();
-                await qc.invalidateQueries({ queryKey: ["tile-entitlements", user?.id] });
-                await qc.invalidateQueries({ queryKey: ["tile-top-ad-status", user?.id] });
-              }}
-            />
+            <BillingCard tier={profile.subscription_tier ?? "free"} until={profile.subscription_until} onChange={refreshProfile} />
 
             {profile.is_artisan && (
-              <ArtisanProfileCard profile={profile} />
+              <ArtisanProfileCard
+                profile={profile}
+                onChange={refreshProfile}
+              />
             )}
 
             <KycCard status={profile.kyc_status} onUpload={refreshProfile} />
 
-          </TabsContent>
-
-          <TabsContent value="support" className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6">
-            <SupportPriorityCard entitlements={entitlements} entitlementsLoading={entitlementsLoading || entitlementsError} />
-            <SupportCenter mode="customer" />
           </TabsContent>
 
           <TabsContent value="artisan" className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6">
@@ -484,32 +413,6 @@ function Dashboard() {
         </div>
       </main>
     </div>
-  );
-}
-
-function SupportPriorityCard({ entitlements, entitlementsLoading }: { entitlements: TileEntitlements | null | undefined; entitlementsLoading: boolean }) {
-  const tier = (entitlements?.tier ?? "free").toLowerCase();
-  const urgent = tier === "vip";
-  const priority = entitlements?.priority_support === true;
-  const label = urgent ? "Priority Support · Urgent" : priority ? "Priority Support" : "Standard Support";
-
-  return (
-    <Card className={"flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 " + DASHBOARD_CARD_CLASS}>
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-300/10 text-sky-300"><MessageCircle className="h-5 w-5" /></span>
-        <div>
-          <p className="font-semibold text-slate-100">{entitlementsLoading ? "Checking support priority…" : label}</p>
-          <p className="mt-1 text-xs text-slate-400">
-            {priority
-              ? "Your support requests are placed ahead of standard requests."
-              : "Create a support ticket and follow replies in your dashboard."}
-          </p>
-        </div>
-      </div>
-      <span className="w-fit rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-300">
-        {entitlementsLoading ? "Checking" : entitlements?.tier ?? "Plan status unavailable"}
-      </span>
-    </Card>
   );
 }
 
@@ -661,7 +564,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
   };
 
   return (
-    <Card id="vendor-kyc" className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
+    <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-300/10 text-emerald-300"><ShieldCheck className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
@@ -735,87 +638,15 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
   );
 }
 
-function ShopLinkCard({
-  slug,
-  entitlements,
-  entitlementsLoading,
-  onSlugChanged,
-}: {
-  slug: string;
-  entitlements: TileEntitlements | null | undefined;
-  entitlementsLoading: boolean;
-  onSlugChanged: () => void | Promise<void>;
-}) {
-  const { user } = useAuth();
-  const qc = useQueryClient();
+function ShopLinkCard({ slug }: { slug: string }) {
   const [origin, setOrigin] = useState("");
-  const [currentSlug, setCurrentSlug] = useState(slug);
-  const [customSlug, setCustomSlug] = useState(slug);
-  const [savingSlug, setSavingSlug] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    const env = import.meta.env as Record<string, string | undefined>;
-    const configuredOrigin = env.VITE_SITE_URL ?? env.VITE_PUBLIC_SITE_URL ?? env.VITE_APP_URL;
-    setOrigin((configuredOrigin ?? window.location.origin).replace(/\/$/, ""));
+    setOrigin(window.location.origin);
   }, []);
 
-  useEffect(() => {
-    setCurrentSlug(slug);
-    setCustomSlug(slug);
-  }, [slug]);
-
-  const url = origin + "/shop/" + currentSlug;
-  const canUseCustomSlug = entitlements?.custom_shop_url === true;
-  const hasQrEntitlement = entitlements?.qr_code === true;
-
-  const saveCustomSlug = async () => {
-    if (!user || !customSlug.trim()) {
-      toast.error("Enter a shop URL first.");
-      return;
-    }
-    setSavingSlug(true);
-    try {
-      const availability = await rpcUntyped("can_use_custom_shop");
-      if (availability.error) {
-        showError(availability.error, "We couldn't check custom shop access. Please try again.");
-        return;
-      }
-      const allowed = availability.data === true ||
-        (availability.data && typeof availability.data === "object" &&
-          ((availability.data as Record<string, unknown>).allowed === true ||
-            (availability.data as Record<string, unknown>).can_use_custom_shop === true));
-      if (!allowed) {
-        toast.error("A custom shop URL is available with an eligible Tile plan.");
-        return;
-      }
-
-      const { data, error } = await rpcUntyped("set_custom_shop_slug", { _slug: customSlug.trim() });
-      if (error) {
-        showError(error, "We couldn't update your shop URL. Check the slug and try again.");
-        return;
-      }
-      const response = Array.isArray(data) ? data[0] : data;
-      const savedSlug = typeof response === "string"
-        ? response
-        : response && typeof response === "object" && typeof (response as Record<string, unknown>).shop_slug === "string"
-          ? (response as Record<string, unknown>).shop_slug as string
-          : customSlug.trim();
-      setCurrentSlug(savedSlug);
-      setCustomSlug(savedSlug);
-      toast.success("Custom shop URL updated.");
-      await Promise.all([
-        Promise.resolve(onSlugChanged()),
-        qc.invalidateQueries({ queryKey: ["tile-entitlements", user.id] }),
-        qc.invalidateQueries({ queryKey: ["shop", slug] }),
-        qc.invalidateQueries({ queryKey: ["shop", savedSlug] }),
-      ]);
-    } catch (error) {
-      showError(error, "We couldn't update your shop URL. Please try again.");
-    } finally {
-      setSavingSlug(false);
-    }
-  };
+  const url = `${origin}/shop/${slug}`;
 
   const copy = async () => {
     try {
@@ -833,7 +664,7 @@ function ShopLinkCard({
       const objectUrl = URL.createObjectURL(file);
       const link = document.createElement("a");
       link.href = objectUrl;
-      link.download = `tile-shop-${currentSlug}.svg`;
+      link.download = `tile-shop-${slug}.svg`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -867,63 +698,25 @@ function ShopLinkCard({
             </div>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <Button onClick={copy} variant="outline" className="h-10 rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/25 hover:bg-white/[0.07] hover:text-white"><CopyIcon className="mr-2 h-4 w-4" />Copy shop link</Button>
-              <Button asChild className="h-10 rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]"><Link to="/shop/$slug" params={{ slug: currentSlug }}>Visit storefront<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+              <Button asChild className="h-10 rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]"><Link to="/shop/$slug" params={{ slug }}>Visit storefront<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
             </div>
-          </div>
-
-          <div id="shop-url" className="mt-6 max-w-xl rounded-xl border border-white/[0.08] bg-[#07170f]/60 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold text-slate-200">Custom Shop URL</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {entitlementsLoading ? "Checking your plan access…" : canUseCustomSlug ? "Choose a short, memorable URL for your storefront." : "Available with Lite and above."}
-                </p>
-              </div>
-              {!canUseCustomSlug && !entitlementsLoading && (
-                <Button asChild size="sm" variant="outline" className="border-white/15 bg-transparent text-slate-200 hover:bg-white/[0.06]">
-                  <a href="#billing">View plans</a>
-                </Button>
-              )}
-            </div>
-            {canUseCustomSlug && (
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <div className="flex min-w-0 flex-1 items-center rounded-xl border border-white/10 bg-black/15 px-3">
-                  <span className="shrink-0 text-xs text-slate-500">{origin}/shop/</span>
-                  <Input value={customSlug} onChange={(event) => setCustomSlug(event.target.value)} aria-label="Custom shop URL slug" className="h-10 min-w-0 border-0 bg-transparent px-1 text-sm text-emerald-100 shadow-none focus-visible:ring-0" />
-                </div>
-                <Button onClick={saveCustomSlug} disabled={savingSlug || customSlug.trim() === currentSlug} className="h-10 shrink-0 rounded-xl bg-[#35d879] px-4 font-semibold text-[#04120a] hover:bg-[#52e98f]">
-                  {savingSlug ? "Saving…" : "Save URL"}
-                </Button>
-              </div>
-            )}
           </div>
         </div>
 
-        <aside id="shop-qr" className="border-t border-white/[0.07] bg-[#07170f]/55 p-5 sm:p-7 lg:border-l lg:border-t-0">
-          {entitlementsLoading ? (
-            <div className="mx-auto flex min-h-[280px] max-w-[240px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/10 p-5 text-center text-sm text-slate-400">
-              Checking shop QR access…
-            </div>
-          ) : hasQrEntitlement ? <div className="mx-auto max-w-[240px]">
+        <aside className="border-t border-white/[0.07] bg-[#07170f]/55 p-5 sm:p-7 lg:border-l lg:border-t-0">
+          <div className="mx-auto max-w-[240px]">
             <div className="flex items-center justify-between gap-2">
               <div><p className="text-sm font-semibold text-white">Shop QR code</p><p className="mt-0.5 text-[11px] text-slate-500">Scan to open your shop</p></div>
               <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-emerald-300"><Share2 className="h-4 w-4" /></span>
             </div>
             <div className="mt-4 rounded-[22px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.22)]">
               <div className="flex items-center justify-center rounded-2xl bg-[#f8faf9] p-3">
-                <QRCodeSVG ref={qrRef} value={url} size={168} level="H" marginSize={4} bgColor="#f8faf9" fgColor="#07170f" title={"QR code for Tile shop " + currentSlug} />
+                <QRCodeSVG ref={qrRef} value={url} size={168} level="H" marginSize={4} bgColor="#f8faf9" fgColor="#07170f" title={`QR code for Tile shop ${slug}`} />
               </div>
-              <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Tile · {currentSlug}</p>
+              <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Tile · {slug}</p>
             </div>
             <Button onClick={downloadQr} variant="outline" className="mt-3 h-10 w-full rounded-xl border-white/15 bg-transparent text-xs font-semibold text-slate-200 hover:border-emerald-300/25 hover:bg-white/[0.06] hover:text-white"><Download className="mr-2 h-4 w-4 text-emerald-300" />Download QR code</Button>
-          </div> : (
-            <div className="mx-auto flex min-h-[280px] max-w-[240px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/10 p-5 text-center">
-              <LockKeyhole className="h-7 w-7 text-slate-500" />
-              <p className="mt-3 text-sm font-semibold text-slate-200">Shop QR code</p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">QR codes are available with an eligible Tile plan.</p>
-              {!entitlementsLoading && <Button asChild size="sm" className="mt-4 rounded-lg bg-[#35d879] text-[#04120a] hover:bg-[#52e98f]"><a href="#billing">View plans</a></Button>}
-            </div>
-          )}
+          </div>
         </aside>
       </div>
     </Card>
@@ -973,66 +766,18 @@ const PLANS: { tier: "lite" | "pro" | "vip"; price: number; perks: string[] }[] 
   }
 ];
 
-function BillingCard({
-  tier,
-  until,
-  entitlements,
-  entitlementsLoading,
-  onSelectTab,
-  onChange,
-}: {
-  tier: string;
-  until?: string | null;
-  entitlements: TileEntitlements | null | undefined;
-  entitlementsLoading: boolean;
-  onSelectTab: (tab: string) => void;
-  onChange: () => void | Promise<void>;
-}) {
+function BillingCard({ tier, until, onChange }: { tier: string; until?: string | null; onChange: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
-  const qc = useQueryClient();
-  const { data: storedPlans = [] } = useQuery({
-    queryKey: ["subscription-plans"],
-    staleTime: 60 * 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscription_plans")
-        .select("tier, display_name, price_ngn")
-        .order("price_ngn", { ascending: true });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-  const displayPlans = PLANS.map((plan) => {
-    const stored = storedPlans.find((item) => item.tier === plan.tier);
-    return {
-      ...plan,
-      displayName: stored?.display_name ?? plan.tier,
-      price: stored ? Number(stored.price_ngn) : plan.price,
-    };
-  });
   const activate = async (t: "lite" | "pro" | "vip") => {
     setBusy(t);
     const { error } = await supabase.rpc("activate_subscription", { _tier: t });
     setBusy(null);
     if (error) return showError(error, "We couldn't activate that plan. Please try again.");
     toast.success(`${t.toUpperCase()} plan activated`);
-    await Promise.all([
-      Promise.resolve(onChange()),
-      qc.invalidateQueries({ queryKey: ["tile-entitlements"] }),
-      qc.invalidateQueries({ queryKey: ["tile-top-ad-status"] }),
-      qc.invalidateQueries({ queryKey: ["vendor-analytics"] }),
-    ]);
+    onChange();
   };
-  const currentCapabilities = [
-    { label: "Verified Vendor Badge", enabled: entitlements?.verified_vendor_badge === true, anchor: "#vendor-kyc" },
-    { label: "Custom Shop URL", enabled: entitlements?.custom_shop_url === true, anchor: "#shop-url" },
-    { label: "Shop QR code", enabled: entitlements?.qr_code === true, anchor: "#shop-qr" },
-    { label: "Top Ads", enabled: isTopAdsEntitled(entitlements?.top_ads), anchor: "#top-ads" },
-    { label: "Basic Analytics", enabled: hasVendorAnalytics(entitlements?.analytics_level), anchor: "#vendor-analytics" },
-    { label: "Priority Support", enabled: entitlements?.priority_support === true, anchor: "#support" },
-  ];
   return (
-    <Card id="billing" className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
+    <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-amber-300/15 bg-amber-300/[0.08] text-amber-200"><Crown className="h-5 w-5" /></span>
@@ -1045,10 +790,10 @@ function BillingCard({
         </div>
       </div>
       <div className="grid gap-3 lg:grid-cols-3">
-        {displayPlans.map((p) => (
+        {PLANS.map((p) => (
           <div key={p.tier} className={`flex h-full flex-col rounded-2xl border p-4 transition-all duration-200 sm:p-5 ${tier === p.tier ? "border-emerald-300/40 bg-[linear-gradient(145deg,rgba(52,211,153,0.1),rgba(7,23,15,0.8))] shadow-[0_0_28px_rgba(52,211,153,0.08)]" : "border-white/[0.08] bg-[#07170f]/60 hover:border-white/15 hover:bg-[#0b2016]"}`}>
             <div className="flex min-h-6 items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{p.displayName}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{p.tier}</p>
               {tier === p.tier ? <span className="rounded-full bg-emerald-300/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-200">Your plan</span> : p.tier === "pro" ? <span className="rounded-full bg-emerald-300/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-200">Popular</span> : null}
             </div>
             <p className="mt-3 text-2xl font-extrabold tracking-tight text-emerald-300">{formatNaira(p.price)}<span className="ml-1 text-xs font-medium text-slate-500">/ month</span></p>
@@ -1059,36 +804,6 @@ function BillingCard({
             </Button>
           </div>
         ))}
-      </div>
-      <div className="mt-5 rounded-2xl border border-white/[0.08] bg-[#07170f]/65 p-4 sm:p-5">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-100">Features on your current plan</p>
-            <p className="mt-1 text-xs text-slate-500">Live access comes from your account entitlements.</p>
-          </div>
-          <span className="text-[10px] text-slate-500">{entitlementsLoading ? "Checking access…" : "Updated with your plan"}</span>
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {currentCapabilities.map((capability) => (
-            <a
-              key={capability.label}
-              href={capability.anchor}
-              onClick={(event) => {
-                if (capability.anchor === "#support") {
-                  event.preventDefault();
-                  onSelectTab("support");
-                }
-              }}
-              className="flex min-w-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:bg-white/[0.05]"
-            >
-              {entitlementsLoading ? <span className="h-4 w-4 shrink-0 rounded-full bg-white/10" /> : capability.enabled
-                ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
-                : <LockKeyhole className="h-4 w-4 shrink-0 text-slate-500" />}
-              <span className="truncate text-xs font-medium text-slate-300">{capability.label}</span>
-              <span className="ml-auto text-[10px] text-slate-500">{entitlementsLoading ? "" : capability.enabled ? "Available" : "Locked"}</span>
-            </a>
-          ))}
-        </div>
       </div>
       <p className="mt-5 flex items-center gap-2 text-xs text-slate-500"><Wallet className="h-3.5 w-3.5 text-emerald-300/70" />Plan payments are deducted from your Tile wallet. Add funds before upgrading if needed.</p>
     </Card>
@@ -1102,14 +817,11 @@ function ListingRow({ l, onChange }: {
     type: string;
     status: string;
     is_promoted?: boolean;
-    promotion_expires_at?: string | null;
     expires_at?: string | null;
   };
   onChange: () => void;
 }) {
   const confirm = useConfirmAction();
-  const { user } = useAuth();
-  const qc = useQueryClient();
   const expiresAt = l.expires_at ? new Date(l.expires_at) : null;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
   const [stats, setStats] = useState<{
@@ -1120,16 +832,7 @@ function ListingRow({ l, onChange }: {
     phone_clicks: number;
   } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
-  const [promoting, setPromoting] = useState(false);
-  const [promotionExpiry, setPromotionExpiry] = useState(l.promotion_expires_at ?? null);
   const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
-  const hasActiveTopAd = promotionExpiry
-    ? new Date(promotionExpiry).getTime() > Date.now()
-    : l.is_promoted === true;
-
-  useEffect(() => {
-    setPromotionExpiry(l.promotion_expires_at ?? null);
-  }, [l.promotion_expires_at]);
 
   useEffect(() => {
     let cancel = false;
@@ -1195,86 +898,27 @@ function ListingRow({ l, onChange }: {
   };
 
   const promote = async () => {
-    if (!user) {
-      toast.error("Sign in to promote this listing.");
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user?.id;
+
+    if (!userId) {
+      toast.error("User not authenticated");
       return;
     }
-    setPromoting(true);
-    try {
-      const eligibility = await rpcUntyped("can_promote_listing", { _listing_id: l.id });
-      if (eligibility.error) {
-        showError(eligibility.error, "We couldn't check Top Ad eligibility. Please try again.");
-        return;
-      }
-      const eligibilityData = Array.isArray(eligibility.data) ? eligibility.data[0] : eligibility.data;
-      const eligibilityRow = eligibilityData && typeof eligibilityData === "object"
-        ? eligibilityData as Record<string, unknown>
-        : null;
-      if (eligibilityData !== true && eligibilityRow?.allowed !== true) {
-        const reason = String(eligibilityRow?.reason ?? eligibilityRow?.message ?? "").toLowerCase();
-        const message = reason.includes("plan") || reason.includes("subscription")
-          ? "An eligible Tile plan is required to use a Top Ad."
-          : reason.includes("limit") || reason.includes("allowance") || reason.includes("quota")
-            ? "Your Top Ad allowance has been used for this 7-day period."
-            : reason.includes("active") || reason.includes("approved")
-              ? "Only an active, approved listing can become a Top Ad."
-              : reason.includes("already_top_ad") || reason.includes("already promoted")
-                ? "This listing is already using a Top Ad."
-                : "This listing can't be promoted right now.";
-        toast.error(message);
-        return;
-      }
 
-      const { data, error } = await rpcUntyped("activate_top_ad", {
-        _listing_id: l.id,
-        _days: 7,
-      });
-      if (error) {
-        showError(error, "We couldn't activate this Top Ad. Please try again.");
-        return;
-      }
-      const activation = Array.isArray(data) ? data[0] : data;
-      const activationRow = activation && typeof activation === "object"
-        ? activation as Record<string, unknown>
-        : null;
-      if (
-        activationRow?.success === false ||
-        activationRow?.activated === false ||
-        activationRow?.allowed === false ||
-        activation === false
-      ) {
-        const reason = String(activationRow?.reason ?? "").toLowerCase();
-        toast.error(reason.includes("limit") || reason.includes("allowance")
-          ? "Your Top Ad allowance has been used for this 7-day period."
-          : "This Top Ad couldn't be activated. Please try again.");
-        return;
-      }
-      const expiryValue = activationRow?.expires_at ?? activationRow?.promotion_expires_at ??
-        activationRow?.top_ad_expires_at ?? activationRow?.ends_at ?? activationRow?.top_ad_until;
-      const expiryCandidate = typeof expiryValue === "string"
-        ? expiryValue
-        : typeof activation === "string" ? activation : null;
-      const expiry = expiryCandidate && !Number.isNaN(new Date(expiryCandidate).getTime())
-        ? expiryCandidate
-        : null;
-      setPromotionExpiry(expiry);
-      toast.success(expiry
-        ? "Top Ad active until " + new Date(expiry).toLocaleDateString() + "."
-        : "Top Ad activated for 7 days.");
-      await Promise.all([
-        Promise.resolve(onChange()),
-        qc.invalidateQueries({ queryKey: ["tile-entitlements", user.id] }),
-        qc.invalidateQueries({ queryKey: ["tile-top-ad-status", user.id] }),
-        qc.invalidateQueries({ queryKey: ["vendor-analytics", user.id] }),
-        qc.invalidateQueries({ queryKey: ["listings"] }),
-        qc.invalidateQueries({ queryKey: ["public-marketplace-catalog"] }),
-        qc.invalidateQueries({ queryKey: ["shop-listings"] }),
-      ]);
-    } catch (error) {
-      showError(error, "We couldn't activate this Top Ad. Please try again.");
-    } finally {
-      setPromoting(false);
+    const { error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>)("promote_listing", {
+      p_listing_id: l.id,
+      p_user_id: userId,
+    });
+
+    if (error) {
+      console.error(error);
+      showError(error, "We couldn't promote this listing. Please try again.");
+      return;
     }
+
+    toast.success("Listing promoted successfully");
+    onChange();
   };
 
   return (
@@ -1287,24 +931,19 @@ function ListingRow({ l, onChange }: {
           {l.status === "approved" && (
             <Button
               size="sm"
-              variant={hasActiveTopAd ? "default" : "outline"}
+              variant={l.is_promoted ? "default" : "outline"}
               className="h-8 rounded-lg border-white/15 bg-white/[0.03] px-3 text-xs text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.08] hover:text-emerald-100"
-              disabled={hasActiveTopAd || promoting}
+              disabled={l.is_promoted}
               onClick={promote}
             >
               <Sparkles className="h-3 w-3 mr-1" />
-              {promoting ? "Checking…" : hasActiveTopAd ? "Top Ad active" : "Use Top Ad"}
+              {l.is_promoted ? "Promoted" : "Promote"}
             </Button>
           )}
           <Button size="sm" variant="outline" aria-label={`Edit ${l.title}`} className="h-8 w-8 rounded-lg border-white/10 bg-white/[0.03] p-0 text-slate-300 hover:bg-white/[0.08] hover:text-white" onClick={openEdit}><Pencil className="h-3.5 w-3.5" /></Button>
           <Button size="sm" variant="outline" aria-label={`Delete ${l.title}`} className="h-8 w-8 rounded-lg border-red-300/15 bg-red-300/[0.04] p-0 text-red-300 hover:bg-red-400/10 hover:text-red-200" onClick={remove}><Trash2 className="h-3.5 w-3.5" /></Button>
         </div>
       </div>
-      {hasActiveTopAd && promotionExpiry && (
-        <p className="mt-2 text-xs font-medium text-emerald-200">
-          Top Ad active until {new Date(promotionExpiry).toLocaleDateString()}.
-        </p>
-      )}
       {stats && (
   <details className="group mt-3 rounded-xl border border-white/[0.08] bg-[#07170f]/65 open:border-emerald-300/20">
     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3.5">
@@ -1435,14 +1074,10 @@ function ListingRow({ l, onChange }: {
 }
 function ArtisanProfileCard({
   profile,
+  onChange,
 }: {
-  profile: {
-    id: string;
-    profession?: string | null;
-    years_experience?: number | null;
-    starting_price?: number | null;
-    avg_rating?: number | null;
-  };
+  profile: any;
+  onChange: () => void;
 }) {
   return (
     <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>

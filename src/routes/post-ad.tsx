@@ -1,7 +1,7 @@
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useForm, type FieldErrors } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -21,7 +21,6 @@ import { uploadListingImages } from "@/lib/storage";
 import { optimizeListingImage } from "@/lib/listing-image";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
-import { focusFormField, focusFormFieldAfterRender, scrollPageToTop } from "@/lib/form-navigation";
 import {
   Upload,
   X,
@@ -56,17 +55,13 @@ const schema = z.object({
   description: z.string().min(20, "Tell buyers more").max(2000),
   state_id: z.string().min(1, "Please select a state"),
   lga_id: z.string().min(1, "Please select an LGA"),
-  phone: z.string().min(7, "Enter a phone number with at least 7 digits"),
-  price: z.preprocess(
-    (value) => value === "" || value === null || value === undefined ? undefined : value,
-    z.coerce.number().positive("Enter a price greater than zero").optional(),
-  ),
+  phone: z.string().min(7),
+  price: z.coerce.number().positive().optional(),
   condition: z.enum(["new", "used_like_new", "used_good", "used_fair"]).optional(),
   brand: z.string().optional(),
 });
 
-type FormInput = z.input<typeof schema>;
-type FormVals = z.output<typeof schema>;
+type FormVals = z.infer<typeof schema>;
 
 type Mode = "home" | "sell";
 type ListingPhoto = { id: string; file: File; previewUrl: string };
@@ -97,10 +92,12 @@ function PostAd() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedListingId, setSubmittedListingId] = useState<string | null>(null);
   const [draftStatus, setDraftStatus] = useState("Draft ready");
+  const [promotionState, setPromotionState] = useState<"idle" | "promoted">("idle");
+  const [promoting, setPromoting] = useState(false);
+  const [promotionStats, setPromotionStats] = useState<{ views_count: number; clicks_count: number; favorites_count: number } | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
   const ownedPreviewUrls = useRef(new Set<string>());
   const isPreparingPhotosRef = useRef(false);
 
@@ -109,7 +106,7 @@ function PostAd() {
     ownedPreviewUrls.current.clear();
   }, []);
 
-  const form = useForm<FormInput, unknown, FormVals>({
+  const form = useForm<FormVals>({
     resolver: zodResolver(schema),
     defaultValues: { category: "", title: "", description: "", state_id: "", lga_id: "", phone: profile?.phone ?? "", price: undefined, condition: undefined, brand: "" },
   });
@@ -152,6 +149,7 @@ function PostAd() {
 
   const tier = (plan?.tier ?? profile?.subscription_tier ?? "free").toLowerCase();
   const canOpenShop = hasCapability(plan, "shop") || tier !== "free";
+  const canPromote = hasCapability(plan, "promote");
   const planLabel = tier === "free" ? "Free" : tier.charAt(0).toUpperCase() + tier.slice(1);
 
   const qualityScore = useMemo(() => {
@@ -212,48 +210,12 @@ function PostAd() {
     return () => window.clearTimeout(timer);
   }, [form, user, watch.category, watch.title, watch.description, watch.state_id, watch.lga_id, watch.phone, watch.price, watch.condition, watch.brand]);
 
-  const goToStep = (next: number) => {
-    setStep(next);
-    scrollPageToTop();
+  const nextStep = () => {
+    if (step < 4) setStep((s) => s + 1);
   };
 
   const prevStep = () => {
-    if (step > 1) goToStep(step - 1);
-  };
-
-  const validateStepFields = async (fields: Array<keyof FormVals>, message: string) => {
-    if (await form.trigger(fields)) return true;
-
-    const firstInvalid = fields.find((field) => form.getFieldState(field).error);
-    const fieldError = firstInvalid ? form.getFieldState(firstInvalid).error?.message : undefined;
-    toast.error(fieldError ?? message);
-    if (firstInvalid) focusFormField(formRef.current, firstInvalid);
-    return false;
-  };
-
-  const handleCategoryNext = async () => {
-    if (await validateStepFields(["category"], "Choose a category before continuing.")) goToStep(2);
-  };
-
-  const handleDetailsNext = async () => {
-    if (await validateStepFields(["title", "description", "price"], "Add a title and description before continuing.")) goToStep(3);
-  };
-
-  const handlePreviewNext = async () => {
-    if (isPreparingPhotos) {
-      toast.error("Please wait while your photos are being prepared.");
-      return;
-    }
-    if (submitting) return;
-    if (await validateStepFields(["state_id", "lga_id", "phone"], "Add your location and contact number before previewing.")) goToStep(4);
-  };
-
-  const returnToChoice = () => {
-    setMode("home");
-    setStep(1);
-    setSubmitted(false);
-    setSubmittedListingId(null);
-    scrollPageToTop();
+    if (step > 1) setStep((s) => s - 1);
   };
 
   const addPhotos = async (incoming: FileList | File[]) => {
@@ -391,6 +353,37 @@ function PostAd() {
     toast.success("AI description drafted");
   };
 
+  const loadListingStats = async (listingId: string) => {
+    const { data } = await supabase.rpc("owner_listing_stats", { _id: listingId });
+    const row = (data ?? [])[0] as { views_count: number; clicks_count: number; favorites_count: number } | undefined;
+    if (row) {
+      setPromotionStats({ views_count: row.views_count, clicks_count: row.clicks_count, favorites_count: Number(row.favorites_count) });
+    }
+  };
+
+  const handlePromoteListing = async () => {
+    if (!user || !submittedListingId) return;
+    setPromoting(true);
+    try {
+      const { data, error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: { message: string } | null }>)("promote_listing", {
+        p_listing_id: submittedListingId,
+        p_user_id: user.id,
+      });
+
+      if (error) throw error;
+      if (!data) throw new Error("Promotion was not accepted.");
+
+      setPromotionState("promoted");
+      await loadListingStats(submittedListingId);
+      toast.success("Listing promoted successfully");
+    } catch (e) {
+      console.error("PROMOTE LISTING ERROR:", e);
+      showError(e, "We couldn't promote this listing right now. Please try again.");
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   const onSubmit = async (vals: FormVals) => {
     if (!user) return;
     if (isPreparingPhotosRef.current) {
@@ -455,6 +448,8 @@ function PostAd() {
 
       window.localStorage.removeItem(DRAFT_KEY);
       setSubmittedListingId(data.id);
+      setPromotionState("idle");
+      setPromotionStats(null);
       setSubmitted(true);
       toast.success("Listing submitted for review");
     } catch (e) {
@@ -466,23 +461,11 @@ function PostAd() {
     }
   };
 
-  const onInvalid = (errors: FieldErrors<FormInput>) => {
-    const first = Object.keys(errors)[0] as keyof FormInput | undefined;
-    if (!first) return;
-    const message = errors[first]?.message;
-    toast.error(typeof message === "string" ? message : "Please complete the required listing fields before publishing.");
-    const isDetailsField = (["title", "description", "price", "condition", "brand"] as (keyof FormInput)[]).includes(first);
-    const targetStep = first === "category"
-      ? 1
-      : isDetailsField
-        ? 2
-        : 3;
-    if (targetStep !== step) {
-      setStep(targetStep);
-      focusFormFieldAfterRender(formRef.current, first);
-      return;
+  const onInvalid = (errors: Record<string, { message?: string }>) => {
+    const first = Object.keys(errors)[0];
+    if (first) {
+      toast.error(`Please complete: ${first}`);
     }
-    focusFormField(formRef.current, first);
   };
 
   if (!loading && !user) {
@@ -555,7 +538,7 @@ function PostAd() {
                   variant="outline"
                   disabled={postingDisabled}
                   className="justify-start h-auto p-5 border-2 hover:border-accent/40 whitespace-normal"
-                  onClick={() => { setMode("sell"); setStep(1); scrollPageToTop(); }}
+                  onClick={() => { setMode("sell"); setStep(1); }}
                 >
                   <div className="text-left">
                     <h3 className="font-bold text-lg">🛒 Sell Something</h3>
@@ -613,21 +596,50 @@ function PostAd() {
             </p>
             <div className="flex justify-center gap-3">
               <Button asChild variant="outline"><Link to="/dashboard">View dashboard</Link></Button>
-              <Button className="bg-accent text-accent-foreground" onClick={returnToChoice}>Create another</Button>
+              <Button className="bg-accent text-accent-foreground" onClick={() => setMode("home")}>Create another</Button>
             </div>
             {submittedListingId && (
               <div className="rounded-2xl border bg-muted/20 p-5 text-left">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="font-semibold">Top Ads after approval</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Once approved, manage this listing and check your Top Ad allowance in the Merchant Hub.
+                    <h3 className="font-semibold">Boost visibility</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Promotion is available after Admin approval{isPrelaunch ? " and marketplace launch" : ""}.
                     </p>
                   </div>
-                  <Button asChild variant="outline" className="shrink-0">
-                    <Link to="/dashboard">Open Merchant Hub</Link>
+                  <Button
+                    type="button"
+                    className="bg-accent text-accent-foreground"
+                    onClick={handlePromoteListing}
+                    disabled={
+                      promoting ||
+                      promotionState === "promoted" ||
+                      !canPromote ||
+                      true
+                    }
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {promoting ? "Promoting..." : promotionState === "promoted" ? "Promoted" : "Promote after approval"}
                   </Button>
                 </div>
+                {!canPromote && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Upgrade to Lite or above to unlock promotions and stronger visibility.
+                  </p>
+                )}
+                {canPromote && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    This listing is awaiting moderation, so promotion is locked until it is approved
+                    {isPrelaunch ? " and the marketplace is launched" : ""}.
+                  </p>
+                )}
+                {promotionStats && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm text-muted-foreground">
+                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.views_count}</p><p>views</p></div>
+                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.clicks_count}</p><p>clicks</p></div>
+                    <div className="rounded-xl border bg-background p-3"><p className="font-semibold text-foreground">{promotionStats.favorites_count}</p><p>saves</p></div>
+                  </div>
+                )}
               </div>
             )}
           </Card>
@@ -670,12 +682,12 @@ function PostAd() {
                 })}
               </div>
 
-              <form ref={formRef} onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5" noValidate>
+              <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5" noValidate>
                 {step === 1 && (
                   <>
-                    <h2 className="text-xl font-semibold">Pick a category <span className="text-destructive">*</span></h2>
+                    <h2 className="text-xl font-semibold">Pick a category</h2>
                     <p className="text-sm text-muted-foreground">Cards feel more premium and make it easier to browse your listing.</p>
-                    <div data-field="category" className="grid gap-3 md:grid-cols-2 mt-4">
+                    <div className="grid gap-3 md:grid-cols-2 mt-4">
                       {CATEGORIES.filter((c) => c.type === "goods").map((c) => {
                         const isSelected = watch.category === c.slug;
                         const meta = CATEGORY_META[c.slug] ?? { icon: "📦", subtitle: "Popular listing" };
@@ -692,10 +704,9 @@ function PostAd() {
                         );
                       })}
                     </div>
-                    {form.formState.errors.category && <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>}
                     <div className="flex justify-between pt-4 border-t">
-                      <Button type="button" variant="outline" onClick={returnToChoice}>Cancel</Button>
-                      <Button type="button" onClick={handleCategoryNext}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                      <Button type="button" variant="outline" onClick={() => setMode("home")}>Cancel</Button>
+                      <Button type="button" disabled={!watch.category} onClick={nextStep}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                     </div>
                   </>
                 )}
@@ -705,14 +716,12 @@ function PostAd() {
                     <h2 className="text-xl font-semibold">Add details that convert</h2>
                     <div className="space-y-4">
                       <div>
-                        <Label>Title <span className="text-destructive">*</span></Label>
+                        <Label>Title</Label>
                         <Input {...form.register("title")} placeholder="iPhone 15 Pro Max 256GB" />
-                        {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}
                       </div>
                       <div>
-                        <Label>Description <span className="text-destructive">*</span></Label>
+                        <Label>Description</Label>
                         <Textarea rows={6} {...form.register("description")} placeholder="Add condition, specs, warranty and why someone should buy it." />
-                        {form.formState.errors.description && <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>}
                       </div>
                       <div className="flex items-center justify-end">
                         <Button type="button" variant="outline" size="sm" onClick={applyAiDescription}><Sparkles className="mr-2 h-4 w-4" /> Generate with AI</Button>
@@ -721,7 +730,6 @@ function PostAd() {
                         <div>
                           <Label>Price (₦)</Label>
                           <Input type="number" {...form.register("price")} placeholder="420000" />
-                          {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
                           {priceHint && <p className="mt-2 text-sm text-muted-foreground">{priceHint}</p>}
                         </div>
                         <div>
@@ -744,7 +752,7 @@ function PostAd() {
                     </div>
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-                      <Button type="button" onClick={handleDetailsNext}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                      <Button type="button" onClick={nextStep}>Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                     </div>
                   </>
                 )}
@@ -763,21 +771,19 @@ function PostAd() {
                         </Button>
                       </div>
                       {detectedLocation && <p className="text-sm text-accent">Detected: {detectedLocation}</p>}
-                      <div data-field="state_id">
-                        <Label>State <span className="text-destructive">*</span></Label>
-                        <Select value={watch.state_id} onValueChange={(value) => { form.setValue("state_id", value, { shouldValidate: true }); form.setValue("lga_id", "", { shouldValidate: true }); }}>
+                      <div>
+                        <Label>State</Label>
+                        <Select value={watch.state_id} onValueChange={(value) => { form.setValue("state_id", value); form.setValue("lga_id", ""); }}>
                           <SelectTrigger><SelectValue placeholder="Choose state" /></SelectTrigger>
                           <SelectContent>{states.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                         </Select>
-                        {form.formState.errors.state_id && <p className="mt-1 text-sm text-destructive">{form.formState.errors.state_id.message}</p>}
                       </div>
-                      <div data-field="lga_id">
-                        <Label>Local government area <span className="text-destructive">*</span></Label>
-                        <Select disabled={!watch.state_id} value={watch.lga_id} onValueChange={(value) => form.setValue("lga_id", value, { shouldValidate: true })}>
+                      <div>
+                        <Label>Local government area</Label>
+                        <Select disabled={!watch.state_id} value={watch.lga_id} onValueChange={(value) => form.setValue("lga_id", value)}>
                           <SelectTrigger><SelectValue placeholder="Choose LGA" /></SelectTrigger>
                           <SelectContent>{lgas.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
                         </Select>
-                        {form.formState.errors.lga_id && <p className="mt-1 text-sm text-destructive">{form.formState.errors.lga_id.message}</p>}
                       </div>
                     </div>
 
@@ -855,14 +861,13 @@ function PostAd() {
                     </div>
 
                     <div>
-                      <Label>Contact phone number <span className="text-destructive">*</span></Label>
+                      <Label>Contact phone number</Label>
                       <Input {...form.register("phone")} placeholder="08012345678" />
-                      {form.formState.errors.phone && <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>}
                     </div>
 
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-                      <Button type="button" onClick={handlePreviewNext}>Preview <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                      <Button type="button" onClick={nextStep} disabled={isPreparingPhotos || submitting}>Preview <ChevronRight className="ml-2 h-4 w-4" /></Button>
                     </div>
                   </>
                 )}
@@ -882,12 +887,17 @@ function PostAd() {
                           <span>{watch.condition ? watch.condition.replace(/_/g, " ") : "Condition pending"}</span>
                         </div>
                       </div>
-                      <div className="rounded-2xl border border-dashed border-accent/30 bg-accent/5 p-4">
-                        <h4 className="font-semibold">After admin review</h4>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          When this listing is approved, you can manage it and check Top Ad access in your Merchant Hub.
-                        </p>
-                      </div>
+                      {canPromote ? (
+                        <div className="rounded-2xl border bg-background p-4">
+                          <h4 className="font-semibold">Want more buyers?</h4>
+                          <p className="text-sm text-muted-foreground mt-1">Promote this listing after publishing to increase visibility.</p>
+                          <p className="mt-3 text-sm text-muted-foreground">Your promotion will be activated once the listing is submitted and approved.</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-accent/30 bg-accent/5 p-4 text-sm text-muted-foreground">
+                          Upgrade to Lite to unlock promotions, a store and richer analytics.
+                        </div>
+                      )}
                     </div>
                     <div className="flex justify-between pt-4 border-t">
                       <Button type="button" variant="outline" onClick={prevStep}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
@@ -907,11 +917,13 @@ function PostAd() {
 
             <div className="space-y-4">
               <Card className="p-5">
-                <h3 className="font-semibold">Manage your business</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Your active plan features and Top Ad allowance are shown in your Merchant Hub.
-                </p>
-                <Button asChild size="sm" variant="outline" className="mt-3"><Link to="/dashboard">Open Merchant Hub</Link></Button>
+                <h3 className="font-semibold">Subscription-aware features</h3>
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  <li>• Free: 3 active listings, no promotions.</li>
+                  <li>• Lite: shop enabled, 1 weekly promotion.</li>
+                  <li>• Pro: priority search, promotions and analytics.</li>
+                  <li>• VIP: priority placement and multi-staff support.</li>
+                </ul>
               </Card>
               <Card className="p-5">
                 <h3 className="font-semibold">Trust signals</h3>

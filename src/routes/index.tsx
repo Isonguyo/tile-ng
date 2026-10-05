@@ -1,3 +1,4 @@
+import { LegalFooter } from "@/components/legal-footer";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -158,7 +159,6 @@ function Index() {
         ...r,
         images: r.images ?? [],
         seller_trust: r.trust_score,
-        seller_id: r.user_id,
       }));
     },
   });
@@ -180,7 +180,6 @@ function Index() {
         ...row,
         images: row.images ?? [],
         seller_trust: row.trust_score,
-        seller_id: row.user_id,
       }));
     },
   });
@@ -858,9 +857,7 @@ function Index() {
       </div>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/[0.07] bg-[#050f0a] px-4 py-7 text-center text-xs text-slate-500">
-        <p>&copy; {new Date().getFullYear()} Tile Marketplace. Connecting trustworthy commercial hubs safely across Nigeria.</p>
-      </footer>
+      <LegalFooter />
     </div>
   );
 }

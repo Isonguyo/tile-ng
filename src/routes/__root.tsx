@@ -16,6 +16,7 @@ import { AuthProvider } from "../lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ConfirmActionProvider } from "@/components/confirm-action-provider";
+import { CookieBanner } from "@/components/cookie-banner";
 
 const TILE_FAVICON_URL = "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg";
 
@@ -146,6 +147,7 @@ function RootComponent() {
           {/* Mobile Bottom Navigation */}
           {!isWaitlist && <MobileBottomNav />}
 
+          <CookieBanner />
           <Toaster richColors closeButton position="top-center" duration={4500} />
         </ConfirmActionProvider>
       </AuthProvider>
