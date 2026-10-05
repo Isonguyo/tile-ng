@@ -9,6 +9,14 @@ export type TileEntitlements = {
   max_active_listings?: number | null;
   active_listings?: number | null;
   can_create_listing?: boolean | null;
+  unlimited_listings?: boolean | null;
+  unlimited_promotions?: boolean | null;
+  multiple_staff_accounts?: boolean | null;
+  advanced_analytics?: boolean | null;
+  google_business_integration?: boolean | null;
+  automated_social_posting?: boolean | null;
+  ai_sales_assistant?: boolean | null;
+  staff_context?: unknown;
   top_ads?: unknown;
   custom_shop_url?: boolean | null;
   qr_code?: boolean | null;
@@ -48,15 +56,65 @@ export function isTopAdsEntitled(value: unknown): boolean {
   if (value === true) return true;
   if (typeof value === "number") return value > 0;
   if (typeof value === "string") {
-    return ["true", "enabled", "available", "per_7_days", "unlimited"].includes(value.toLowerCase());
+    return ["true", "enabled", "available", "per_7_days", "unlimited"].includes(
+      value.toLowerCase(),
+    );
   }
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
-  return row.enabled === true || row.allowed === true ||
-    (typeof row.limit === "number" && row.limit > 0);
+  return (
+    row.mode === "unlimited" ||
+    row.enabled === true ||
+    row.allowed === true ||
+    (typeof row.limit === "number" && row.limit > 0)
+  );
+}
+
+export function hasUnlimitedListings(value: TileEntitlements | null | undefined): boolean {
+  if (!value) return false;
+  return (
+    value.unlimited_listings === true ||
+    (Object.prototype.hasOwnProperty.call(value, "max_active_listings") &&
+      value.max_active_listings === null)
+  );
+}
+
+export function hasVipEntitlement(value: TileEntitlements | null | undefined): boolean {
+  if (!value) return false;
+  if (
+    value.unlimited_listings === true ||
+    value.unlimited_promotions === true ||
+    value.multiple_staff_accounts === true ||
+    value.advanced_analytics === true ||
+    value.google_business_integration === true ||
+    value.automated_social_posting === true ||
+    value.ai_sales_assistant === true
+  )
+    return true;
+  if (typeof value.tier_rank === "number") return value.tier_rank >= 3;
+  return value.tier?.trim().toLowerCase() === "vip";
 }
 
 export function hasVendorAnalytics(value: string | null | undefined): boolean {
-  return typeof value === "string" && value.trim() !== "" &&
-    !["none", "disabled", "unavailable"].includes(value.trim().toLowerCase());
+  return (
+    typeof value === "string" &&
+    value.trim() !== "" &&
+    !["none", "disabled", "unavailable"].includes(value.trim().toLowerCase())
+  );
+}
+
+/** Tier rank is supplied by the entitlement RPC and reflects the effective
+ * plan, including subscription expiry. The tier name is a compatibility
+ * fallback for older RPC payloads. */
+export function hasProOrVipEntitlement(value: TileEntitlements | null | undefined): boolean {
+  if (!value) return false;
+  if (typeof value.tier_rank === "number") return value.tier_rank >= 2;
+  const tier = value.tier?.trim().toLowerCase();
+  return tier === "pro" || tier === "vip";
+}
+
+export function hasAdvancedVendorAnalytics(value: string | null | undefined): boolean {
+  if (!hasVendorAnalytics(value)) return false;
+  const level = value!.trim().toLowerCase();
+  return !["basic", "lite", "summary"].includes(level);
 }

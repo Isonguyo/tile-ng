@@ -12,16 +12,18 @@ import { getSignedUrl } from "@/lib/storage";
 import { usePlan, hasCapability } from "@/hooks/use-plan";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 
 export const Route = createFileRoute("/messages/")({
-  head: () => ({ meta: [{ title: "Inbox — Tile" }],
-  links: [
+  head: () => ({
+    meta: [{ title: "Inbox — Tile" }],
+    links: [
       {
         rel: "icon",
         href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
       },
     ],
-   }),
+  }),
   component: InboxPage,
 });
 
@@ -47,7 +49,11 @@ function InboxPage() {
     if (!loading && !user) nav({ to: "/auth" });
   }, [user, loading, nav]);
 
-  const { data: chats = [], isLoading, refetch } = useQuery({
+  const {
+    data: chats = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["my-chats", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -62,12 +68,22 @@ function InboxPage() {
     const ch = supabase
       .channel(`inbox-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => refetch())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chats" }, () => refetch())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chats" }, () =>
+        refetch(),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user, refetch]);
 
-  if (loading || isLoading) return <div className="min-h-screen bg-background"><SiteHeader /><LoadingSpinner label="Loading inbox…" /></div>;
+  if (loading || isLoading)
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <LoadingSpinner label="Loading inbox…" />
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,11 +91,18 @@ function InboxPage() {
       <div className="container mx-auto px-4 py-6 max-w-3xl">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><MessageCircle className="h-6 w-6" />Inbox</h1>
-            <p className="text-sm text-muted-foreground mt-1">A premium marketplace inbox with pinned conversations and smarter handoffs.</p>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <MessageCircle className="h-6 w-6" />
+              Inbox
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              A premium marketplace inbox with pinned conversations and smarter handoffs.
+            </p>
           </div>
           {hasCapability(plan, "premium_inbox") ? (
-            <Badge className="bg-accent text-accent-foreground"><Sparkles className="mr-1 h-3 w-3" /> Premium inbox</Badge>
+            <Badge className="bg-accent text-accent-foreground">
+              <Sparkles className="mr-1 h-3 w-3" /> Premium inbox
+            </Badge>
           ) : (
             <Badge variant="secondary">Standard inbox</Badge>
           )}
@@ -91,7 +114,9 @@ function InboxPage() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {chats.map((c) => <ChatRowItem key={c.id} c={c} />)}
+            {chats.map((c) => (
+              <ChatRowItem key={c.id} c={c} />
+            ))}
           </div>
         )}
       </div>
@@ -102,16 +127,20 @@ function InboxPage() {
 function ChatRowItem({ c }: { c: ChatRow }) {
   const [img, setImg] = useState<string | null>(null);
   const [pinned, setPinned] = useState(Boolean(c.pinned_at));
-  useEffect(() => { if (c.listing_image) getSignedUrl(c.listing_image).then(setImg); }, [c.listing_image]);
+  useEffect(() => {
+    if (c.listing_image) getSignedUrl(c.listing_image).then(setImg);
+  }, [c.listing_image]);
   const t = c.last_message_at ? new Date(c.last_message_at) : null;
-  const time = t ? (Date.now() - t.getTime() < 86400000
-    ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : t.toLocaleDateString()) : "";
+  const time = t
+    ? Date.now() - t.getTime() < 86400000
+      ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : t.toLocaleDateString()
+    : "";
 
   const togglePin = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const { data, error } = await (supabase.rpc as any)("toggle_chat_pin", { _chat_id: c.id });
+    const { data, error } = await rpcUntyped("toggle_chat_pin", { _chat_id: c.id });
     if (error) return showError(error, "We couldn't update this conversation. Please try again.");
     setPinned(Boolean(data));
     toast.success(data ? "Conversation pinned" : "Conversation unpinned");
@@ -119,9 +148,15 @@ function ChatRowItem({ c }: { c: ChatRow }) {
 
   return (
     <Link to="/messages/$chatId" params={{ chatId: c.id }} className="block">
-      <Card className={`p-3 flex gap-3 items-center hover:bg-muted/50 transition-colors ${pinned ? "border-accent/40" : ""}`}>
+      <Card
+        className={`p-3 flex gap-3 items-center hover:bg-muted/50 transition-colors ${pinned ? "border-accent/40" : ""}`}
+      >
         <div className="h-14 w-14 rounded-lg bg-muted shrink-0 overflow-hidden grid place-items-center">
-          {img ? <img src={img} alt="" className="h-full w-full object-cover" /> : <ImageIcon className="h-5 w-5 text-muted-foreground" />}
+          {img ? (
+            <img src={img} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-baseline gap-2">
@@ -133,10 +168,20 @@ function ChatRowItem({ c }: { c: ChatRow }) {
           </div>
           <p className="text-xs text-muted-foreground truncate">{c.listing_title ?? "Listing"}</p>
           <div className="flex justify-between items-center gap-2 mt-0.5">
-            <p className="text-sm text-foreground/80 truncate">{c.last_message ?? <span className="italic text-muted-foreground">No messages yet</span>}</p>
+            <p className="text-sm text-foreground/80 truncate">
+              {c.last_message ?? (
+                <span className="italic text-muted-foreground">No messages yet</span>
+              )}
+            </p>
             <div className="flex items-center gap-2 shrink-0">
-              {c.unread_count > 0 && <Badge className="bg-accent text-accent-foreground">{c.unread_count}</Badge>}
-              <button type="button" onClick={togglePin} className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+              {c.unread_count > 0 && (
+                <Badge className="bg-accent text-accent-foreground">{c.unread_count}</Badge>
+              )}
+              <button
+                type="button"
+                onClick={togglePin}
+                className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
                 <Pin className={`h-3.5 w-3.5 ${pinned ? "fill-current" : ""}`} />
               </button>
             </div>

@@ -7,12 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { friendlyAuthError } from "@/lib/auth-errors";
 import { AuthLayout } from "@/components/auth/auth-layout";
-import {
-  MailCheck,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { MailCheck, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 type VerificationState = "checking" | "pending" | "verified" | "error";
 
@@ -43,10 +38,7 @@ function VerifyEmailPage() {
   useEffect(() => {
     if (!cooldown) return;
 
-    const timer = window.setTimeout(
-      () => setCooldown((value) => value - 1),
-      1000,
-    );
+    const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
 
     return () => window.clearTimeout(timer);
   }, [cooldown]);
@@ -100,9 +92,7 @@ function VerifyEmailPage() {
       }
 
       if (
-        (event === "SIGNED_IN" ||
-          event === "TOKEN_REFRESHED" ||
-          event === "USER_UPDATED") &&
+        (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
         currentUser?.email_confirmed_at
       ) {
         setState("verified");
@@ -149,9 +139,7 @@ function VerifyEmailPage() {
 
   const resend = async () => {
     if (!email) {
-      toast.error(
-        "We couldn't find your email address. Please sign up again or contact support.",
-      );
+      toast.error("We couldn't find your email address. Please sign up again or contact support.");
       return;
     }
 
@@ -165,7 +153,12 @@ function VerifyEmailPage() {
     setBusy(false);
 
     if (error) {
-      toast.error(friendlyAuthError(error.message, "We couldn't send the verification email. Please try again."));
+      toast.error(
+        friendlyAuthError(
+          error.message,
+          "We couldn't send the verification email. Please try again.",
+        ),
+      );
       return;
     }
 
@@ -201,9 +194,7 @@ function VerifyEmailPage() {
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
 
-          <h2 className="mt-5 text-lg font-semibold">
-            Checking verification status...
-          </h2>
+          <h2 className="mt-5 text-lg font-semibold">Checking verification status...</h2>
 
           <p className="mt-2 text-sm text-muted-foreground">
             We're confirming your email with Tile.
@@ -228,9 +219,7 @@ function VerifyEmailPage() {
             <CheckCircle2 className="h-9 w-9" />
           </div>
 
-          <h2 className="mt-5 text-xl font-bold">
-            You're verified! 🎉
-          </h2>
+          <h2 className="mt-5 text-xl font-bold">You're verified! 🎉</h2>
 
           <p className="mt-2 text-sm text-muted-foreground">
             {email
@@ -239,8 +228,7 @@ function VerifyEmailPage() {
           </p>
 
           <p className="mt-3 text-sm text-muted-foreground">
-            Your Tile account is now ready. You can continue to your dashboard
-            and start using Tile.
+            Your Tile account is now ready. You can continue to your dashboard and start using Tile.
           </p>
 
           <p className="mt-3 text-xs text-muted-foreground">
@@ -249,10 +237,7 @@ function VerifyEmailPage() {
               : "We're finishing your account setup…"}
           </p>
 
-          <Button
-            onClick={continueToTile}
-            className="mt-6 w-full"
-          >
+          <Button onClick={continueToTile} className="mt-6 w-full">
             Continue to Tile
           </Button>
         </div>
@@ -275,24 +260,18 @@ function VerifyEmailPage() {
             <AlertCircle className="h-8 w-8" />
           </div>
 
-          <h2 className="mt-5 text-xl font-bold">
-            Something went wrong
-          </h2>
+          <h2 className="mt-5 text-xl font-bold">Something went wrong</h2>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            We couldn't verify your email right now. The link may have expired
-            or there may have been a temporary problem.
+            We couldn't verify your email right now. The link may have expired or there may have
+            been a temporary problem.
           </p>
 
           <div className="mt-6 flex flex-col gap-2">
             <Button onClick={resend} disabled={busy || cooldown > 0}>
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
 
-              {cooldown > 0
-                ? `Resend in ${cooldown}s`
-                : "Send another verification email"}
+              {cooldown > 0 ? `Resend in ${cooldown}s` : "Send another verification email"}
             </Button>
 
             <Button asChild variant="outline">
@@ -318,18 +297,13 @@ function VerifyEmailPage() {
           <MailCheck className="h-8 w-8" />
         </div>
 
-        <h2 className="mt-4 text-lg font-semibold">
-          Check your inbox
-        </h2>
+        <h2 className="mt-4 text-lg font-semibold">Check your inbox</h2>
 
         <p className="mt-2 text-sm text-muted-foreground">
           {email ? (
             <>
               We sent a confirmation link to{" "}
-              <span className="font-semibold text-foreground">
-                {email}
-              </span>
-              .
+              <span className="font-semibold text-foreground">{email}</span>.
             </>
           ) : (
             "Check your inbox for the confirmation link from Tile."
@@ -337,23 +311,15 @@ function VerifyEmailPage() {
         </p>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          After clicking the verification link, you'll be brought back here
-          and we'll confirm your account automatically.
+          After clicking the verification link, you'll be brought back here and we'll confirm your
+          account automatically.
         </p>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          <Button
-            onClick={resend}
-            disabled={busy || cooldown > 0}
-            className="w-full sm:w-auto"
-          >
-            {busy ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
+          <Button onClick={resend} disabled={busy || cooldown > 0} className="w-full sm:w-auto">
+            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
 
-            {cooldown > 0
-              ? `Resend in ${cooldown}s`
-              : "Resend email"}
+            {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend email"}
           </Button>
 
           <Button asChild variant="outline" className="w-full sm:w-auto">

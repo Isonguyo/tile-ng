@@ -53,9 +53,20 @@ export const Route = createFileRoute("/artisans/$id")({
     return {
       meta: [
         { title: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile" },
-        { name: "description", content: name ? `View ${name}'s artisan profile on Tile.` : "View this artisan profile on Tile." },
-        { property: "og:title", content: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile" },
-        { property: "og:description", content: "View services, experience and portfolio details on Tile." },
+        {
+          name: "description",
+          content: name
+            ? `View ${name}'s artisan profile on Tile.`
+            : "View this artisan profile on Tile.",
+        },
+        {
+          property: "og:title",
+          content: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile",
+        },
+        {
+          property: "og:description",
+          content: "View services, experience and portfolio details on Tile.",
+        },
         { property: "og:type", content: "profile" },
         { name: "twitter:card", content: "summary" },
       ],
@@ -83,7 +94,9 @@ export const Route = createFileRoute("/artisans/$id")({
           <UserRound className="h-10 w-10 text-muted-foreground" />
         </div>
         <h1 className="text-3xl font-black tracking-tight">Profile Not Found</h1>
-        <p className="mt-3 text-lg text-muted-foreground">This artisan profile may have been removed or is currently unavailable.</p>
+        <p className="mt-3 text-lg text-muted-foreground">
+          This artisan profile may have been removed or is currently unavailable.
+        </p>
         <Button asChild size="lg" className="mt-8 rounded-full">
           <Link to="/artisans">Explore Other Artisans</Link>
         </Button>
@@ -94,8 +107,12 @@ export const Route = createFileRoute("/artisans/$id")({
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <div className="container mx-auto max-w-2xl px-4 py-32 text-center">
-        <h1 className="text-3xl font-black tracking-tight text-destructive">Something went wrong</h1>
-        <p className="mt-3 text-lg text-muted-foreground">{friendlyErrorMessage(error, "We couldn't load this artisan profile. Please try again.")}</p>
+        <h1 className="text-3xl font-black tracking-tight text-destructive">
+          Something went wrong
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          {friendlyErrorMessage(error, "We couldn't load this artisan profile. Please try again.")}
+        </p>
       </div>
     </div>
   ),
@@ -115,23 +132,25 @@ function ArtisanDetailPage() {
   const artisan = Route.useLoaderData() as unknown as ArtisanProfile;
 
   const [preview, setPreview] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const avatar = artisan.profile_photo || artisan.avatar_url;
   const gallery: string[] = ((artisan.portfolio_images ?? []) as string[]).filter(Boolean);
-  
+
   const { data: contact } = useQuery({
     queryKey: ["artisan-contact", artisan.id, currentUser?.id],
     enabled: !!currentUser,
     queryFn: async () => {
       const { data } = await supabase.rpc("artisan_contact", { _id: artisan.id });
-      return (data as unknown as Array<{ phone: string | null; whatsapp: string | null }>)?.[0] ?? null;
+      return (
+        (data as unknown as Array<{ phone: string | null; whatsapp: string | null }>)?.[0] ?? null
+      );
     },
   });
-  
+
   const waPhone = sanitizePhone(contact?.whatsapp || contact?.phone);
   const telPhone = contact?.phone?.replace(/\s+/g, "") || null;
 
@@ -161,12 +180,21 @@ function ArtisanDetailPage() {
 
   const canReview = !!currentUser && !isOwner && profile?.is_artisan !== true;
 
-  const { data: reviews = [], refetch: refetchReviews } = useQuery({
+  type ReviewRow = {
+    id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string | null;
+    profiles?: { full_name?: string | null } | null;
+  };
+
+  const { data: reviews = [], refetch: refetchReviews } = useQuery<ReviewRow[]>({
     queryKey: ["artisan-reviews", artisan.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("artisan_reviews")
-        .select(`
+        .select(
+          `
         id,
         rating,
         comment,
@@ -177,12 +205,13 @@ function ArtisanDetailPage() {
           avatar_url,
           profile_photo
         )
-      `)
+      `,
+        )
         .eq("artisan_id", artisan.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data ?? [];
+      return ((data ?? []) as ReviewRow[]) ?? [];
     },
   });
 
@@ -205,14 +234,12 @@ function ArtisanDetailPage() {
           .eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("artisan_reviews")
-          .insert({
-            artisan_id: artisan.id,
-            reviewer_id: currentUser.id,
-            rating,
-            comment: review,
-          });
+        const { error } = await supabase.from("artisan_reviews").insert({
+          artisan_id: artisan.id,
+          reviewer_id: currentUser.id,
+          rating,
+          comment: review,
+        });
         if (error) throw error;
       }
 
@@ -248,18 +275,16 @@ function ArtisanDetailPage() {
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
         <Button asChild variant="ghost" size="sm" className="mb-6 rounded-full hover:bg-background">
-          <Link to="/artisans"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory</Link>
+          <Link to="/artisans">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory
+          </Link>
         </Button>
 
         {/* Hero Section */}
         <Card className="relative overflow-hidden rounded-[2.5rem] border-0 bg-background shadow-2xl shadow-primary/5 ring-1 ring-border/50">
           <div className="relative h-64 sm:h-80">
             {gallery[0] ? (
-              <img
-                src={gallery[0]}
-                alt="Cover"
-                className="h-full w-full object-cover"
-              />
+              <img src={gallery[0]} alt="Cover" className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full bg-gradient-to-tr from-primary/90 via-primary/60 to-emerald-400" />
             )}
@@ -286,7 +311,6 @@ function ArtisanDetailPage() {
 
           <div className="relative px-6 pb-10 sm:px-10">
             <div className="-mt-20 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-              
               <div className="flex flex-col sm:flex-row sm:items-end gap-6">
                 {/* Avatar */}
                 <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-full ring-8 ring-background bg-card shadow-xl">
@@ -354,11 +378,7 @@ function ArtisanDetailPage() {
                     asChild
                     className="rounded-full border-border/50 px-8 text-base shadow-sm hover:bg-emerald-50 hover:text-emerald-700"
                   >
-                    <a
-                      href={`https://wa.me/${waPhone}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noreferrer">
                       <MessageCircle className="mr-2.5 h-5 w-5" />
                       WhatsApp
                     </a>
@@ -369,36 +389,39 @@ function ArtisanDetailPage() {
 
             {/* Trust Statistics (Using integrated Stat component) */}
             <div className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <Stat 
+              <Stat
                 icon={<Briefcase className="h-5 w-5" />}
                 iconBg="bg-blue-50 text-blue-600"
                 label="Experience"
                 value={`${artisan.years_experience ?? 0} Years`}
               />
-              <Stat 
+              <Stat
                 icon={<Star className="h-5 w-5 fill-amber-500" />}
                 iconBg="bg-amber-50 text-amber-500"
                 label="Rating"
                 value={(artisan.avg_rating ?? 0).toFixed(1)}
               />
-              <Stat 
+              <Stat
                 icon={<ShieldCheck className="h-5 w-5" />}
                 iconBg="bg-emerald-50 text-emerald-600"
                 label="Projects Completed"
                 value={`${artisan.total_sales ?? 0}+`}
               />
-              <Stat 
+              <Stat
                 icon={<Sparkles className="h-5 w-5" />}
                 iconBg="bg-primary/10 text-primary"
                 label="Starting Price"
-                value={artisan.starting_price ? `₦${Number(artisan.starting_price).toLocaleString()}` : "Custom Quote"}
+                value={
+                  artisan.starting_price
+                    ? `₦${Number(artisan.starting_price).toLocaleString()}`
+                    : "Custom Quote"
+                }
               />
             </div>
           </div>
         </Card>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[2fr_1fr]">
-          
           {/* Main Left Column */}
           <div className="space-y-8">
             {/* Portfolio */}
@@ -406,9 +429,14 @@ function ArtisanDetailPage() {
               <div className="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight">Portfolio</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Recent work and completed projects</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Recent work and completed projects
+                  </p>
                 </div>
-                <Badge variant="secondary" className="rounded-full bg-background px-4 py-1.5 text-sm font-medium shadow-sm">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full bg-background px-4 py-1.5 text-sm font-medium shadow-sm"
+                >
                   {gallery.length} {gallery.length === 1 ? "Photo" : "Photos"}
                 </Badge>
               </div>
@@ -420,7 +448,8 @@ function ArtisanDetailPage() {
                   </div>
                   <h3 className="text-lg font-semibold">No Portfolio Yet</h3>
                   <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-                    This artisan hasn't uploaded any project photos. Reach out to request examples of their past work.
+                    This artisan hasn't uploaded any project photos. Reach out to request examples
+                    of their past work.
                   </p>
                 </div>
               ) : (
@@ -463,11 +492,12 @@ function ArtisanDetailPage() {
 
           {/* Right Sidebar */}
           <div className="space-y-8">
-            
             {/* Contact Card */}
             <Card className="overflow-hidden rounded-[2rem] border border-emerald-900/10 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 text-white shadow-xl">
               <div className="p-8">
-                <h2 className="text-2xl font-bold tracking-tight">Hire {artisan.full_name?.split(" ")[0] || "Artisan"}</h2>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Hire {artisan.full_name?.split(" ")[0] || "Artisan"}
+                </h2>
                 <p className="mt-2 text-emerald-100/80">
                   Ready to start your project? Reach out to discuss details and get a quote.
                 </p>
@@ -492,11 +522,7 @@ function ArtisanDetailPage() {
                       size="lg"
                       className="w-full justify-start rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
                     >
-                      <a
-                        href={`https://wa.me/${waPhone}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noreferrer">
                         <MessageCircle className="mr-3 h-5 w-5" />
                         Chat on WhatsApp
                       </a>
@@ -540,9 +566,7 @@ function ArtisanDetailPage() {
               <div className="p-8">
                 {canReview && (
                   <div className="mb-8 rounded-2xl border border-border/50 bg-muted/20 p-6">
-                    <label className="mb-3 block text-sm font-semibold">
-                      Leave a Rating
-                    </label>
+                    <label className="mb-3 block text-sm font-semibold">Leave a Rating</label>
                     <div className="mb-5 flex gap-1.5">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -588,10 +612,12 @@ function ArtisanDetailPage() {
                   {reviews.length === 0 ? (
                     <div className="text-center py-6">
                       <p className="text-muted-foreground">No reviews yet.</p>
-                      <p className="text-sm text-muted-foreground/70 mt-1">Be the first to share your experience!</p>
+                      <p className="text-sm text-muted-foreground/70 mt-1">
+                        Be the first to share your experience!
+                      </p>
                     </div>
                   ) : (
-                    reviews.map((item: any) => (
+                    reviews.map((item) => (
                       <div
                         key={item.id}
                         className="border-b border-border/50 pb-6 last:border-0 last:pb-0"
@@ -615,10 +641,10 @@ function ArtisanDetailPage() {
                             </div>
                           </div>
                           <span className="text-xs font-medium text-muted-foreground">
-                            {new Date(item.created_at).toLocaleDateString(undefined, { 
-                              month: 'short', 
-                              day: 'numeric', 
-                              year: 'numeric' 
+                            {new Date(item.created_at ?? Date.now()).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
                             })}
                           </span>
                         </div>
@@ -675,15 +701,13 @@ function Stat({
 }) {
   return (
     <div className="group rounded-[1.5rem] border border-border/50 bg-muted/20 p-5 transition-all duration-300 hover:border-primary/20 hover:bg-background hover:shadow-xl hover:shadow-primary/5">
-      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${iconBg} transition-transform duration-300 group-hover:scale-110`}>
+      <div
+        className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${iconBg} transition-transform duration-300 group-hover:scale-110`}
+      >
         {icon}
       </div>
-      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1.5 text-2xl font-black tracking-tight text-foreground">
-        {value}
-      </p>
+      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1.5 text-2xl font-black tracking-tight text-foreground">{value}</p>
     </div>
   );
 }

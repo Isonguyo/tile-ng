@@ -9,7 +9,10 @@ export function OAuthButtons({ disabled = false }: { disabled?: boolean }) {
   const location = useRouterState({ select: (s) => s.location });
 
   const handleGoogle = async () => {
-    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}${location.pathname}${location.search}` : undefined;
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${location.pathname}${location.search}`
+        : undefined;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -31,8 +34,18 @@ export function OAuthButtons({ disabled = false }: { disabled?: boolean }) {
 
   return (
     <div className="space-y-3">
-      <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={disabled}>
-        {disabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Chrome className="mr-2 h-4 w-4" />}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={handleGoogle}
+        disabled={disabled}
+      >
+        {disabled ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Chrome className="mr-2 h-4 w-4" />
+        )}
         Continue with Google
       </Button>
     </div>

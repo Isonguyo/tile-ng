@@ -43,8 +43,13 @@ type AuthCtx = {
 };
 
 const Ctx = createContext<AuthCtx>({
-  user: null, session: null, profile: null, isAdmin: false, loading: true,
-  signOut: async () => {}, refreshProfile: async () => {},
+  user: null,
+  session: null,
+  profile: null,
+  isAdmin: false,
+  loading: true,
+  signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -66,12 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s); setUser(s?.user ?? null);
+      setSession(s);
+      setUser(s?.user ?? null);
       if (s?.user) setTimeout(() => loadProfile(s.user.id), 0);
-      else { setProfile(null); setIsAdmin(false); }
+      else {
+        setProfile(null);
+        setIsAdmin(false);
+      }
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s); setUser(s?.user ?? null);
+      setSession(s);
+      setUser(s?.user ?? null);
       if (s?.user) loadProfile(s.user.id).finally(() => setLoading(false));
       else setLoading(false);
     });
@@ -79,11 +89,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{
-      user, session, profile, isAdmin, loading,
-      signOut: async () => { await supabase.auth.signOut(); },
-      refreshProfile: async () => { if (user) await loadProfile(user.id); },
-    }}>
+    <Ctx.Provider
+      value={{
+        user,
+        session,
+        profile,
+        isAdmin,
+        loading,
+        signOut: async () => {
+          await supabase.auth.signOut();
+        },
+        refreshProfile: async () => {
+          if (user) await loadProfile(user.id);
+        },
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

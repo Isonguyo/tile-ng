@@ -8,7 +8,11 @@ export const loginSchema = z.object({
 export const signupSchema = z
   .object({
     full_name: z.string().trim().min(2, "Enter your full name").max(80, "Name is too long"),
-    email: z.string().trim().min(1, "Enter your email address").email("Enter a valid email address"),
+    email: z
+      .string()
+      .trim()
+      .min(1, "Enter your email address")
+      .email("Enter a valid email address"),
     password: z.string().min(8, "Use at least 8 characters").max(72, "Password is too long"),
     confirm_password: z.string().min(1, "Please confirm your password"),
     phone_number: z.string().trim().max(30).optional().or(z.literal("")),

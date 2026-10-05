@@ -7,6 +7,7 @@ database (the source). No second/destination project is visible to my tools, and
 projects expose exactly one managed backend at a time. Nothing can be copied until we settle this.
 
 I need one of these from you:
+
 - **Option A (recommended for a Lovable Cloud app):** stay on the managed backend. It is already
   permanent and backed up; no migration needed. Zero risk.
 - **Option B:** you own the destination project (your own Supabase account). Then I need its
@@ -20,6 +21,7 @@ No destructive operation, env change, or disconnect will happen until you pick.
 ## Audit of the source database
 
 ### Schema
+
 - **30 public tables:** admin_invite_codes, artisan_events, artisan_portfolio, artisan_profiles,
   artisan_reviews, artisan_skills, audit_logs, chat_pins, chats, cities, favorites, lgas,
   listing_events, listings, messages, notifications, platform_settings, profiles, promotion_plans,
@@ -41,6 +43,7 @@ No destructive operation, env change, or disconnect will happen until you pick.
   supabase_vault.
 
 ### Data volume (source)
+
 users 17 · profiles 17 · user_roles 21 · listings 9 · chats 15 · messages 26 · favorites 5 ·
 notifications 61 · listing_events 65 · wallet_transactions 17 · search_logs 5 · shop_reviews 1 ·
 admin_invite_codes 6 · subscription_plans 4 · promotion_plans 6 · platform_settings 1 ·
@@ -48,16 +51,19 @@ states 37 · lgas 773 · cities 0. Artisan tables, reports, audit_logs, subscrip
 promotion_purchases, typing_indicators, chat_pins: 0 rows.
 
 ### Storage
+
 - `listings` (public): 88 objects, ~30 MB — listing images, shop banners, portfolio images.
 - `kyc` (private): 2 objects, ~377 kB — identity documents.
 
 ### Auth
+
 - 17 users, with identities rows (email/password + Google via the Lovable OAuth broker),
   sessions, refresh tokens.
 - Frontend auth surface: `/login`, `/signup`, `/forgot-password`, `/reset-password`,
   `/verify-email`, Google sign-in through `@lovable.dev/cloud-auth-js`.
 
 ### Code references
+
 - No hardcoded project ref anywhere in `src/` — everything reads env vars in
   `.env` / `src/integrations/supabase/*`. 29 modules import the generated client.
 - Auto-generated files that must be regenerated (not hand-edited) against the destination:
@@ -65,6 +71,7 @@ promotion_purchases, typing_indicators, chat_pins: 0 rows.
   `supabase/config.toml`, `.env`.
 
 ## Risks found
+
 1. **Auth users do not migrate by copying rows.** `auth.users`/`auth.identities` are only movable
    via the Auth Admin API with password-hash import, and that requires service-role access on both
    sides. Google identities must keep the same `provider_id` (Google sub) or those users get new
@@ -86,6 +93,7 @@ promotion_purchases, typing_indicators, chat_pins: 0 rows.
    updated separately.
 
 ## Migration checklist (execution order, once a destination exists)
+
 1. Freeze writes: enable maintenance mode via `admin_update_platform_settings`.
 2. Snapshot source: schema DDL + per-table CSV exports + row-count manifest.
 3. Destination schema: extensions → enums → tables → constraints → indexes → functions →
@@ -108,5 +116,6 @@ promotion_purchases, typing_indicators, chat_pins: 0 rows.
 11. Keep the old project untouched and read-only for a rollback window (suggest 14 days).
 
 ## What I will NOT do
+
 No changes to `.env`, no disconnect, no deletes on the source, no Auth writes — until you confirm
 the destination and explicitly approve step 4.

@@ -20,9 +20,11 @@ export function hasVerifiedVendorBadge(value: unknown): boolean {
     row.vendor_verified === true ||
     row.is_verified_vendor === true ||
     row.verified_vendor === true
-  ) return true;
-  const label = [row.badge, row.badge_name, row.badge_type, row.name, row.key, row.slug]
-    .find((item): item is string => typeof item === "string");
+  )
+    return true;
+  const label = [row.badge, row.badge_name, row.badge_type, row.name, row.key, row.slug].find(
+    (item): item is string => typeof item === "string",
+  );
   if (label) {
     const normalized = label.toLowerCase().replace(/[_-]+/g, " ");
     if (normalized === "verified" || normalized.includes("verified vendor")) return true;

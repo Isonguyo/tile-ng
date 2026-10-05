@@ -102,12 +102,23 @@ function ArtisanCreatePage() {
       if (error) throw error;
 
       type MyProfile = {
-        full_name: string | null; profession: string | null; bio: string | null;
-        phone: string | null; whatsapp: string | null; state: string | null; lga: string | null;
-        years_experience: number | null; is_available: boolean | null; starting_price: number | null;
-        offers_home_service: boolean | null; offers_emergency_service: boolean | null;
-        available_weekends: boolean | null; is_artisan: boolean | null;
-        profile_photo: string | null; avatar_url: string | null; portfolio_images: string[] | null;
+        full_name: string | null;
+        profession: string | null;
+        bio: string | null;
+        phone: string | null;
+        whatsapp: string | null;
+        state: string | null;
+        lga: string | null;
+        years_experience: number | null;
+        is_available: boolean | null;
+        starting_price: number | null;
+        offers_home_service: boolean | null;
+        offers_emergency_service: boolean | null;
+        available_weekends: boolean | null;
+        is_artisan: boolean | null;
+        profile_photo: string | null;
+        avatar_url: string | null;
+        portfolio_images: string[] | null;
       };
       return ((data as unknown as MyProfile[])?.[0] ?? null) as MyProfile | null;
     },
@@ -145,37 +156,35 @@ function ArtisanCreatePage() {
     resolver: zodResolver(schema),
     values: existingArtisan
       ? {
-        full_name: existingArtisan.full_name ?? "",
-        profession: existingArtisan.profession ?? "",
-        bio: existingArtisan.bio ?? "",
-        phone: existingArtisan.phone ?? "",
-        whatsapp: existingArtisan.whatsapp ?? "",
-        state: existingArtisan.state ?? "",
-        lga: existingArtisan.lga ?? "",
-        years_experience: existingArtisan.years_experience ?? 0,
-        is_available: existingArtisan.is_available ?? true,
-        starting_price: existingArtisan.starting_price ?? undefined,
-        offers_home_service: existingArtisan.offers_home_service ?? true,
-        offers_emergency_service:
-          existingArtisan.offers_emergency_service ?? false,
-        available_weekends:
-          existingArtisan.available_weekends ?? false,
-      }
+          full_name: existingArtisan.full_name ?? "",
+          profession: existingArtisan.profession ?? "",
+          bio: existingArtisan.bio ?? "",
+          phone: existingArtisan.phone ?? "",
+          whatsapp: existingArtisan.whatsapp ?? "",
+          state: existingArtisan.state ?? "",
+          lga: existingArtisan.lga ?? "",
+          years_experience: existingArtisan.years_experience ?? 0,
+          is_available: existingArtisan.is_available ?? true,
+          starting_price: existingArtisan.starting_price ?? undefined,
+          offers_home_service: existingArtisan.offers_home_service ?? true,
+          offers_emergency_service: existingArtisan.offers_emergency_service ?? false,
+          available_weekends: existingArtisan.available_weekends ?? false,
+        }
       : {
-        full_name: "",
-        profession: "",
-        bio: "",
-        phone: "",
-        whatsapp: "",
-        state: "",
-        lga: "",
-        years_experience: 0,
-        is_available: true,
-        starting_price: undefined,
-        offers_home_service: true,
-        offers_emergency_service: false,
-        available_weekends: false,
-      },
+          full_name: "",
+          profession: "",
+          bio: "",
+          phone: "",
+          whatsapp: "",
+          state: "",
+          lga: "",
+          years_experience: 0,
+          is_available: true,
+          starting_price: undefined,
+          offers_home_service: true,
+          offers_emergency_service: false,
+          available_weekends: false,
+        },
   });
   useEffect(() => {
     if (!profile?.is_artisan) return;
@@ -201,10 +210,7 @@ function ArtisanCreatePage() {
   const { data: states = [] } = useQuery({
     queryKey: ["artisan-states"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("states")
-        .select("id, name")
-        .order("name");
+      const { data, error } = await supabase.from("states").select("id, name").order("name");
 
       if (error) throw error;
       return data ?? [];
@@ -245,7 +251,15 @@ function ArtisanCreatePage() {
     if (isStep2Valid) {
       goToStep(3);
     } else {
-      const fields = ["full_name", "profession", "phone", "state", "lga", "years_experience", "bio"] as const;
+      const fields = [
+        "full_name",
+        "profession",
+        "phone",
+        "state",
+        "lga",
+        "years_experience",
+        "bio",
+      ] as const;
       const firstInvalid = fields.find((field) => form.getFieldState(field).error);
       const message = firstInvalid ? form.getFieldState(firstInvalid).error?.message : undefined;
       toast.error(message ?? "Please complete all required fields correctly.");
@@ -254,19 +268,25 @@ function ArtisanCreatePage() {
   };
 
   const handleAdvanceToReview = () => {
-    const missingProfilePhoto = !profilePhoto && !existingArtisan?.profile_photo && !existingArtisan?.avatar_url;
+    const missingProfilePhoto =
+      !profilePhoto && !existingArtisan?.profile_photo && !existingArtisan?.avatar_url;
     const existingPortfolioCount = existingArtisan?.portfolio_images?.length ?? 0;
     const missingPortfolioCount = Math.max(0, 3 - portfolioImages.length - existingPortfolioCount);
 
     if (missingProfilePhoto || missingPortfolioCount > 0) {
-      const profileError = missingProfilePhoto ? "Add a clear profile photo before continuing." : undefined;
-      const portfolioError = missingPortfolioCount > 0
-        ? `Add at least ${missingPortfolioCount} more portfolio photo${missingPortfolioCount === 1 ? "" : "s"} to continue.`
+      const profileError = missingProfilePhoto
+        ? "Add a clear profile photo before continuing."
         : undefined;
+      const portfolioError =
+        missingPortfolioCount > 0
+          ? `Add at least ${missingPortfolioCount} more portfolio photo${missingPortfolioCount === 1 ? "" : "s"} to continue.`
+          : undefined;
       setPhotoErrors({ profile: profileError, portfolio: portfolioError });
-      toast.error(missingProfilePhoto && missingPortfolioCount > 0
-        ? `Add a profile photo and ${missingPortfolioCount} portfolio photo${missingPortfolioCount === 1 ? "" : "s"} to continue.`
-        : profileError ?? portfolioError ?? "Complete the required photo fields to continue.");
+      toast.error(
+        missingProfilePhoto && missingPortfolioCount > 0
+          ? `Add a profile photo and ${missingPortfolioCount} portfolio photo${missingPortfolioCount === 1 ? "" : "s"} to continue.`
+          : (profileError ?? portfolioError ?? "Complete the required photo fields to continue."),
+      );
       focusFormField(formRef.current, missingProfilePhoto ? "profile_photo" : "portfolio_images");
       return;
     }
@@ -278,7 +298,11 @@ function ArtisanCreatePage() {
     const first = Object.keys(invalid)[0] as keyof FormValues | undefined;
     if (!first) return;
     const message = invalid[first]?.message;
-    toast.error(typeof message === "string" ? message : "Please complete the required artisan profile fields.");
+    toast.error(
+      typeof message === "string"
+        ? message
+        : "Please complete the required artisan profile fields.",
+    );
     if (step !== 2) {
       setStep(2);
       focusFormFieldAfterRender(formRef.current, first);
@@ -287,8 +311,10 @@ function ArtisanCreatePage() {
     focusFormField(formRef.current, first);
   };
 
-  const selectedStateName = states.find((s: any) => s.id === watch.state)?.name || "";
-  const selectedLgaName = lgas.find((l: any) => l.id === watch.lga)?.name || "";
+  const selectedStateName =
+    states.find((s: { id: string; name: string }) => s.id === watch.state)?.name || "";
+  const selectedLgaName =
+    lgas.find((l: { id: string; name: string }) => l.id === watch.lga)?.name || "";
 
   const onSubmit = async (values: FormValues) => {
     if (!user) return;
@@ -296,7 +322,7 @@ function ArtisanCreatePage() {
 
     try {
       let avatarUrl = "";
-      let portfolioUrls: string[] = [...(existingArtisan?.portfolio_images ?? [])];
+      const portfolioUrls: string[] = [...(existingArtisan?.portfolio_images ?? [])];
 
       if (profilePhoto) {
         const fileExt = profilePhoto.name.split(".").pop();
@@ -311,9 +337,9 @@ function ArtisanCreatePage() {
 
         if (avatarErr) throw avatarErr;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("listings")
-          .getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("listings").getPublicUrl(filePath);
 
         avatarUrl = publicUrl;
       }
@@ -326,15 +352,13 @@ function ArtisanCreatePage() {
           // ✅ NEW: Start directly with user.id
           const filePath = `${user.id}/artisan-portfolio-${crypto.randomUUID()}.${fileExt}`;
 
-          const { error: portErr } = await supabase.storage
-            .from("listings")
-            .upload(filePath, file);
+          const { error: portErr } = await supabase.storage.from("listings").upload(filePath, file);
 
           if (portErr) throw portErr;
 
-          const { data: { publicUrl } } = supabase.storage
-            .from("listings")
-            .getPublicUrl(filePath);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("listings").getPublicUrl(filePath);
 
           portfolioUrls.push(publicUrl);
         }
@@ -358,15 +382,9 @@ function ArtisanCreatePage() {
           offers_home_service: values.offers_home_service,
           offers_emergency_service: values.offers_emergency_service,
           available_weekends: values.available_weekends,
-          avatar_url:
-            avatarUrl ||
-            existingArtisan?.avatar_url ||
-            existingArtisan?.profile_photo,
+          avatar_url: avatarUrl || existingArtisan?.avatar_url || existingArtisan?.profile_photo,
 
-          profile_photo:
-            avatarUrl ||
-            existingArtisan?.profile_photo ||
-            existingArtisan?.avatar_url,
+          profile_photo: avatarUrl || existingArtisan?.profile_photo || existingArtisan?.avatar_url,
 
           portfolio_images:
             portfolioUrls.length > 0
@@ -380,12 +398,15 @@ function ArtisanCreatePage() {
       toast.success(
         isPrelaunch
           ? "Your artisan profile has been submitted for review and will remain private until approved and the marketplace launches."
-          : "Your artisan profile has been submitted for review and will remain private until it is approved."
+          : "Your artisan profile has been submitted for review and will remain private until it is approved.",
       );
       navigate({ to: "/dashboard" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      showError(err, "We couldn't save your artisan profile. Please check your details and try again.");
+      showError(
+        err,
+        "We couldn't save your artisan profile. Please check your details and try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -396,10 +417,13 @@ function ArtisanCreatePage() {
       <div className="min-h-screen bg-[#06120d] text-slate-100">
         <SiteHeader />
         <div className="container mx-auto max-w-xl px-4 py-24 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]"><Briefcase className="h-8 w-8 text-emerald-300" /></div>
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]">
+            <Briefcase className="h-8 w-8 text-emerald-300" />
+          </div>
           <h1 className="text-3xl font-bold text-white">Become a Tile Artisan</h1>
           <p className="mt-4 text-slate-400">
-            Create your professional profile so customers can discover and contact you anywhere in Nigeria.
+            Create your professional profile so customers can discover and contact you anywhere in
+            Nigeria.
           </p>
           <Button asChild className="mt-8">
             <Link to="/auth">Sign in to continue</Link>
@@ -410,21 +434,24 @@ function ArtisanCreatePage() {
   }
 
   return (
-      <div className="min-h-screen bg-[#06120d] text-slate-100">
-        <SiteHeader />
+    <div className="min-h-screen bg-[#06120d] text-slate-100">
+      <SiteHeader />
       <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
         {isPrelaunch && (
           <div className="mb-5 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4 sm:p-5">
             <p className="font-semibold text-emerald-200">Tile is currently in pre-launch.</p>
             <p className="mt-1 text-sm leading-6 text-slate-400">
-              You can complete your artisan profile now. It will stay private until it is approved and the marketplace launches.
+              You can complete your artisan profile now. It will stay private until it is approved
+              and the marketplace launches.
             </p>
           </div>
         )}
 
         {postingDisabled && (
           <div className="mb-5 rounded-2xl border border-rose-300/15 bg-rose-400/[0.05] p-4 sm:p-5">
-            <p className="font-semibold text-rose-200">New marketplace submissions are temporarily disabled.</p>
+            <p className="font-semibold text-rose-200">
+              New marketplace submissions are temporarily disabled.
+            </p>
             <p className="mt-1 text-sm text-slate-400">
               Submitting new artisan profile changes is currently paused.
             </p>
@@ -432,22 +459,34 @@ function ArtisanCreatePage() {
         )}
 
         <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Artisan onboarding</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Create your artisan profile</h1>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
+            Artisan onboarding
+          </p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
+            Create your artisan profile
+          </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
-            Join the professional network of verified service providers and installers across Nigeria.
+            Join the professional network of verified service providers and installers across
+            Nigeria.
           </p>
         </div>
 
         <div className="mb-6 rounded-2xl border border-[#1b3b2a] bg-gradient-to-r from-[#10241a] to-[#0b1a13] p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <span className="text-sm font-semibold text-white">Your profile setup</span>
-            <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.07] px-3 py-1 text-xs font-semibold text-emerald-200">Step {step} of 4</span>
+            <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.07] px-3 py-1 text-xs font-semibold text-emerald-200">
+              Step {step} of 4
+            </span>
           </div>
           <Progress value={step * 25} className="h-2 bg-white/[0.08]" />
           <div className="mt-4 grid grid-cols-4 gap-2 text-center text-[10px] font-semibold sm:text-xs">
             {["Start", "Details", "Portfolio", "Review"].map((label, index) => (
-              <span key={label} className={index + 1 <= step ? "text-emerald-200" : "text-slate-500"}>{label}</span>
+              <span
+                key={label}
+                className={index + 1 <= step ? "text-emerald-200" : "text-slate-500"}
+              >
+                {label}
+              </span>
             ))}
           </div>
         </div>
@@ -459,11 +498,16 @@ function ArtisanCreatePage() {
               <div className="p-5 sm:p-8">
                 <div className="text-center">
                   <div className="flex justify-center mb-5">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]"><UserRound className="h-8 w-8 text-emerald-300" /></div>
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]">
+                      <UserRound className="h-8 w-8 text-emerald-300" />
+                    </div>
                   </div>
-                  <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Build your professional presence</h2>
+                  <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                    Build your professional presence
+                  </h2>
                   <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400 sm:text-base">
-                    Create your professional profile so customers across Nigeria can discover your skills, view your previous work and contact you directly.
+                    Create your professional profile so customers across Nigeria can discover your
+                    skills, view your previous work and contact you directly.
                   </p>
                 </div>
 
@@ -495,7 +539,13 @@ function ArtisanCreatePage() {
                   </div>
                 </div>
 
-                <Button className="mt-7 h-12 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" size="lg" type="button" onClick={() => goToStep(2)} disabled={postingDisabled}>
+                <Button
+                  className="mt-7 h-12 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"
+                  size="lg"
+                  type="button"
+                  onClick={() => goToStep(2)}
+                  disabled={postingDisabled}
+                >
                   Create My Profile
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -507,21 +557,39 @@ function ArtisanCreatePage() {
               <div className="space-y-6 p-5 sm:p-8">
                 <div>
                   <h2 className="text-2xl font-bold text-white">Basic information</h2>
-                  <p className="mt-2 text-sm text-slate-400">Tell customers who you are and what you do.</p>
+                  <p className="mt-2 text-sm text-slate-400">
+                    Tell customers who you are and what you do.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="artisan-full-name">Full Name <span className="text-rose-300">*</span></Label>
-                  <Input id="artisan-full-name" placeholder="John Doe" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("full_name")} />
-                  {form.formState.errors.full_name && <p className="text-xs text-rose-300">{form.formState.errors.full_name.message}</p>}
+                  <Label htmlFor="artisan-full-name">
+                    Full Name <span className="text-rose-300">*</span>
+                  </Label>
+                  <Input
+                    id="artisan-full-name"
+                    placeholder="John Doe"
+                    className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
+                    {...form.register("full_name")}
+                  />
+                  {form.formState.errors.full_name && (
+                    <p className="text-xs text-rose-300">
+                      {form.formState.errors.full_name.message}
+                    </p>
+                  )}
                 </div>
 
                 <div data-field="profession" className="space-y-2">
-                  <Label>Profession <span className="text-rose-300">*</span></Label>
+                  <Label>
+                    Profession <span className="text-rose-300">*</span>
+                  </Label>
                   <Select
                     value={watch.profession}
                     onValueChange={(value) =>
-                      form.setValue("profession", value, { shouldValidate: true, shouldDirty: true })
+                      form.setValue("profession", value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
                     }
                   >
                     <SelectTrigger className="h-11 rounded-xl border-white/10 bg-[#08150f] text-slate-100">
@@ -536,21 +604,41 @@ function ArtisanCreatePage() {
                     </SelectContent>
                   </Select>
                 </div>
-                {form.formState.errors.profession && <p className="-mt-4 text-xs text-rose-300">{form.formState.errors.profession.message}</p>}
+                {form.formState.errors.profession && (
+                  <p className="-mt-4 text-xs text-rose-300">
+                    {form.formState.errors.profession.message}
+                  </p>
+                )}
 
                 <div data-field="phone" className="space-y-2">
-                  <Label>Phone Number <span className="text-rose-300">*</span></Label>
-                  <Input type="tel" placeholder="08012345678" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("phone")} />
-                  {form.formState.errors.phone && <p className="text-xs text-rose-300">{form.formState.errors.phone.message}</p>}
+                  <Label>
+                    Phone Number <span className="text-rose-300">*</span>
+                  </Label>
+                  <Input
+                    type="tel"
+                    placeholder="08012345678"
+                    className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
+                    {...form.register("phone")}
+                  />
+                  {form.formState.errors.phone && (
+                    <p className="text-xs text-rose-300">{form.formState.errors.phone.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label>WhatsApp Number (Optional)</Label>
-                  <Input type="tel" placeholder="08012345678" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("whatsapp")} />
+                  <Input
+                    type="tel"
+                    placeholder="08012345678"
+                    className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
+                    {...form.register("whatsapp")}
+                  />
                 </div>
 
                 <div data-field="state" className="space-y-2">
-                  <Label>State <span className="text-rose-300">*</span></Label>
+                  <Label>
+                    State <span className="text-rose-300">*</span>
+                  </Label>
                   <Select
                     value={watch.state}
                     onValueChange={(value) => {
@@ -562,51 +650,73 @@ function ArtisanCreatePage() {
                       <SelectValue placeholder="Select State" />
                     </SelectTrigger>
                     <SelectContent>
-                      {states.map((state: any) => (
+                      {states.map((state: { id: string; name: string }) => (
                         <SelectItem key={state.id} value={state.id}>
                           {state.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {form.formState.errors.state && <p className="text-xs text-rose-300">{form.formState.errors.state.message}</p>}
+                  {form.formState.errors.state && (
+                    <p className="text-xs text-rose-300">{form.formState.errors.state.message}</p>
+                  )}
                 </div>
 
                 <div data-field="lga" className="space-y-2">
-                  <Label>Local Government Area <span className="text-rose-300">*</span></Label>
+                  <Label>
+                    Local Government Area <span className="text-rose-300">*</span>
+                  </Label>
                   <Select
                     disabled={!watch.state}
                     value={watch.lga}
-                    onValueChange={(value) => form.setValue("lga", value, { shouldValidate: true, shouldDirty: true })}
+                    onValueChange={(value) =>
+                      form.setValue("lga", value, { shouldValidate: true, shouldDirty: true })
+                    }
                   >
                     <SelectTrigger className="h-11 rounded-xl border-white/10 bg-[#08150f] text-slate-100">
                       <SelectValue placeholder="Select Local Government" />
                     </SelectTrigger>
                     <SelectContent>
-                      {lgas.map((lga: any) => (
+                      {lgas.map((lga: { id: string; name: string }) => (
                         <SelectItem key={lga.id} value={lga.id}>
                           {lga.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {form.formState.errors.lga && <p className="text-xs text-rose-300">{form.formState.errors.lga.message}</p>}
+                  {form.formState.errors.lga && (
+                    <p className="text-xs text-rose-300">{form.formState.errors.lga.message}</p>
+                  )}
                 </div>
 
                 <div data-field="years_experience" className="space-y-2">
                   <Label>Years of Experience</Label>
-                  <Input type="number" min="0" max="80" placeholder="5" className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600" {...form.register("years_experience")} />
-                  {form.formState.errors.years_experience && <p className="text-xs text-rose-300">{form.formState.errors.years_experience.message}</p>}
+                  <Input
+                    type="number"
+                    min="0"
+                    max="80"
+                    placeholder="5"
+                    className="h-11 rounded-xl border-white/10 bg-[#08150f] text-white placeholder:text-slate-600"
+                    {...form.register("years_experience")}
+                  />
+                  {form.formState.errors.years_experience && (
+                    <p className="text-xs text-rose-300">
+                      {form.formState.errors.years_experience.message}
+                    </p>
+                  )}
                 </div>
 
                 <div data-field="bio" className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <Label>Professional Bio <span className="text-rose-300">*</span></Label>
+                    <Label>
+                      Professional Bio <span className="text-rose-300">*</span>
+                    </Label>
                     <span
-                      className={`text-xs ${(watch.bio?.length ?? 0) >= 30
-                        ? "font-medium text-emerald-300"
-                        : "text-slate-500"
-                        }`}
+                      className={`text-xs ${
+                        (watch.bio?.length ?? 0) >= 30
+                          ? "font-medium text-emerald-300"
+                          : "text-slate-500"
+                      }`}
                     >
                       {watch.bio?.length ?? 0}/500 characters
                     </span>
@@ -621,18 +731,29 @@ function ArtisanCreatePage() {
                   {form.formState.errors.bio ? (
                     <p className="text-xs text-rose-300">{form.formState.errors.bio.message}</p>
                   ) : (
-                    <p className={`text-xs ${(watch.bio?.length ?? 0) >= 30 ? "text-emerald-300" : "font-medium text-amber-200"}`}>
+                    <p
+                      className={`text-xs ${(watch.bio?.length ?? 0) >= 30 ? "text-emerald-300" : "font-medium text-amber-200"}`}
+                    >
                       Minimum 30 characters required. Tell customers what makes you stand out.
                     </p>
                   )}
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
-                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => goToStep(1)} type="button">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]"
+                    onClick={() => goToStep(1)}
+                    type="button"
+                  >
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="button" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" onClick={handleValidateBasicInfo}>
+                  <Button
+                    type="button"
+                    className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"
+                    onClick={handleValidateBasicInfo}
+                  >
                     Continue
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -644,9 +765,13 @@ function ArtisanCreatePage() {
             {step === 3 && (
               <div className="space-y-8 p-5 sm:p-8">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]"><Images className="h-6 w-6 text-emerald-300" /></span>
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08]">
+                    <Images className="h-6 w-6 text-emerald-300" />
+                  </span>
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Portfolio and availability</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-white">
+                      Portfolio and availability
+                    </h2>
                     <p className="mt-1 text-sm text-slate-400">
                       This is what customers will look at before they initiate contact with you.
                     </p>
@@ -654,7 +779,10 @@ function ArtisanCreatePage() {
                 </div>
 
                 {/* Profile Photo Section */}
-                <Card data-field="profile_photo" className="flex flex-col items-center rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
+                <Card
+                  data-field="profile_photo"
+                  className="flex flex-col items-center rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6"
+                >
                   <Camera className="mb-3 h-8 w-8 text-emerald-300" />
                   <h3 className="flex items-center gap-2 text-center text-sm font-semibold text-white">
                     <UserRound className="h-4 w-4" /> Profile Photo
@@ -666,7 +794,11 @@ function ArtisanCreatePage() {
                   <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-xs">
                     {profilePhotoPreview && (
                       <div className="h-20 w-20 overflow-hidden rounded-2xl border border-emerald-300/25 shadow-lg">
-                        <img src={profilePhotoPreview} alt="Profile photo preview" className="h-full w-full object-cover" />
+                        <img
+                          src={profilePhotoPreview}
+                          alt="Profile photo preview"
+                          className="h-full w-full object-cover"
+                        />
                       </div>
                     )}
                     <input
@@ -682,26 +814,44 @@ function ArtisanCreatePage() {
                         e.target.value = "";
                       }}
                     />
-                    <Button variant="outline" className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]" type="button" onClick={() => avatarInputRef.current?.click()}>
+                    <Button
+                      variant="outline"
+                      className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]"
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                    >
                       {profilePhotoPreview ? "Change Photo" : "Choose Photo"}
                     </Button>
-                    {photoErrors.profile && <p className="text-center text-xs font-medium text-rose-300">{photoErrors.profile}</p>}
+                    {photoErrors.profile && (
+                      <p className="text-center text-xs font-medium text-rose-300">
+                        {photoErrors.profile}
+                      </p>
+                    )}
                   </div>
                 </Card>
 
                 {/* Previous Jobs Portfolio Section */}
-                <Card data-field="portfolio_images" className="rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6">
+                <Card
+                  data-field="portfolio_images"
+                  className="rounded-2xl border border-dashed border-emerald-300/20 bg-white/[0.02] p-5 sm:p-6"
+                >
                   <div className="text-center max-w-md mx-auto mb-4">
                     <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-white">
                       <Images className="h-4 w-4" /> Previous Jobs
                     </h3>
                     <p className="mt-1 text-xs leading-5 text-slate-400">
-                      Upload between 3 and 8 clear photos of real setup jobs or projects you have personally completed.
+                      Upload between 3 and 8 clear photos of real setup jobs or projects you have
+                      personally completed.
                     </p>
                     <p className="mt-2 text-xs font-semibold text-emerald-300">
-                      {(portfolioImages.length + (existingArtisan?.portfolio_images?.length ?? 0))}/8 uploaded
+                      {portfolioImages.length + (existingArtisan?.portfolio_images?.length ?? 0)}/8
+                      uploaded
                     </p>
-                    {photoErrors.portfolio && <p className="mt-2 text-xs font-medium text-rose-300">{photoErrors.portfolio}</p>}
+                    {photoErrors.portfolio && (
+                      <p className="mt-2 text-xs font-medium text-rose-300">
+                        {photoErrors.portfolio}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-col items-center">
@@ -715,35 +865,65 @@ function ArtisanCreatePage() {
                         if (!e.target.files) return;
                         const uploaded = Array.from(e.target.files);
                         const existingCount = existingArtisan?.portfolio_images?.length ?? 0;
-                        const next = [...portfolioImages, ...uploaded].slice(0, Math.max(0, 8 - existingCount));
+                        const next = [...portfolioImages, ...uploaded].slice(
+                          0,
+                          Math.max(0, 8 - existingCount),
+                        );
                         setPortfolioImages(next);
                         setPhotoErrors((current) => ({
                           ...current,
-                          portfolio: next.length + existingCount >= 3
-                            ? undefined
-                            : current.portfolio
-                              ? `Add at least ${3 - next.length - existingCount} more portfolio photo${3 - next.length - existingCount === 1 ? "" : "s"} to continue.`
-                              : undefined,
+                          portfolio:
+                            next.length + existingCount >= 3
+                              ? undefined
+                              : current.portfolio
+                                ? `Add at least ${3 - next.length - existingCount} more portfolio photo${3 - next.length - existingCount === 1 ? "" : "s"} to continue.`
+                                : undefined,
                         }));
                         e.target.value = "";
                       }}
                     />
-                    <Button variant="outline" className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]" type="button" onClick={() => portfolioInputRef.current?.click()} disabled={(existingArtisan?.portfolio_images?.length ?? 0) + portfolioImages.length >= 8}>
+                    <Button
+                      variant="outline"
+                      className="h-11 w-full max-w-xs rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06]"
+                      type="button"
+                      onClick={() => portfolioInputRef.current?.click()}
+                      disabled={
+                        (existingArtisan?.portfolio_images?.length ?? 0) + portfolioImages.length >=
+                        8
+                      }
+                    >
                       Add Portfolio Photos
                     </Button>
                   </div>
 
-                  {((existingArtisan?.portfolio_images?.length ?? 0) > 0 || portfolioImages.length > 0) && (
+                  {((existingArtisan?.portfolio_images?.length ?? 0) > 0 ||
+                    portfolioImages.length > 0) && (
                     <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                       {existingArtisan?.portfolio_images?.map((url, idx) => (
-                        <div key={url} className="relative aspect-square overflow-hidden rounded-xl border border-emerald-300/15 bg-[#07150e]">
-                          <img src={url} alt={`Existing portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
-                          <span className="absolute bottom-0 w-full bg-black/65 py-1 text-center text-[10px] font-semibold text-white">Current work</span>
+                        <div
+                          key={url}
+                          className="relative aspect-square overflow-hidden rounded-xl border border-emerald-300/15 bg-[#07150e]"
+                        >
+                          <img
+                            src={url}
+                            alt={`Existing portfolio project ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <span className="absolute bottom-0 w-full bg-black/65 py-1 text-center text-[10px] font-semibold text-white">
+                            Current work
+                          </span>
                         </div>
                       ))}
                       {portfolioImages.map((file, idx) => (
-                        <div key={idx} className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-[#07150e]">
-                          <img src={portfolioPreviews[idx]} alt={`New portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
+                        <div
+                          key={idx}
+                          className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-[#07150e]"
+                        >
+                          <img
+                            src={portfolioPreviews[idx]}
+                            alt={`New portfolio project ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
                           <button
                             type="button"
                             onClick={() => setPortfolioImages((p) => p.filter((_, i) => i !== idx))}
@@ -760,8 +940,12 @@ function ArtisanCreatePage() {
 
                 {/* Starting Price Field */}
                 <div className="max-w-sm space-y-2">
-                  <Label htmlFor="starting_price" className="flex items-center gap-2 text-sm font-semibold text-slate-200">
-                    <BadgeDollarSign className="h-5 w-5 text-emerald-300" /> Starting Price (Optional)
+                  <Label
+                    htmlFor="starting_price"
+                    className="flex items-center gap-2 text-sm font-semibold text-slate-200"
+                  >
+                    <BadgeDollarSign className="h-5 w-5 text-emerald-300" /> Starting Price
+                    (Optional)
                   </Label>
                   <div className="relative rounded-md shadow-sm">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -793,14 +977,23 @@ function ArtisanCreatePage() {
                         name="is_available"
                         control={form.control}
                         render={({ field }) => (
-                          <Checkbox id="is_available" checked={field.value} onCheckedChange={field.onChange} />
+                          <Checkbox
+                            id="is_available"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         )}
                       />
                       <div className="grid gap-1.5 leading-none">
-                        <Label htmlFor="is_available" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                        <Label
+                          htmlFor="is_available"
+                          className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
+                        >
                           <UserRound className="h-3.5 w-3.5 text-emerald-300" /> Available for work
                         </Label>
-                        <p className="text-xs leading-5 text-slate-400">Instantly show up in customer matching queues.</p>
+                        <p className="text-xs leading-5 text-slate-400">
+                          Instantly show up in customer matching queues.
+                        </p>
                       </div>
                     </div>
 
@@ -810,14 +1003,23 @@ function ArtisanCreatePage() {
                         name="offers_home_service"
                         control={form.control}
                         render={({ field }) => (
-                          <Checkbox id="offers_home_service" checked={field.value} onCheckedChange={field.onChange} />
+                          <Checkbox
+                            id="offers_home_service"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         )}
                       />
                       <div className="grid gap-1.5 leading-none">
-                        <Label htmlFor="offers_home_service" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                        <Label
+                          htmlFor="offers_home_service"
+                          className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
+                        >
                           <House className="h-3.5 w-3.5 text-emerald-300" /> Home service
                         </Label>
-                        <p className="text-xs leading-5 text-slate-400">Open to traveling directly to client construction locations.</p>
+                        <p className="text-xs leading-5 text-slate-400">
+                          Open to traveling directly to client construction locations.
+                        </p>
                       </div>
                     </div>
 
@@ -827,14 +1029,23 @@ function ArtisanCreatePage() {
                         name="offers_emergency_service"
                         control={form.control}
                         render={({ field }) => (
-                          <Checkbox id="offers_emergency_service" checked={field.value} onCheckedChange={field.onChange} />
+                          <Checkbox
+                            id="offers_emergency_service"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         )}
                       />
                       <div className="grid gap-1.5 leading-none">
-                        <Label htmlFor="offers_emergency_service" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                        <Label
+                          htmlFor="offers_emergency_service"
+                          className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
+                        >
                           <Zap className="h-3.5 w-3.5 text-amber-200" /> Emergency service
                         </Label>
-                        <p className="text-xs leading-5 text-slate-400">Available for urgent repairs callouts outside standard hours.</p>
+                        <p className="text-xs leading-5 text-slate-400">
+                          Available for urgent repairs callouts outside standard hours.
+                        </p>
                       </div>
                     </div>
 
@@ -844,25 +1055,44 @@ function ArtisanCreatePage() {
                         name="available_weekends"
                         control={form.control}
                         render={({ field }) => (
-                          <Checkbox id="available_weekends" checked={field.value} onCheckedChange={field.onChange} />
+                          <Checkbox
+                            id="available_weekends"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         )}
                       />
                       <div className="grid gap-1.5 leading-none">
-                        <Label htmlFor="available_weekends" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
-                          <CalendarDays className="h-3.5 w-3.5 text-emerald-300" /> Weekend Availability
+                        <Label
+                          htmlFor="available_weekends"
+                          className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
+                        >
+                          <CalendarDays className="h-3.5 w-3.5 text-emerald-300" /> Weekend
+                          Availability
                         </Label>
-                        <p className="text-xs leading-5 text-slate-400">Accept appointments over Saturdays and Sundays.</p>
+                        <p className="text-xs leading-5 text-slate-400">
+                          Accept appointments over Saturdays and Sundays.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
-                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => goToStep(2)} type="button">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]"
+                    onClick={() => goToStep(2)}
+                    type="button"
+                  >
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="button" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" onClick={handleAdvanceToReview}>
+                  <Button
+                    type="button"
+                    className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"
+                    onClick={handleAdvanceToReview}
+                  >
                     Continue to Review
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -893,7 +1123,11 @@ function ArtisanCreatePage() {
 
                     <div className="mb-3 h-24 w-24 overflow-hidden rounded-2xl border-4 border-[#0b1912] bg-white/[0.05] shadow-lg">
                       {profilePhotoPreview ? (
-                        <img src={profilePhotoPreview} alt="Avatar preview" className="h-full w-full object-cover" />
+                        <img
+                          src={profilePhotoPreview}
+                          alt="Avatar preview"
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-white/[0.04]">
                           <UserRound className="h-8 w-8 text-slate-500" />
@@ -904,20 +1138,27 @@ function ArtisanCreatePage() {
                     <h3 className="flex items-center gap-1.5 text-xl font-bold text-white">
                       {watch.full_name || "John Doe"}
                     </h3>
-                    <p className="mt-0.5 text-sm font-medium text-emerald-300">{watch.profession || "Verified Installer"}</p>
+                    <p className="mt-0.5 text-sm font-medium text-emerald-300">
+                      {watch.profession || "Verified Installer"}
+                    </p>
 
                     <div className="flex items-center gap-0.5 mt-2">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`h-4 w-4 ${i < 4 ? "text-amber-500 fill-amber-500" : "text-muted border-muted"}`} />
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${i < 4 ? "text-amber-500 fill-amber-500" : "text-muted border-muted"}`}
+                        />
                       ))}
                     </div>
 
                     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-4 text-xs font-medium text-muted-foreground">
                       <span className="flex items-center gap-1 text-slate-400">
-                        <Briefcase className="h-3.5 w-3.5" /> {watch.years_experience || 0} years experience
+                        <Briefcase className="h-3.5 w-3.5" /> {watch.years_experience || 0} years
+                        experience
                       </span>
                       <span className="flex items-center gap-1 text-slate-400">
-                        <MapPin className="h-3.5 w-3.5" /> {selectedStateName || "Lagos"} • {selectedLgaName || "Ikeja"}
+                        <MapPin className="h-3.5 w-3.5" /> {selectedStateName || "Lagos"} •{" "}
+                        {selectedLgaName || "Ikeja"}
                       </span>
                     </div>
 
@@ -930,36 +1171,60 @@ function ArtisanCreatePage() {
 
                   <div className="space-y-4 p-5 text-sm">
                     <div>
-                      <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">About</h4>
+                      <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        About
+                      </h4>
                       <p className="leading-relaxed text-slate-300 italic">
                         "{watch.bio || "No profile bio written yet..."}"
                       </p>
                     </div>
 
                     <div>
-                      <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Portfolio showcase</h4>
+                      <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Portfolio showcase
+                      </h4>
                       <div className="grid grid-cols-4 gap-2">
                         {(existingArtisan?.portfolio_images ?? []).map((url, idx) => (
-                          <div key={url} className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
-                            <img src={url} alt={`Portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
+                          <div
+                            key={url}
+                            className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
+                          >
+                            <img
+                              src={url}
+                              alt={`Portfolio project ${idx + 1}`}
+                              className="h-full w-full object-cover"
+                            />
                           </div>
                         ))}
                         {portfolioImages.map((file, idx) => (
-                          <div key={`${file.name}-${idx}`} className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
-                            <img src={portfolioPreviews[idx]} alt={`New portfolio project ${idx + 1}`} className="h-full w-full object-cover" />
+                          <div
+                            key={`${file.name}-${idx}`}
+                            className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
+                          >
+                            <img
+                              src={portfolioPreviews[idx]}
+                              alt={`New portfolio project ${idx + 1}`}
+                              className="h-full w-full object-cover"
+                            />
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 border-t border-white/[0.07] pt-3 text-center text-[10px] font-semibold text-slate-500 sm:text-[11px]">
-                      <div className={`rounded-lg border p-2 ${watch.offers_home_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}>
+                      <div
+                        className={`rounded-lg border p-2 ${watch.offers_home_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}
+                      >
                         Home Service {watch.offers_home_service ? "✓" : "✗"}
                       </div>
-                      <div className={`rounded-lg border p-2 ${watch.offers_emergency_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}>
+                      <div
+                        className={`rounded-lg border p-2 ${watch.offers_emergency_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}
+                      >
                         Emergency {watch.offers_emergency_service ? "✓" : "✗"}
                       </div>
-                      <div className={`rounded-lg border p-2 ${watch.available_weekends ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}>
+                      <div
+                        className={`rounded-lg border p-2 ${watch.available_weekends ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}
+                      >
                         Weekends {watch.available_weekends ? "✓" : "✗"}
                       </div>
                     </div>
@@ -967,14 +1232,22 @@ function ArtisanCreatePage() {
                 </div>
 
                 <div className="flex justify-between border-t border-white/[0.07] pt-4">
-                  <Button variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]" onClick={() => goToStep(3)} type="button" disabled={submitting}>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07]"
+                    onClick={() => goToStep(3)}
+                    type="button"
+                    disabled={submitting}
+                  >
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="submit" className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]" disabled={submitting || postingDisabled}>
-                    {submitting
-                      ? "Submitting Profile..."
-                      : "Submit Profile for Admin Review"}
+                  <Button
+                    type="submit"
+                    className="rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"
+                    disabled={submitting || postingDisabled}
+                  >
+                    {submitting ? "Submitting Profile..." : "Submit Profile for Admin Review"}
                   </Button>
                 </div>
               </div>

@@ -1,8 +1,26 @@
 import { z } from "zod";
 import {
-  Rocket, BadgeCheck, Store, Wrench, Gift, ShoppingBag, Users, MessageSquare,
-  ShieldCheck, Megaphone, Search, Sparkles, Facebook, Instagram, Linkedin,
-  Youtube, Music2, Twitter, MessageCircle, Crown, type LucideIcon,
+  Rocket,
+  BadgeCheck,
+  Store,
+  Wrench,
+  Gift,
+  ShoppingBag,
+  Users,
+  MessageSquare,
+  ShieldCheck,
+  Megaphone,
+  Search,
+  Sparkles,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Music2,
+  Twitter,
+  MessageCircle,
+  Crown,
+  type LucideIcon,
 } from "lucide-react";
 import { LOCATIONS } from "@/lib/categories";
 import { siteUrl } from "@/lib/site-url";
@@ -160,9 +178,30 @@ export const FALLBACK_FOUNDING_REWARD: FoundingReward = {
 };
 
 export const FOUNDING_REWARDS: FoundingReward[] = [
-  { min: 1, max: 50, title: "Founding 50", plan: "VIP", detail: "1 month of VIP free when Tile launches", icon: Crown },
-  { min: 51, max: 200, title: "Early Member", plan: "PRO", detail: "1 month of PRO free when Tile launches", icon: BadgeCheck },
-  { min: 201, max: 500, title: "Early Member", plan: "LITE", detail: "1 month of LITE free when Tile launches", icon: Gift },
+  {
+    min: 1,
+    max: 50,
+    title: "Founding 50",
+    plan: "VIP",
+    detail: "1 month of VIP free when Tile launches",
+    icon: Crown,
+  },
+  {
+    min: 51,
+    max: 200,
+    title: "Early Member",
+    plan: "PRO",
+    detail: "1 month of PRO free when Tile launches",
+    icon: BadgeCheck,
+  },
+  {
+    min: 201,
+    max: 500,
+    title: "Early Member",
+    plan: "LITE",
+    detail: "1 month of LITE free when Tile launches",
+    icon: Gift,
+  },
   FALLBACK_FOUNDING_REWARD,
 ];
 
@@ -225,11 +264,15 @@ const heroContentSchema: z.ZodType<HeroContent> = z.object({
 const communityContentSchema: z.ZodType<CommunityContent> = z.object({
   title: optionalString,
   subtitle: optionalString,
-  items: z.array(z.object({
-    id: optionalString,
-    label: optionalString,
-    key: optionalString,
-  })).optional(),
+  items: z
+    .array(
+      z.object({
+        id: optionalString,
+        label: optionalString,
+        key: optionalString,
+      }),
+    )
+    .optional(),
 });
 
 const launchContentSchema: z.ZodType<LaunchContent> = z.object({
@@ -299,16 +342,19 @@ const formContentSchema: z.ZodType<FormContent> = z.object({
 });
 
 const waitlistPageDataSchema = z.object({
-  stats: z.object({
-    count: z.number().optional(),
-    buyers: z.number().optional(),
-    sellers: z.number().optional(),
-    artisans: z.number().optional(),
-    all_types: z.number().optional(),
-    visits: z.number().optional(),
-    join_clicks: z.number().optional(),
-    signups: z.number().optional(),
-  }).passthrough().optional(),
+  stats: z
+    .object({
+      count: z.number().optional(),
+      buyers: z.number().optional(),
+      sellers: z.number().optional(),
+      artisans: z.number().optional(),
+      all_types: z.number().optional(),
+      visits: z.number().optional(),
+      join_clicks: z.number().optional(),
+      signups: z.number().optional(),
+    })
+    .passthrough()
+    .optional(),
   content: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -344,18 +390,26 @@ const CITY_NAME = /^[A-Za-z][A-Za-z\s'.-]{1,59}$/;
 export const waitlistJoinSchema = z.object({
   full_name: z.string().trim().min(2, "Enter your full name").max(120, "Name is too long"),
   email: z.string().trim().email("Enter a valid email address").max(255),
-  phone: z.string().trim().max(30).refine(
-    (value) => !value || NIGERIAN_PHONE.test(value.replace(/[\s()-]/g, "")),
-    "Enter a valid Nigerian phone number",
-  ),
-  state: z.string().trim().refine(
-    (value) => !value || (LOCATIONS as readonly string[]).includes(value),
-    "Select a valid Nigerian state",
-  ),
-  city: z.string().trim().max(60).refine(
-    (value) => !value || CITY_NAME.test(value),
-    "Enter a valid city name",
-  ),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .refine(
+      (value) => !value || NIGERIAN_PHONE.test(value.replace(/[\s()-]/g, "")),
+      "Enter a valid Nigerian phone number",
+    ),
+  state: z
+    .string()
+    .trim()
+    .refine(
+      (value) => !value || (LOCATIONS as readonly string[]).includes(value),
+      "Select a valid Nigerian state",
+    ),
+  city: z
+    .string()
+    .trim()
+    .max(60)
+    .refine((value) => !value || CITY_NAME.test(value), "Enter a valid city name"),
   user_type: z.enum(["buyer", "seller", "artisan", "all"]),
   referral_code: z.string().trim().max(40),
 });

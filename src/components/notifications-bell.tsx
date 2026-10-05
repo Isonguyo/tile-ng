@@ -2,13 +2,25 @@ import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useNavigate } from "@tanstack/react-router";
 
-type Notif = { id: string; title: string; body: string | null; link: string | null; read: boolean; created_at: string };
+type Notif = {
+  id: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+};
 
 export function NotificationsBell() {
   const { user } = useAuth();
@@ -18,15 +30,30 @@ export function NotificationsBell() {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(20);
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
       setItems((data as Notif[]) ?? []);
     };
     load();
-    const ch = supabase.channel(`notif-${user.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (p) => setItems((m) => [p.new as Notif, ...m]))
+    const ch = supabase
+      .channel(`notif-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (p) => setItems((m) => [p.new as Notif, ...m]),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user]);
 
   if (!user) return null;

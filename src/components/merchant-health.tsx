@@ -54,20 +54,20 @@ export function MerchantHealthCard({ compact = false }: { compact?: boolean }) {
       <div className="flex items-center gap-4">
         <div className="relative h-16 w-16 shrink-0">
           <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
-            <circle 
-              cx="32" 
-              cy="32" 
-              r="26" 
-              strokeWidth="6" 
-              className="stroke-[#163321]" 
-              fill="none" 
+            <circle
+              cx="32"
+              cy="32"
+              r="26"
+              strokeWidth="6"
+              className="stroke-[#163321]"
+              fill="none"
             />
             <circle
-              cx="32" 
-              cy="32" 
-              r="26" 
-              strokeWidth="6" 
-              fill="none" 
+              cx="32"
+              cy="32"
+              r="26"
+              strokeWidth="6"
+              fill="none"
               strokeLinecap="round"
               className={`${ring} transition-all duration-700 ease-out`}
               stroke="currentColor"
@@ -81,11 +81,12 @@ export function MerchantHealthCard({ compact = false }: { compact?: boolean }) {
 
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-sm font-bold text-slate-100">
-            <Activity className="h-4 w-4 text-[#22C55E]" /> 
+            <Activity className="h-4 w-4 text-[#22C55E]" />
             Merchant health
           </p>
           <p className="text-xs text-slate-400 mt-0.5">
-            <span className="text-[#22C55E] font-medium">{label}</span> · {data.active_listings} active listings
+            <span className="text-[#22C55E] font-medium">{label}</span> · {data.active_listings}{" "}
+            active listings
           </p>
         </div>
       </div>
@@ -94,7 +95,7 @@ export function MerchantHealthCard({ compact = false }: { compact?: boolean }) {
         <ul className="mt-4 pt-3 border-t border-[#163321] space-y-2 text-xs text-slate-300">
           {data.recommendations.slice(0, 3).map((r, i) => (
             <li key={i} className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#22C55E]" /> 
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#22C55E]" />
               <span className="leading-tight">{r}</span>
             </li>
           ))}
@@ -107,16 +108,26 @@ export function MerchantHealthCard({ compact = false }: { compact?: boolean }) {
 export function QuotaBar({ used, max, label }: { used: number; max: number; label: string }) {
   const safeMax = Math.max(max, 0);
   const pct = safeMax === 0 ? 0 : Math.min(100, Math.round((used / safeMax) * 100));
-  const tone = pct >= 100 ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" : pct >= 75 ? "bg-amber-500" : "bg-[#22C55E] shadow-[0_0_10px_rgba(34,197,94,0.4)]";
+  const tone =
+    pct >= 100
+      ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+      : pct >= 75
+        ? "bg-amber-500"
+        : "bg-[#22C55E] shadow-[0_0_10px_rgba(34,197,94,0.4)]";
 
   return (
     <div className="rounded-xl border border-[#163321] bg-[#081810]/80 backdrop-blur-md p-3.5">
       <div className="flex items-center justify-between text-xs font-medium">
         <span className="text-slate-400">{label}</span>
-        <span className="text-slate-200 font-mono">{used} of {safeMax} used</span>
+        <span className="text-slate-200 font-mono">
+          {used} of {safeMax} used
+        </span>
       </div>
       <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[#05100B] border border-[#163321]">
-        <div className={`h-full ${tone} transition-all duration-500`} style={{ width: `${pct}%` }} />
+        <div
+          className={`h-full ${tone} transition-all duration-500`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       {pct >= 100 && (
         <p className="mt-2 text-[11px] text-red-400 font-medium flex items-center gap-1">

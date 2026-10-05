@@ -13,17 +13,11 @@ type RpcResult = { data: unknown; error: { message: string } | null };
  * client loses its `this` binding and throws "Cannot read properties of
  * undefined (reading 'rest')".
  */
-export function rpcUntyped(
-  fn: string,
-  args?: Record<string, unknown>,
-): Promise<RpcResult> {
+export function rpcUntyped(fn: string, args?: Record<string, unknown>): Promise<RpcResult> {
   return (supabase as any).rpc(fn, args) as Promise<RpcResult>;
 }
 
-export async function waitlistRpc(
-  fn: string,
-  args?: Record<string, unknown>,
-): Promise<unknown> {
+export async function waitlistRpc(fn: string, args?: Record<string, unknown>): Promise<unknown> {
   const { data, error } = await rpcUntyped(fn, args);
   if (error) throw new Error(error.message);
   return data;

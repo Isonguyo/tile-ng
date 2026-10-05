@@ -13,7 +13,13 @@ type Props = {
   compact?: boolean;
 };
 
-export function FeatureGate({ capability, requiredTier = "lite", children, fallback, compact }: Props) {
+export function FeatureGate({
+  capability,
+  requiredTier = "lite",
+  children,
+  fallback,
+  compact,
+}: Props) {
   const { data: plan, isLoading } = usePlan();
 
   if (isLoading) return null;
@@ -24,7 +30,9 @@ export function FeatureGate({ capability, requiredTier = "lite", children, fallb
     return (
       <div className="inline-flex items-center gap-1.5 text-xs text-amber-400">
         <Lock className="h-3 w-3" />
-        <Link to="/dashboard" className="underline">Upgrade to {requiredTier.toUpperCase()}</Link>
+        <Link to="/dashboard" className="underline">
+          Upgrade to {requiredTier.toUpperCase()}
+        </Link>
       </div>
     );
   }

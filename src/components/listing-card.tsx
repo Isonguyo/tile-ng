@@ -2,14 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MapPin, 
-  Star, 
-  ImageIcon, 
-  Eye, 
-  MousePointerClick, 
-  CheckCircle2, 
-  ShieldCheck 
+import {
+  MapPin,
+  Star,
+  ImageIcon,
+  Eye,
+  MousePointerClick,
+  CheckCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -97,7 +97,7 @@ export function ListingCard({ l }: { l: ListingCardData }) {
           visibilityTimer = null;
         }
       },
-      { threshold: [0, 0.5, 1] }
+      { threshold: [0, 0.5, 1] },
     );
 
     observer.observe(card);
@@ -155,11 +155,7 @@ export function ListingCard({ l }: { l: ListingCardData }) {
             {l.title}
           </h3>
 
-          {l.description && (
-            <p className="text-xs text-slate-400 line-clamp-1">
-              {l.description}
-            </p>
-          )}
+          {l.description && <p className="text-xs text-slate-400 line-clamp-1">{l.description}</p>}
 
           {/* Price & Trust Score */}
           <div className="flex items-center justify-between gap-2 pt-1">
@@ -173,8 +169,8 @@ export function ListingCard({ l }: { l: ListingCardData }) {
                   l.seller_trust >= 70
                     ? "border-[#22C55E]/30 text-[#22C55E]"
                     : l.seller_trust >= 40
-                    ? "border-slate-700 text-slate-300"
-                    : "border-red-500/30 text-red-400"
+                      ? "border-slate-700 text-slate-300"
+                      : "border-red-500/30 text-red-400"
                 }`}
               >
                 <ShieldCheck className="h-3.5 w-3.5" />

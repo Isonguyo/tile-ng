@@ -1,25 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Home,
-  Wrench,
-  Plus,
-  MessageCircle,
-  User,
-  Package,
-  Store,
-  Briefcase,
-} from "lucide-react";
+import { Home, Wrench, Plus, MessageCircle, User, Package, Store, Briefcase } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 function NavItem({
   to,
@@ -36,16 +21,12 @@ function NavItem({
     <Link
       to={to}
       className={`flex min-w-0 w-full flex-col items-center justify-center gap-1 overflow-hidden transition-colors ${
-        active
-          ? "text-primary"
-          : "text-muted-foreground hover:text-primary"
+        active ? "text-primary" : "text-muted-foreground hover:text-primary"
       }`}
     >
       {icon}
 
-      <span className="max-w-full truncate text-[10px] font-medium">
-        {label}
-      </span>
+      <span className="max-w-full truncate text-[10px] font-medium">{label}</span>
     </Link>
   );
 }
@@ -92,14 +73,9 @@ export function MobileBottomNav() {
                 </button>
               </SheetTrigger>
 
-              <SheetContent
-                side="bottom"
-                className="rounded-t-3xl"
-              >
+              <SheetContent side="bottom" className="rounded-t-3xl">
                 <SheetHeader>
-                  <SheetTitle>
-                    What would you like to do?
-                  </SheetTitle>
+                  <SheetTitle>What would you like to do?</SheetTitle>
                 </SheetHeader>
 
                 <div className="mt-6 grid gap-3">
@@ -112,13 +88,9 @@ export function MobileBottomNav() {
                     <Package className="h-6 w-6 shrink-0 text-primary" />
 
                     <div className="min-w-0">
-                      <h3 className="font-semibold">
-                        Sell a Product
-                      </h3>
+                      <h3 className="font-semibold">Sell a Product</h3>
 
-                      <p className="text-sm text-muted-foreground">
-                        Create a marketplace listing.
-                      </p>
+                      <p className="text-sm text-muted-foreground">Create a marketplace listing.</p>
                     </div>
                   </Link>
 
@@ -131,9 +103,7 @@ export function MobileBottomNav() {
                     <Store className="h-6 w-6 shrink-0 text-primary" />
 
                     <div className="min-w-0">
-                      <h3 className="font-semibold">
-                        Open Your Shop
-                      </h3>
+                      <h3 className="font-semibold">Open Your Shop</h3>
 
                       <p className="text-sm text-muted-foreground">
                         Manage your business storefront.
@@ -150,13 +120,9 @@ export function MobileBottomNav() {
                     <Briefcase className="h-6 w-6 shrink-0 text-primary" />
 
                     <div className="min-w-0">
-                      <h3 className="font-semibold">
-                        Become an Artisan
-                      </h3>
+                      <h3 className="font-semibold">Become an Artisan</h3>
 
-                      <p className="text-sm text-muted-foreground">
-                        Offer professional services.
-                      </p>
+                      <p className="text-sm text-muted-foreground">Offer professional services.</p>
                     </div>
                   </Link>
                 </div>
@@ -176,10 +142,7 @@ export function MobileBottomNav() {
           <NavItem
             to={profileDestination}
             label="Profile"
-            active={
-              pathname.startsWith("/profile") ||
-              pathname.startsWith("/dashboard")
-            }
+            active={pathname.startsWith("/profile") || pathname.startsWith("/dashboard")}
             icon={<User className="h-5 w-5 shrink-0" />}
           />
         </div>

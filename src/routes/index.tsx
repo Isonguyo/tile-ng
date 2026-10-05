@@ -8,6 +8,7 @@ import { ListingCard, type ListingCardData } from "@/components/listing-card";
 import { CATEGORIES, LOCATIONS, formatNaira } from "@/lib/categories";
 import { getSignedUrl } from "@/lib/storage";
 import { fromUntyped } from "@/lib/db-untyped";
+import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
 import { HeroSearch } from "@/components/hero-search";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TierBadge } from "@/components/tier-badge";
 import * as Icons from "lucide-react";
 import { z } from "zod";
 import type { ComponentType } from "react";
@@ -63,16 +65,17 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type ProfileRow = {
-  id: string | null;
-  subscription_tier: string | null;
-  is_verified: boolean | null;
+type FeaturedVendorRow = {
+  id: string;
+  effective_tier: string | null;
+  tier: string | null;
+  tier_rank: number | null;
   business_name: string | null;
   full_name: string | null;
-  avatar_url?: string | null;
-  shop_slug?: string | null;
-  location?: string | null;
-  active_listings?: number;
+  avatar_url: string | null;
+  shop_slug: string | null;
+  location: string | null;
+  active_listings: number | null;
 };
 
 type ArtisanRow = {
@@ -122,7 +125,9 @@ function Index() {
 
   // Marketplace Feed state
   const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular" | "price-low" | "price-high">("newest");
+  const [sortBy, setSortBy] = useState<
+    "recommended" | "newest" | "oldest" | "popular" | "price-low" | "price-high"
+  >("recommended");
 
   // Smooth scroll to listings container when search params update
   useEffect(() => {
@@ -144,13 +149,14 @@ function Index() {
   // 1. LISTINGS QUERY
   // ==========================
   const { data: listings = [], isLoading } = useQuery({
-    queryKey: ["listings", { q, loc, cat }],
+    queryKey: ["listings", { q, loc, cat, type: activeTab }],
     queryFn: async () => {
       // Ranking (plan tier → promotion → trust → relevance → recency) happens in the database.
       const { data, error } = await rpcUntyped("search_listings", {
         _q: q || null,
         _location: loc && loc !== "all" ? loc : null,
         _category: cat || null,
+        _type: activeTab === "goods" || activeTab === "service" ? activeTab : null,
         _limit: 150,
       });
       if (error) throw new Error(error.message);
@@ -200,7 +206,11 @@ function Index() {
       if ((flags as { launch_mode?: string } | null)?.launch_mode !== "launched") {
         listingCountQuery = listingCountQuery.eq("is_prelaunch", false);
       }
-      const [{ count: listingsCount, error: listingsError }, { count: shopsCount }, { count: sellersCount }] = await Promise.all([
+      const [
+        { count: listingsCount, error: listingsError },
+        { count: shopsCount },
+        { count: sellersCount },
+      ] = await Promise.all([
         listingCountQuery,
         supabase.from("shops").select("*", { count: "exact", head: true }),
         supabase.from("public_profiles").select("*", { count: "exact", head: true }),
@@ -228,22 +238,71 @@ function Index() {
   }, [publicCatalog]);
 
   // ==========================
-  // 4. FEATURED SHOPS QUERY
+  // 4. FEATURED VENDORS QUERY
   // ==========================
   const { data: vendors = [] } = useQuery({
-    queryKey: ["featured-shops"],
+    queryKey: ["featured-vendors"],
     enabled: !isFiltering,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("shops")
-        .select("id, subscription_tier, is_verified, business_name, full_name, avatar_url, shop_slug, location, created_at")
-        .not("shop_slug", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(6);
-
+      const { data, error } = await rpcUntyped("featured_vendors", { _limit: 12 });
       if (error) throw error;
-
-      return (data as ProfileRow[]) ?? [];
+      const rows = Array.isArray(data) ? data : data ? [data] : [];
+      return rows.flatMap((value): FeaturedVendorRow[] => {
+        if (!value || typeof value !== "object") return [];
+        const row = value as Record<string, unknown>;
+        const id =
+          typeof row.id === "string" ? row.id : typeof row.user_id === "string" ? row.user_id : "";
+        const shopSlug =
+          typeof row.shop_slug === "string"
+            ? row.shop_slug
+            : typeof row.slug === "string"
+              ? row.slug
+              : null;
+        if (!id || !shopSlug) return [];
+        const rank =
+          typeof row.tier_rank === "number"
+            ? row.tier_rank
+            : typeof row.rank_tier === "number"
+              ? row.rank_tier
+              : null;
+        return [
+          {
+            id,
+            effective_tier:
+              typeof row.effective_tier === "string" ? row.effective_tier.toLowerCase() : null,
+            tier:
+              typeof row.tier === "string"
+                ? row.tier.toLowerCase()
+                : typeof row.seller_tier === "string"
+                  ? row.seller_tier.toLowerCase()
+                  : null,
+            tier_rank: rank,
+            business_name: typeof row.business_name === "string" ? row.business_name : null,
+            full_name: typeof row.full_name === "string" ? row.full_name : null,
+            avatar_url:
+              typeof row.avatar_url === "string"
+                ? row.avatar_url
+                : typeof row.profile_photo === "string"
+                  ? row.profile_photo
+                  : null,
+            shop_slug: shopSlug,
+            location:
+              typeof row.location === "string"
+                ? row.location
+                : typeof row.state === "string"
+                  ? row.state
+                  : typeof row.city === "string"
+                    ? row.city
+                    : null,
+            active_listings:
+              typeof row.active_listings === "number"
+                ? row.active_listings
+                : typeof row.active_listing_count === "number"
+                  ? row.active_listing_count
+                  : null,
+          },
+        ];
+      });
     },
   });
 
@@ -251,9 +310,8 @@ function Index() {
   // 4.5 TRENDING LISTINGS QUERY
   // ==========================
   const trendingListings = useMemo(
-    () => [...publicCatalog]
-      .sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0))
-      .slice(0, 8),
+    () =>
+      [...publicCatalog].sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0)).slice(0, 8),
     [publicCatalog],
   );
 
@@ -268,7 +326,9 @@ function Index() {
     getSignedUrl(featuredImagePath).then((url) => {
       if (active) setFeaturedProductImage(url);
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [featuredImagePath]);
 
   // ==========================
@@ -285,7 +345,7 @@ function Index() {
         _verified_only: false,
       });
       if (error) throw error;
-      return ((data as unknown) as ArtisanRow[]).slice(0, 8);
+      return (data as unknown as ArtisanRow[]).slice(0, 8);
     },
   });
 
@@ -300,9 +360,7 @@ function Index() {
   }, [catCounts]);
 
   const trendingCategories = useMemo(() => {
-    return [...quickCategories]
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
+    return [...quickCategories].sort((a, b) => b.count - a.count).slice(0, 6);
   }, [quickCategories]);
 
   const processedListings = useMemo(() => {
@@ -321,6 +379,10 @@ function Index() {
     }
 
     switch (sortBy) {
+      case "recommended":
+        // Keep the ranked order returned by search_listings: effective plan,
+        // active promotion, trust, relevance, then recency.
+        break;
       case "price-low":
         result.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
         break;
@@ -328,30 +390,25 @@ function Index() {
         result.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
         break;
       case "popular":
-        result.sort((a, b) => ((b.views_count ?? 0) + (b.clicks_count ?? 0)) - ((a.views_count ?? 0) + (a.clicks_count ?? 0)));
+        result.sort(
+          (a, b) =>
+            (b.views_count ?? 0) +
+            (b.clicks_count ?? 0) -
+            ((a.views_count ?? 0) + (a.clicks_count ?? 0)),
+        );
         break;
       case "oldest":
         result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         break;
       case "newest":
-      default:
         result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
     }
 
-    result.sort((a, b) => {
-      if (a.is_promoted === b.is_promoted) return 0;
-      return a.is_promoted ? -1 : 1;
-    });
-
     return result;
   }, [listings, activeTab, sortBy]);
 
-  const verifiedMerchants = useMemo(
-    () => vendors.filter((v) => v.is_verified),
-    [vendors]
-  );
-  const featuredStore = verifiedMerchants[0];
+  const featuredStore = vendors[0];
   const featuredArtisan = featuredArtisans[0];
 
   const executeSearch = (e: React.FormEvent) => {
@@ -398,36 +455,140 @@ function Index() {
             <div className="container relative z-10 mx-auto px-4 py-12 sm:py-16 lg:py-20">
               <div className="grid min-w-0 grid-cols-1 items-center gap-10 lg:grid-cols-[1.14fr_.86fr] xl:gap-14">
                 <div className="tile-market-copy min-w-0 w-full space-y-6">
-                  <div className="tile-trust-pill"><Icons.BadgeCheck className="h-4 w-4 fill-emerald-400 text-emerald-400" /> Verified Businesses <span>&#8226;</span> Safe <span>&#8226;</span> Reliable</div>
+                  <div className="tile-trust-pill">
+                    <Icons.BadgeCheck className="h-4 w-4 fill-emerald-400 text-emerald-400" />{" "}
+                    Verified Businesses <span>&#8226;</span> Safe <span>&#8226;</span> Reliable
+                  </div>
                   <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl md:text-6xl xl:text-[4.4rem]">
-                    Find Trusted Stores,<br /><span>Products &amp; Services</span><br />Near You
+                    Find Trusted Stores,
+                    <br />
+                    <span>Products &amp; Services</span>
+                    <br />
+                    Near You
                   </h1>
                   <p className="max-w-2xl text-base leading-7 text-white/75 sm:text-lg">
-                    Shop from verified businesses, discover local services, compare prices and connect directly with trusted sellers across Nigeria.
+                    Shop from verified businesses, discover local services, compare prices and
+                    connect directly with trusted sellers across Nigeria.
                   </p>
                   <HeroSearch initialQ={q ?? ""} initialLoc={loc ?? "all"} />
                 </div>
 
-                <div className="tile-market-showcase min-w-0" role="group" aria-label="Featured local products, stores and artisans">
-                  <div className="tile-map-glow" aria-hidden="true"><span /><span /><span /><i /></div>
+                <div
+                  className="tile-market-showcase min-w-0"
+                  role="group"
+                  aria-label="Featured local products, stores and artisans"
+                >
+                  <div className="tile-map-glow" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                    <i />
+                  </div>
                   <article className="tile-feature-product">
-                    <div className="tile-card-ribbon">&#10024; {featuredListing ? "Trending" : "Popular Finds"}</div>
-                    {featuredProductImage ? <img src={featuredProductImage} alt={featuredListing?.title || "Featured local product"} /> : <div className="tile-product-placeholder"><Icons.Package /></div>}
-                    <div className="tile-product-info"><strong>{featuredListing?.title || "Find something local"}</strong><b>{featuredListing?.price != null ? formatNaira(featuredListing.price) : "Explore listings"}</b><span><Icons.MapPin /> {featuredListing?.location || "Across Nigeria"}</span></div>
+                    <div className="tile-card-ribbon">
+                      &#10024; {featuredListing ? "Trending" : "Popular Finds"}
+                    </div>
+                    {featuredProductImage ? (
+                      <img
+                        src={featuredProductImage}
+                        alt={featuredListing?.title || "Featured local product"}
+                      />
+                    ) : (
+                      <div className="tile-product-placeholder">
+                        <Icons.Package />
+                      </div>
+                    )}
+                    <div className="tile-product-info">
+                      <strong>{featuredListing?.title || "Find something local"}</strong>
+                      <b>
+                        {featuredListing?.price != null
+                          ? formatNaira(featuredListing.price)
+                          : "Explore listings"}
+                      </b>
+                      <span>
+                        <Icons.MapPin /> {featuredListing?.location || "Across Nigeria"}
+                      </span>
+                    </div>
                   </article>
                   <article className="tile-feature-store">
-                    <img className="tile-store-photo" src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=85" alt="Modern local shop" />
-                    <div className="tile-store-info"><div className="tile-store-mark">{featuredStore?.avatar_url ? <img src={featuredStore.avatar_url} alt="" /> : (featuredStore?.business_name || "Tile").slice(0, 2).toUpperCase()}</div><div><strong>{featuredStore?.business_name || featuredStore?.full_name || "Explore nearby shops"} {featuredStore && <Icons.BadgeCheck />}</strong><span>Local products &amp; services</span><small>Trusted businesses near you</small><em>{featuredStore ? "Verified Store" : "Across Nigeria"}</em></div></div>
+                    <img
+                      className="tile-store-photo"
+                      src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=85"
+                      alt="Modern local shop"
+                    />
+                    <div className="tile-store-info">
+                      <div className="tile-store-mark">
+                        {featuredStore?.avatar_url ? (
+                          <img src={featuredStore.avatar_url} alt="" />
+                        ) : (
+                          (featuredStore?.business_name || "Tile").slice(0, 2).toUpperCase()
+                        )}
+                      </div>
+                      <div>
+                        <strong>
+                          {featuredStore?.business_name ||
+                            featuredStore?.full_name ||
+                            "Explore nearby shops"}{" "}
+                          {featuredStore && (
+                            <FeaturedVendorBadge userId={featuredStore.id} compact />
+                          )}
+                        </strong>
+                        <span>Featured local business</span>
+                        <small>
+                          {featuredStore?.active_listings != null
+                            ? `${featuredStore.active_listings} live listing${featuredStore.active_listings === 1 ? "" : "s"}`
+                            : "Products and services near you"}
+                        </small>
+                        <em>{featuredStore ? "Featured on Tile" : "Across Nigeria"}</em>
+                      </div>
+                    </div>
                   </article>
                   <article className="tile-feature-artisan">
-                    <img src={featuredArtisan?.avatar_url || "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=800&q=85"} alt={featuredArtisan?.full_name ? `Photo of ${featuredArtisan.full_name}` : "Skilled artisan at work"} />
-                    <div className="tile-artisan-info"><em>{featuredArtisan ? "Featured Artisan" : "Skilled Professionals"}</em><strong>{featuredArtisan?.full_name || "Find a professional"}</strong><span>{featuredArtisan?.profession || "Trusted services near you"}</span><small><Icons.MapPin /> {featuredArtisan?.lga || featuredArtisan?.state || "Across Nigeria"}{featuredArtisan?.state ? `, ${featuredArtisan.state}` : ""} <Icons.ChevronRight /></small></div>
+                    <img
+                      src={
+                        featuredArtisan?.avatar_url ||
+                        "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=800&q=85"
+                      }
+                      alt={
+                        featuredArtisan?.full_name
+                          ? `Photo of ${featuredArtisan.full_name}`
+                          : "Skilled artisan at work"
+                      }
+                    />
+                    <div className="tile-artisan-info">
+                      <em>{featuredArtisan ? "Featured Artisan" : "Skilled Professionals"}</em>
+                      <strong>{featuredArtisan?.full_name || "Find a professional"}</strong>
+                      <span>{featuredArtisan?.profession || "Trusted services near you"}</span>
+                      <small>
+                        <Icons.MapPin />{" "}
+                        {featuredArtisan?.lga || featuredArtisan?.state || "Across Nigeria"}
+                        {featuredArtisan?.state ? `, ${featuredArtisan.state}` : ""}{" "}
+                        <Icons.ChevronRight />
+                      </small>
+                    </div>
                   </article>
-                  <div className="tile-real-people"><Icons.ShieldCheck /><span>Real People<br />Real Businesses<br />Across Nigeria</span></div>
-                  <div className="tile-map-pin tile-map-pin-one"><Icons.MapPin /></div>
-                  <div className="tile-map-pin tile-map-pin-two"><Icons.MapPin /></div>
-                  <div className="tile-float-icon tile-float-bag"><Icons.ShoppingBag /></div>
-                  <div className="tile-float-icon tile-float-tool"><Icons.Wrench /></div>
+                  <div className="tile-real-people">
+                    <Icons.ShieldCheck />
+                    <span>
+                      Real People
+                      <br />
+                      Real Businesses
+                      <br />
+                      Across Nigeria
+                    </span>
+                  </div>
+                  <div className="tile-map-pin tile-map-pin-one">
+                    <Icons.MapPin />
+                  </div>
+                  <div className="tile-map-pin tile-map-pin-two">
+                    <Icons.MapPin />
+                  </div>
+                  <div className="tile-float-icon tile-float-bag">
+                    <Icons.ShoppingBag />
+                  </div>
+                  <div className="tile-float-icon tile-float-tool">
+                    <Icons.Wrench />
+                  </div>
                 </div>
               </div>
             </div>
@@ -439,18 +600,49 @@ function Index() {
           <section className="container mx-auto px-4 -mt-8 relative z-20">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Listings", val: stats?.total_listings ?? 0, icon: Icons.Package, color: "text-emerald-300 bg-emerald-300/10" },
-                { label: "Verified Sellers", val: stats?.verified_vendors ?? 0, icon: Icons.BadgeCheck, color: "text-teal-300 bg-teal-300/10" },
-                { label: "Active Shops", val: stats?.active_shops ?? 0, icon: Icons.Store, color: "text-amber-200 bg-amber-200/10" },
-                { label: "Categories", val: quickCategories.length, icon: Icons.LayoutGrid, color: "text-lime-200 bg-lime-200/10" },
+                {
+                  label: "Listings",
+                  val: stats?.total_listings ?? 0,
+                  icon: Icons.Package,
+                  color: "text-emerald-300 bg-emerald-300/10",
+                },
+                {
+                  label: "Verified Sellers",
+                  val: stats?.verified_vendors ?? 0,
+                  icon: Icons.BadgeCheck,
+                  color: "text-teal-300 bg-teal-300/10",
+                },
+                {
+                  label: "Active Shops",
+                  val: stats?.active_shops ?? 0,
+                  icon: Icons.Store,
+                  color: "text-amber-200 bg-amber-200/10",
+                },
+                {
+                  label: "Categories",
+                  val: quickCategories.length,
+                  icon: Icons.LayoutGrid,
+                  color: "text-lime-200 bg-lime-200/10",
+                },
               ].map((s, i) => {
                 const Ic = s.icon;
                 return (
-                  <Card key={i} className="group flex items-center gap-3 overflow-hidden rounded-2xl border-[#1b3b2a] bg-gradient-to-br from-[#10241a] to-[#0b1a13] p-3.5 shadow-[0_12px_35px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2c6944] hover:shadow-[0_18px_40px_rgba(0,0,0,0.24)] sm:gap-4 sm:p-4">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${s.color}`}><Ic className="h-5 w-5" /></div>
+                  <Card
+                    key={i}
+                    className="group flex items-center gap-3 overflow-hidden rounded-2xl border-[#1b3b2a] bg-gradient-to-br from-[#10241a] to-[#0b1a13] p-3.5 shadow-[0_12px_35px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2c6944] hover:shadow-[0_18px_40px_rgba(0,0,0,0.24)] sm:gap-4 sm:p-4"
+                  >
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${s.color}`}
+                    >
+                      <Ic className="h-5 w-5" />
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-xl font-extrabold tracking-tight text-white md:text-2xl">{Number(s.val).toLocaleString()}</p>
-                      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 sm:text-[11px]">{s.label}</p>
+                      <p className="text-xl font-extrabold tracking-tight text-white md:text-2xl">
+                        {Number(s.val).toLocaleString()}
+                      </p>
+                      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 sm:text-[11px]">
+                        {s.label}
+                      </p>
                     </div>
                   </Card>
                 );
@@ -459,71 +651,151 @@ function Index() {
           </section>
         )}
 
-        {/* 3. FEATURED STORES */}
-        {!isFiltering && verifiedMerchants.length > 0 && (
-          <section className="container mx-auto px-4 pt-12 pb-6">
+        {/* 3. FEATURED VENDORS */}
+        {!isFiltering && vendors.length > 0 && (
+          <section id="featured-vendors" className="container mx-auto px-4 pt-12 pb-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-white">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/15 bg-emerald-300/[0.08]"><Icons.Store className="h-5 w-5 text-emerald-300" /></span>
-                  Featured Stores
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/15 bg-emerald-300/[0.08]">
+                    <Icons.Store className="h-5 w-5 text-emerald-300" />
+                  </span>
+                  Featured Vendors
                 </h2>
                 <p className="mt-2 text-sm text-slate-400">
-                  Discover trusted businesses with active listings across Nigeria.
+                  Businesses selected for featured placement across the Tile marketplace.
                 </p>
               </div>
-              <Button asChild variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:border-emerald-300/30 hover:bg-white/[0.07] hover:text-white">
-                <Link to="/">View All</Link>
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:border-emerald-300/30 hover:bg-white/[0.07] hover:text-white"
+              >
+                <Link to="/" hash="market">
+                  View All
+                </Link>
               </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {verifiedMerchants.map((v) => (
-                <Link
-                  key={v.id}
-                  to="/shop/$slug"
-                  params={{ slug: v.shop_slug! }}
-                  className="group overflow-hidden rounded-2xl border border-[#1b3b2a] bg-gradient-to-b from-[#10241a] to-[#0b1a13] shadow-[0_12px_35px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/30 hover:shadow-[0_20px_45px_rgba(0,0,0,0.26)]"
-                >
-                  <div className="relative flex h-24 items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_10%,rgba(52,211,153,0.18),transparent_70%),linear-gradient(145deg,#102b1e,#0a1b13)]">
-                    <div aria-hidden="true" className="absolute h-20 w-20 rounded-full border border-emerald-300/10" />
-                    {v.avatar_url ? (
-                      <img src={v.avatar_url} alt={v.business_name || v.full_name || "Store owner"} className="relative h-14 w-14 rounded-2xl border border-emerald-200/30 object-cover shadow-lg transition-transform duration-300 group-hover:scale-105" />
-                    ) : (
-                      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200/20 bg-emerald-300/10 text-emerald-200 shadow-lg">
-                        <Icons.Store className="h-6 w-6" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <h3 className="truncate text-sm font-bold text-slate-100 transition-colors group-hover:text-emerald-200">{v.business_name || v.full_name}</h3>
-                      {v.is_verified && <Icons.BadgeCheck className="h-4 w-4 shrink-0 fill-emerald-300 text-emerald-300" />}
+              {vendors.map((v) => {
+                const isVipVendor = v.tier_rank !== null && v.tier_rank >= 3;
+                return (
+                  <Link
+                    key={v.id}
+                    to="/shop/$slug"
+                    params={{ slug: v.shop_slug! }}
+                    className={`group overflow-hidden rounded-2xl border shadow-[0_12px_35px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(0,0,0,0.26)] ${isVipVendor ? "border-amber-300/30 bg-[radial-gradient(ellipse_at_50%_0%,rgba(251,191,36,0.12),transparent_60%),linear-gradient(150deg,#15271b,#0b1a13)] hover:border-amber-200/60" : "border-[#1b3b2a] bg-gradient-to-b from-[#10241a] to-[#0b1a13] hover:border-emerald-300/30"}`}
+                  >
+                    <div
+                      className={`relative flex h-24 items-center justify-center overflow-hidden ${isVipVendor ? "bg-[radial-gradient(ellipse_at_50%_10%,rgba(251,191,36,0.18),transparent_70%),linear-gradient(145deg,#292818,#0a1b13)]" : "bg-[radial-gradient(ellipse_at_50%_10%,rgba(52,211,153,0.18),transparent_70%),linear-gradient(145deg,#102b1e,#0a1b13)]"}`}
+                    >
+                      <div
+                        aria-hidden="true"
+                        className={`absolute h-20 w-20 rounded-full ${isVipVendor ? "border border-amber-200/20" : "border border-emerald-300/10"}`}
+                      />
+                      {v.avatar_url ? (
+                        <img
+                          src={v.avatar_url}
+                          alt={v.business_name || v.full_name || "Store owner"}
+                          className={`relative h-14 w-14 rounded-2xl border object-cover shadow-lg transition-transform duration-300 group-hover:scale-105 ${isVipVendor ? "border-amber-200/50" : "border-emerald-200/30"}`}
+                        />
+                      ) : (
+                        <div
+                          className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border shadow-lg ${isVipVendor ? "border-amber-200/30 bg-amber-200/10 text-amber-100" : "border-emerald-200/20 bg-emerald-300/10 text-emerald-200"}`}
+                        >
+                          {isVipVendor ? (
+                            <Icons.Crown className="h-6 w-6" />
+                          ) : (
+                            <Icons.Store className="h-6 w-6" />
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <p className="mt-1 truncate text-xs text-slate-500">{v.location || "Nigeria"}</p>
-                    <span className="mt-3 inline-flex items-center gap-1 rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-2.5 py-1 text-[10px] font-semibold text-emerald-200"><Icons.BadgeCheck className="h-3 w-3" />Verified business</span>
-                  </div>
-                </Link>
-              ))}
+                    <div className="p-4 text-center">
+                      <div className="flex min-w-0 items-center justify-center gap-1.5">
+                        <h3 className="truncate text-sm font-bold text-slate-100 transition-colors group-hover:text-emerald-200">
+                          {v.business_name || v.full_name}
+                        </h3>
+                        <FeaturedVendorBadge userId={v.id} compact />
+                      </div>
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {v.location || "Nigeria"}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${isVipVendor ? "border-amber-200/25 bg-amber-200/[0.08] text-amber-100" : "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-200"}`}
+                        >
+                          {isVipVendor ? (
+                            <Icons.Crown className="h-3 w-3" />
+                          ) : (
+                            <Icons.Store className="h-3 w-3" />
+                          )}
+                          {isVipVendor ? "VIP Vendor" : "Featured vendor"}
+                        </span>
+                        <FeaturedVendorBadge userId={v.id} />
+                      </div>
+                      {v.active_listings !== null && (
+                        <p className="mt-3 text-[11px] text-slate-400">
+                          {v.active_listings.toLocaleString()} active listing
+                          {v.active_listings === 1 ? "" : "s"}
+                        </p>
+                      )}
+                      {(v.effective_tier || v.tier || v.tier_rank !== null) && (
+                        <div className="mt-2 flex justify-center">
+                          <TierBadge
+                            tier={
+                              v.effective_tier ??
+                              v.tier ??
+                              (v.tier_rank === 3
+                                ? "vip"
+                                : v.tier_rank === 2
+                                  ? "pro"
+                                  : v.tier_rank === 1
+                                    ? "lite"
+                                    : null)
+                            }
+                          />
+                        </div>
+                      )}
+                      <span
+                        className={`mt-3 inline-flex items-center gap-1 text-xs font-semibold ${isVipVendor ? "text-amber-100" : "text-emerald-200"}`}
+                      >
+                        Visit Shop
+                        <Icons.ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         )}
 
-        {/* 4. VERIFIED TRUST FLAGBANNER */}
-        {!isFiltering && verifiedMerchants.length > 0 && (
+        {/* 4. FEATURED VENDOR BANNER */}
+        {!isFiltering && vendors.length > 0 && (
           <section className="container mx-auto px-4 py-6">
             <div className="flex flex-col items-center justify-between gap-6 rounded-3xl border border-emerald-300/15 bg-[radial-gradient(ellipse_at_0%_50%,rgba(52,211,153,0.13),transparent_55%),linear-gradient(120deg,#10271b,#0a1a12)] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:flex-row md:p-8">
               <div className="space-y-2 max-w-xl text-center md:text-left">
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/15 bg-emerald-300/[0.08] px-3 py-1 text-xs font-semibold text-emerald-200">
-                  <Icons.BadgeCheck className="h-3.5 w-3.5" /> Trusted businesses
+                  <Icons.Store className="h-3.5 w-3.5" /> Featured vendors
                 </div>
-                <h3 className="text-xl font-bold tracking-tight text-white">Trade with confidence</h3>
+                <h3 className="text-xl font-bold tracking-tight text-white">
+                  Discover businesses featured on Tile
+                </h3>
                 <p className="text-sm leading-6 text-slate-400">
-                  We review business credentials, historical fulfillment consistency, and identity markers so you can buy items or book trade services with absolute confidence.
+                  Browse featured storefronts, compare their public listings and connect directly
+                  with the businesses behind them.
                 </p>
               </div>
-              <Button asChild variant="default" className="h-11 shrink-0 rounded-xl bg-[#35d879] px-5 font-bold text-[#04120a] shadow-[0_8px_24px_rgba(53,216,121,0.18)] hover:bg-[#52e98f]">
-                <Link to="/">Find Verified Sellers</Link>
+              <Button
+                asChild
+                variant="default"
+                className="h-11 shrink-0 rounded-xl bg-[#35d879] px-5 font-bold text-[#04120a] shadow-[0_8px_24px_rgba(53,216,121,0.18)] hover:bg-[#52e98f]"
+              >
+                <Link to="/" hash="market">
+                  Explore listings
+                </Link>
               </Button>
             </div>
           </section>
@@ -534,10 +806,15 @@ function Index() {
           <section className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-300/15 bg-orange-300/[0.08]"><Icons.Flame className="h-5 w-5 text-orange-300" /></span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-300/15 bg-orange-300/[0.08]">
+                  <Icons.Flame className="h-5 w-5 text-orange-300" />
+                </span>
                 <h2 className="text-2xl font-bold tracking-tight text-white">Trending Products</h2>
               </div>
-              <Link to="/" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link
+                to="/"
+                className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
+              >
                 View All <Icons.ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -563,15 +840,17 @@ function Index() {
                   Find Skilled Artisans Near You
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                  Hire verified electricians, plumbers, mechanics, fashion designers,
-                  carpenters, photographers, cleaners, painters, welders,
-                  technicians and hundreds of skilled professionals across Nigeria.
+                  Hire verified electricians, plumbers, mechanics, fashion designers, carpenters,
+                  photographers, cleaners, painters, welders, technicians and hundreds of skilled
+                  professionals across Nigeria.
                 </p>
               </div>
-              <Button asChild variant="outline" className="self-start rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:border-emerald-300/30 hover:bg-white/[0.07] hover:text-white sm:self-center">
-                <Link to="/artisans">
-                  Browse All Artisans
-                </Link>
+              <Button
+                asChild
+                variant="outline"
+                className="self-start rounded-xl border-white/15 bg-white/[0.03] text-slate-200 hover:border-emerald-300/30 hover:bg-white/[0.07] hover:text-white sm:self-center"
+              >
+                <Link to="/artisans">Browse All Artisans</Link>
               </Button>
             </div>
 
@@ -587,7 +866,9 @@ function Index() {
                     {artisan.avatar_url ? (
                       <img
                         src={artisan.avatar_url}
-                        alt={artisan.full_name ? `Photo of ${artisan.full_name}` : "Artisan profile"}
+                        alt={
+                          artisan.full_name ? `Photo of ${artisan.full_name}` : "Artisan profile"
+                        }
                         className="absolute -bottom-6 h-20 w-20 rounded-2xl border-4 border-[#0d2016] object-cover shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
@@ -613,14 +894,16 @@ function Index() {
                     </p>
 
                     <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-3">
-                      <Badge variant="secondary" className="border border-emerald-300/10 bg-emerald-300/[0.06] text-xs font-semibold text-emerald-100">
+                      <Badge
+                        variant="secondary"
+                        className="border border-emerald-300/10 bg-emerald-300/[0.06] text-xs font-semibold text-emerald-100"
+                      >
                         Professional
                       </Badge>
                       <span className="text-xs font-medium text-slate-500 transition-colors group-hover:text-emerald-200">
                         View profile
                       </span>
                     </div>
-
                   </div>
                 </Link>
               ))}
@@ -634,14 +917,21 @@ function Index() {
             <div className="rounded-3xl border border-[#1b3b2a] bg-gradient-to-r from-[#0d2117] via-[#0b1a13] to-[#0d2117] px-4 py-5 sm:px-6">
               <div className="mb-4 flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">Find your next hire</p>
-                  <h3 className="mt-1 text-lg font-bold tracking-tight text-white">Popular services</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">
+                    Find your next hire
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold tracking-tight text-white">
+                    Popular services
+                  </h3>
                 </div>
                 <Icons.Sparkles className="mb-1 h-5 w-5 text-emerald-300/70" />
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
                 {POPULAR_SERVICES.map((service) => {
-                  const ServiceIcon = (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[service.icon] ?? Icons.Wrench;
+                  const ServiceIcon =
+                    (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[
+                      service.icon
+                    ] ?? Icons.Wrench;
                   return (
                     <Button
                       key={service.slug}
@@ -670,44 +960,58 @@ function Index() {
         {!isFiltering && quickCategories.length > 0 && (
           <section className="container mx-auto my-6 px-4 py-4 sm:py-6">
             <div className="rounded-3xl border border-[#1b3b2a] bg-[radial-gradient(ellipse_at_100%_0%,rgba(52,211,153,0.08),transparent_40%),linear-gradient(145deg,#0e2117,#091710)] p-5 sm:p-7">
-            <div className="mb-6 max-w-4xl">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">Explore Tile</p>
-              <h2 className="mt-1 text-2xl font-bold tracking-tight text-white">Browse by category</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Explore thousands of verified products and services organized explicitly by trade class.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {quickCategories.map((c) => {
-                const Ic = (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[c.icon] ?? Icons.Tag;
-                const active = cat === c.slug;
-                return (
-                  <Button
-                    key={c.slug}
-                    variant="ghost"
-                    onClick={() => handleCategoryFilter(c.slug)}
-                    className={`group flex h-auto flex-col items-center justify-center whitespace-normal rounded-2xl border p-4 text-center normal-case transition-all duration-300 hover:-translate-y-0.5 sm:p-5 ${active
-                      ? "border-emerald-300/50 bg-emerald-300/[0.1] ring-1 ring-emerald-300/25 hover:bg-emerald-300/[0.1]"
-                      : "border-white/[0.07] bg-white/[0.025] hover:border-emerald-300/25 hover:bg-white/[0.05]"
+              <div className="mb-6 max-w-4xl">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">
+                  Explore Tile
+                </p>
+                <h2 className="mt-1 text-2xl font-bold tracking-tight text-white">
+                  Browse by category
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Explore thousands of verified products and services organized explicitly by trade
+                  class.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {quickCategories.map((c) => {
+                  const Ic =
+                    (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[
+                      c.icon
+                    ] ?? Icons.Tag;
+                  const active = cat === c.slug;
+                  return (
+                    <Button
+                      key={c.slug}
+                      variant="ghost"
+                      onClick={() => handleCategoryFilter(c.slug)}
+                      className={`group flex h-auto flex-col items-center justify-center whitespace-normal rounded-2xl border p-4 text-center normal-case transition-all duration-300 hover:-translate-y-0.5 sm:p-5 ${
+                        active
+                          ? "border-emerald-300/50 bg-emerald-300/[0.1] ring-1 ring-emerald-300/25 hover:bg-emerald-300/[0.1]"
+                          : "border-white/[0.07] bg-white/[0.025] hover:border-emerald-300/25 hover:bg-white/[0.05]"
                       }`}
-                  >
-                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.07] transition-colors group-hover:bg-emerald-300/[0.12]">
-                      <Ic className="h-6 w-6 text-emerald-300" />
-                    </div>
-                    <p className="max-w-[140px] truncate text-sm font-bold text-slate-100">{c.label}</p>
-                    <p className="mt-1 rounded-full border border-white/[0.06] bg-black/15 px-2 py-0.5 text-xs font-medium text-slate-400">
-                      {c.count.toLocaleString()}
-                    </p>
-                  </Button>
-                );
-              })}
-            </div>
+                    >
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.07] transition-colors group-hover:bg-emerald-300/[0.12]">
+                        <Ic className="h-6 w-6 text-emerald-300" />
+                      </div>
+                      <p className="max-w-[140px] truncate text-sm font-bold text-slate-100">
+                        {c.label}
+                      </p>
+                      <p className="mt-1 rounded-full border border-white/[0.06] bg-black/15 px-2 py-0.5 text-xs font-medium text-slate-400">
+                        {c.count.toLocaleString()}
+                      </p>
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           </section>
         )}
 
         {/* 8. ALL LISTINGS SECTION & SEARCH RESULTS VIEW CONTAINER */}
-        <section ref={listingsRef} className="container mx-auto grid scroll-mt-16 grid-cols-1 gap-6 px-4 py-8 lg:grid-cols-4 lg:gap-8">
+        <section
+          ref={listingsRef}
+          className="container mx-auto grid scroll-mt-16 grid-cols-1 gap-6 px-4 py-8 lg:grid-cols-4 lg:gap-8"
+        >
           {/* SEARCH FILTERS CONTROLS ASIDE */}
           <aside className="lg:col-span-1 space-y-6">
             {/* TRENDING TOP CATEGORIES */}
@@ -720,7 +1024,13 @@ function Index() {
                 </div>
                 <div className="p-3 space-y-2">
                   {trendingCategories.map((tc) => {
-                    const Ic = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tc.icon] ?? Icons.Tag;
+                    const Ic =
+                      (
+                        Icons as unknown as Record<
+                          string,
+                          React.ComponentType<{ className?: string }>
+                        >
+                      )[tc.icon] ?? Icons.Tag;
                     return (
                       <Button
                         key={tc.slug}
@@ -732,8 +1042,12 @@ function Index() {
                           <Ic className="h-5 w-5 text-emerald-300" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-100">{tc.label}</p>
-                          <p className="text-xs text-slate-500">{tc.count.toLocaleString()} active listings</p>
+                          <p className="truncate text-sm font-semibold text-slate-100">
+                            {tc.label}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {tc.count.toLocaleString()} active listings
+                          </p>
                         </div>
                         <Icons.ChevronRight className="ml-auto h-4 w-4 shrink-0 text-slate-500" />
                       </Button>
@@ -746,12 +1060,14 @@ function Index() {
             {/* FILTER FORM ASIDE BLOCK */}
             <Card className="space-y-4 rounded-2xl border-[#1b3b2a] bg-gradient-to-b from-[#10241a] to-[#0b1a13] p-4 shadow-[0_14px_38px_rgba(0,0,0,0.16)]">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300/80">Narrow your search</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300/80">
+                  Narrow your search
+                </p>
                 <h3 className="mt-1 text-base font-bold text-white">Filter listings</h3>
               </div>
               <form onSubmit={executeSearch} className="space-y-3">
                 <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-400">Keywords</label>
+                  <label className="text-xs font-semibold text-slate-400">Keywords</label>
                   <div className="relative">
                     <Icons.Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                     <input
@@ -765,7 +1081,7 @@ function Index() {
                 </div>
 
                 <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-400">State location</label>
+                  <label className="text-xs font-semibold text-slate-400">State location</label>
                   <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                     <SelectTrigger className="w-full rounded-xl border-white/10 bg-[#08150f] text-slate-100">
                       <SelectValue placeholder="Select Location" />
@@ -773,18 +1089,28 @@ function Index() {
                     <SelectContent>
                       <SelectItem value="all">All Nigeria</SelectItem>
                       {LOCATIONS.map((l) => (
-                        <SelectItem key={l} value={l}>{l}</SelectItem>
+                        <SelectItem key={l} value={l}>
+                          {l}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <Button type="submit" className="w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]">
+                <Button
+                  type="submit"
+                  className="w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f]"
+                >
                   Apply Filters
                 </Button>
 
                 {isFiltering && (
-                  <Button type="button" variant="ghost" onClick={clearAllFilters} className="w-full text-xs text-slate-400 hover:bg-white/[0.05] hover:text-white">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={clearAllFilters}
+                    className="w-full text-xs text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                  >
                     Clear Active Filters
                   </Button>
                 )}
@@ -797,7 +1123,9 @@ function Index() {
             <div className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-4 sm:flex-row sm:items-center">
               <div>
                 <h2 className="text-xl font-black tracking-tight text-white">
-                  {isFiltering ? `Search Results ${activeCategoryLabel ? `in ${activeCategoryLabel}` : ""}` : "Explore Marketplace Feed"}
+                  {isFiltering
+                    ? `Search Results ${activeCategoryLabel ? `in ${activeCategoryLabel}` : ""}`
+                    : "Explore Marketplace Feed"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
                   Showing {processedListings.length} approved listings across chosen filters.
@@ -805,12 +1133,36 @@ function Index() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full sm:w-auto">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(v) => setActiveTab(v as typeof activeTab)}
+                  className="w-full sm:w-auto"
+                >
                   <TabsList className="grid w-full grid-cols-4 rounded-xl border border-white/[0.07] bg-[#0a1912] p-1 sm:w-auto">
-                    <TabsTrigger value="all" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">All</TabsTrigger>
-                    <TabsTrigger value="goods" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">Goods</TabsTrigger>
-                    <TabsTrigger value="service" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">Services</TabsTrigger>
-                    <TabsTrigger value="featured" className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]">Featured</TabsTrigger>
+                    <TabsTrigger
+                      value="all"
+                      className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]"
+                    >
+                      All
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="goods"
+                      className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]"
+                    >
+                      Goods
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="service"
+                      className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]"
+                    >
+                      Services
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="featured"
+                      className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]"
+                    >
+                      Featured
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
 
@@ -819,6 +1171,7 @@ function Index() {
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="recommended">Recommended</SelectItem>
                     <SelectItem value="newest">Newest First</SelectItem>
                     <SelectItem value="oldest">Oldest First</SelectItem>
                     <SelectItem value="popular">Popularity</SelectItem>
@@ -832,7 +1185,10 @@ function Index() {
             {isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 py-12">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="h-[280px] animate-pulse rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#10241a] to-[#0a1912]" />
+                  <div
+                    key={i}
+                    className="h-[280px] animate-pulse rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#10241a] to-[#0a1912]"
+                  />
                 ))}
               </div>
             ) : processedListings.length === 0 ? (
@@ -842,9 +1198,18 @@ function Index() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-bold text-white">No items match your criteria</h4>
-                  <p className="text-xs leading-5 text-slate-400">Try loosening search keywords, selecting standard categories, or switching states.</p>
+                  <p className="text-xs leading-5 text-slate-400">
+                    Try loosening search keywords, selecting standard categories, or switching
+                    states.
+                  </p>
                 </div>
-                <Button size="sm" onClick={clearAllFilters} className="rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]">Reset All View Filters</Button>
+                <Button
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]"
+                >
+                  Reset All View Filters
+                </Button>
               </Card>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -859,8 +1224,37 @@ function Index() {
 
       {/* FOOTER */}
       <footer className="border-t border-white/[0.07] bg-[#050f0a] px-4 py-7 text-center text-xs text-slate-500">
-        <p>&copy; {new Date().getFullYear()} Tile Marketplace. Connecting trustworthy commercial hubs safely across Nigeria.</p>
+        <p>
+          &copy; {new Date().getFullYear()} Tile Marketplace. Connecting trustworthy commercial hubs
+          safely across Nigeria.
+        </p>
       </footer>
     </div>
+  );
+}
+
+function FeaturedVendorBadge({ userId, compact = false }: { userId: string; compact?: boolean }) {
+  const { data: verified = false } = useQuery({
+    queryKey: ["vendor-badges", userId],
+    enabled: !!userId,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await rpcUntyped("get_vendor_badges", { _user_id: userId });
+      if (error) throw error;
+      return hasVerifiedVendorBadge(data);
+    },
+  });
+
+  if (!verified) return null;
+  return compact ? (
+    <Icons.BadgeCheck
+      aria-label="Verified vendor"
+      className="inline h-4 w-4 fill-emerald-300 text-emerald-300"
+    />
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] text-slate-300">
+      <Icons.BadgeCheck className="h-3 w-3 text-emerald-300" />
+      Verified
+    </span>
   );
 }

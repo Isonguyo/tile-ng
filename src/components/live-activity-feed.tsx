@@ -45,22 +45,32 @@ export function LiveActivityFeed() {
       ]);
       if (!alive) return;
       const seed: Event[] = [
-        ...((listings ?? []) as Array<{ id: string; title: string; location: string | null; created_at: string }>).map(
-          (l) => ({
-            id: `l:${l.id}`,
-            kind: "listing" as const,
-            text: `New listing · ${l.title}${l.location ? ` · ${l.location}` : ""}`,
-            at: new Date(l.created_at).getTime(),
-          }),
-        ),
-        ...((shops ?? []) as Array<{ id: string; business_name: string | null; location: string | null; created_at: string }>).map(
-          (s) => ({
-            id: `s:${s.id}`,
-            kind: "shop" as const,
-            text: `Shop opened · ${s.business_name ?? "New shop"}${s.location ? ` · ${s.location}` : ""}`,
-            at: new Date(s.created_at).getTime(),
-          }),
-        ),
+        ...(
+          (listings ?? []) as Array<{
+            id: string;
+            title: string;
+            location: string | null;
+            created_at: string;
+          }>
+        ).map((l) => ({
+          id: `l:${l.id}`,
+          kind: "listing" as const,
+          text: `New listing · ${l.title}${l.location ? ` · ${l.location}` : ""}`,
+          at: new Date(l.created_at).getTime(),
+        })),
+        ...(
+          (shops ?? []) as Array<{
+            id: string;
+            business_name: string | null;
+            location: string | null;
+            created_at: string;
+          }>
+        ).map((s) => ({
+          id: `s:${s.id}`,
+          kind: "shop" as const,
+          text: `Shop opened · ${s.business_name ?? "New shop"}${s.location ? ` · ${s.location}` : ""}`,
+          at: new Date(s.created_at).getTime(),
+        })),
       ]
         .sort((a, b) => b.at - a.at)
         .slice(0, 10);
@@ -73,7 +83,12 @@ export function LiveActivityFeed() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "listings" },
         (payload) => {
-          const l = payload.new as { id: string; title?: string; location?: string | null; status?: string };
+          const l = payload.new as {
+            id: string;
+            title?: string;
+            location?: string | null;
+            status?: string;
+          };
           if (l.status && l.status !== "approved") return;
           setEvents((prev) =>
             [

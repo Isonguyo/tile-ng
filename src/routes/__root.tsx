@@ -17,7 +17,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ConfirmActionProvider } from "@/components/confirm-action-provider";
 
-const TILE_FAVICON_URL = "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg";
+const TILE_FAVICON_URL =
+  "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg";
 
 function NotFoundComponent() {
   return (
@@ -45,10 +46,9 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(
-      error instanceof Error ? error : new Error(String(error)),
-      { boundary: "tanstack_root_error_component" },
-    );
+    reportLovableError(error instanceof Error ? error : new Error(String(error)), {
+      boundary: "tanstack_root_error_component",
+    });
   }, [error]);
 
   return (
@@ -88,15 +88,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Tile" },
-      { name: "description", content: "Tile is a dual-sided marketplace for buying and selling goods, and hiring services." },
+      {
+        name: "description",
+        content:
+          "Tile is a dual-sided marketplace for buying and selling goods, and hiring services.",
+      },
       { name: "author", content: "Tile" },
       { property: "og:title", content: "Tile" },
-      { property: "og:description", content: "Tile is a dual-sided marketplace for buying and selling goods, and hiring services." },
+      {
+        property: "og:description",
+        content:
+          "Tile is a dual-sided marketplace for buying and selling goods, and hiring services.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Tile" },
       { name: "twitter:title", content: "Tile" },
-      { name: "twitter:description", content: "Tile is a dual-sided marketplace for buying and selling goods, and hiring services." },
+      {
+        name: "twitter:description",
+        content:
+          "Tile is a dual-sided marketplace for buying and selling goods, and hiring services.",
+      },
       { property: "og:image", content: TILE_FAVICON_URL },
       { name: "twitter:image", content: TILE_FAVICON_URL },
     ],

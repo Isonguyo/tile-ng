@@ -1,6 +1,14 @@
 import { useEffect, useState, type RefObject } from "react";
 import {
-  ArrowRight, Copy, Crown, Gift, MessageCircle, Rocket, Share2, Target, Twitter,
+  ArrowRight,
+  Copy,
+  Crown,
+  Gift,
+  MessageCircle,
+  Rocket,
+  Share2,
+  Target,
+  Twitter,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,15 +90,19 @@ export function WaitlistProfile({
   const shareToTwitter = () => {
     if (!shareLink) return;
     const text = `Join Tile waitlist and get early access: ${shareLink}`;
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
-  const rewardPlan = (currentReward && "reward_plan" in currentReward
-    ? currentReward.reward_plan
-    : undefined) ?? getFoundingReward(currentPosition).plan;
-  const rewardBenefit = (currentReward && "benefit" in currentReward
-    ? currentReward.benefit
-    : undefined) ?? getFoundingReward(currentPosition).detail;
+  const rewardPlan =
+    (currentReward && "reward_plan" in currentReward ? currentReward.reward_plan : undefined) ??
+    getFoundingReward(currentPosition).plan;
+  const rewardBenefit =
+    (currentReward && "benefit" in currentReward ? currentReward.benefit : undefined) ??
+    getFoundingReward(currentPosition).detail;
   const isVendor = userType === "seller" || userType === "artisan" || userType === "all";
 
   return (
@@ -100,7 +112,9 @@ export function WaitlistProfile({
           <Crown className="h-8 w-8" />
         </div>
         <h2 className="mt-4 text-3xl font-black tracking-tight">
-          {done === "exists" ? "You're already a Tile founding member." : "You're officially on the list."}
+          {done === "exists"
+            ? "You're already a Tile founding member."
+            : "You're officially on the list."}
         </h2>
         <p className="mt-2 max-w-xl mx-auto text-muted-foreground">
           {done === "exists"
@@ -140,8 +154,13 @@ export function WaitlistProfile({
             const TierIcon = tier.icon;
             const active = currentPosition >= tier.min && currentPosition <= tier.max;
             return (
-              <div key={`preview-${tier.min}`} className={`rounded-xl border p-3 ${active ? "border-primary bg-background" : "bg-background/60"}`}>
-                <TierIcon className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground"}`} />
+              <div
+                key={`preview-${tier.min}`}
+                className={`rounded-xl border p-3 ${active ? "border-primary bg-background" : "bg-background/60"}`}
+              >
+                <TierIcon
+                  className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground"}`}
+                />
                 <p className="mt-2 text-xs font-bold">{tier.title}</p>
                 <p className="text-sm font-black">{tier.plan}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">{tier.detail}</p>
@@ -151,7 +170,11 @@ export function WaitlistProfile({
         </div>
       </div>
 
-      <div ref={profileRef} id="member-profile" className="mt-5 scroll-mt-24 rounded-2xl border bg-background p-5">
+      <div
+        ref={profileRef}
+        id="member-profile"
+        className="mt-5 scroll-mt-24 rounded-2xl border bg-background p-5"
+      >
         <div className="flex flex-wrap gap-2 rounded-xl bg-muted/50 p-1">
           {[
             { value: "overview" as const, label: "Overview", icon: Target },
@@ -214,18 +237,26 @@ export function WaitlistProfile({
               <div>
                 <h3 className="font-bold">Grow your Tile network</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Invite people with your personal link. New wait-list members are attributed to your referral code.
+                  Invite people with your personal link. New wait-list members are attributed to
+                  your referral code.
                 </p>
               </div>
             </div>
 
             <div className="mt-5 rounded-xl border bg-background p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your referral code</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Your referral code
+              </p>
               <p className="mt-1 font-mono text-xl font-black tracking-wider">
                 {status?.referral_token ?? "—"}
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <Button onClick={copyShareLink} variant="outline" disabled={!shareLink} className="flex-1">
+                <Button
+                  onClick={copyShareLink}
+                  variant="outline"
+                  disabled={!shareLink}
+                  className="flex-1"
+                >
                   <Copy className="mr-2 h-4 w-4" />
                   {copied ? "Copied" : "Copy invite link"}
                 </Button>
@@ -240,11 +271,15 @@ export function WaitlistProfile({
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border bg-background p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Successful referrals</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Successful referrals
+                </p>
                 <p className="mt-1 text-3xl font-black">{referralCount}</p>
               </div>
               <div className="rounded-xl border bg-background p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your position</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Your position
+                </p>
                 <p className="mt-1 text-3xl font-black">#{currentPosition}</p>
               </div>
             </div>
@@ -270,7 +305,9 @@ export function WaitlistProfile({
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <TierIcon className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                        <TierIcon
+                          className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground"}`}
+                        />
                         <span className="text-xs font-bold uppercase tracking-wider">
                           {formatRewardRange(tier)}
                         </span>
@@ -291,7 +328,9 @@ export function WaitlistProfile({
         <div className="flex items-start gap-3">
           <Rocket className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
-            <h3 className="font-bold">{isVendor ? "Prepare before launch" : "Get ready before launch"}</h3>
+            <h3 className="font-bold">
+              {isVendor ? "Prepare before launch" : "Get ready before launch"}
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {isVendor
                 ? "Create your Tile account and prepare your products, shop or artisan profile privately while Admin reviews the marketplace."

@@ -8,17 +8,25 @@ export function friendlyErrorMessage(
   error: unknown,
   fallback = "We couldn't complete that action. Please try again.",
 ): string {
-  const message = error instanceof Error
-    ? error.message
-    : typeof error === "string"
-      ? error
-      : error && typeof error === "object" && "message" in error && typeof error.message === "string"
-        ? error.message
-        : "";
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : error &&
+            typeof error === "object" &&
+            "message" in error &&
+            typeof error.message === "string"
+          ? error.message
+          : "";
   const normalized = message.toLowerCase();
 
   if (!normalized) return fallback;
-  if (normalized.includes("network") || normalized.includes("fetch") || normalized.includes("connection")) {
+  if (
+    normalized.includes("network") ||
+    normalized.includes("fetch") ||
+    normalized.includes("connection")
+  ) {
     return "Connection issue. Check your internet and try again.";
   }
   if (

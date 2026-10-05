@@ -2,7 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowRight, BadgeCheck, Crown, Facebook, Gift, Loader2, Rocket, Search, Share2, Sparkles, Target, Users,
+  ArrowRight,
+  BadgeCheck,
+  Crown,
+  Facebook,
+  Gift,
+  Loader2,
+  Rocket,
+  Search,
+  Share2,
+  Sparkles,
+  Target,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,7 +25,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
-  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -84,8 +98,13 @@ function WaitListPage() {
   const [statusError, setStatusError] = useState("");
   const [statusData, setStatusData] = useState<WaitlistStatus | null>(null);
   const [form, setForm] = useState<WaitlistFormValues>({
-    full_name: "", email: "", phone: "", state: "", city: "",
-    user_type: "buyer", referral_code: "",
+    full_name: "",
+    email: "",
+    phone: "",
+    state: "",
+    city: "",
+    user_type: "buyer",
+    referral_code: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [referralCheck, setReferralCheck] = useState<ReferralCheck>({ code: "", state: "idle" });
@@ -105,18 +124,63 @@ function WaitListPage() {
   const count = Number(pageData?.stats?.count ?? 0);
   const animated = useCountUp(count);
   const heroContent = getContentValue(pageData?.content, "hero", waitlistContentSchemas.hero, {});
-  const communityContent = getContentValue(pageData?.content, "community", waitlistContentSchemas.community, {});
-  const launchContent = getContentValue(pageData?.content, "launch", waitlistContentSchemas.launch, {});
-  const benefits = getContentValue(pageData?.content, "benefits", waitlistContentSchemas.benefits, []);
-  const features = getContentValue(pageData?.content, "features", waitlistContentSchemas.features, []);
+  const communityContent = getContentValue(
+    pageData?.content,
+    "community",
+    waitlistContentSchemas.community,
+    {},
+  );
+  const launchContent = getContentValue(
+    pageData?.content,
+    "launch",
+    waitlistContentSchemas.launch,
+    {},
+  );
+  const benefits = getContentValue(
+    pageData?.content,
+    "benefits",
+    waitlistContentSchemas.benefits,
+    [],
+  );
+  const features = getContentValue(
+    pageData?.content,
+    "features",
+    waitlistContentSchemas.features,
+    [],
+  );
   const faqs = getContentValue(pageData?.content, "faqs", waitlistContentSchemas.faqs, []);
   const socials = getContentValue(pageData?.content, "socials", waitlistContentSchemas.socials, []);
-  const progressContent = getContentValue(pageData?.content, "progress", waitlistContentSchemas.progress, {});
-  const footerContent = getContentValue(pageData?.content, "footer", waitlistContentSchemas.footer, {});
-  const sectionsContent = getContentValue(pageData?.content, "sections", waitlistContentSchemas.sections, {});
+  const progressContent = getContentValue(
+    pageData?.content,
+    "progress",
+    waitlistContentSchemas.progress,
+    {},
+  );
+  const footerContent = getContentValue(
+    pageData?.content,
+    "footer",
+    waitlistContentSchemas.footer,
+    {},
+  );
+  const sectionsContent = getContentValue(
+    pageData?.content,
+    "sections",
+    waitlistContentSchemas.sections,
+    {},
+  );
   const formContent = getContentValue(sectionsContent, "form", waitlistContentSchemas.form, {});
-  const benefitsSection = getContentValue(sectionsContent, "benefits", waitlistContentSchemas.section, {});
-  const featuresSection = getContentValue(sectionsContent, "features", waitlistContentSchemas.section, {});
+  const benefitsSection = getContentValue(
+    sectionsContent,
+    "benefits",
+    waitlistContentSchemas.section,
+    {},
+  );
+  const featuresSection = getContentValue(
+    sectionsContent,
+    "features",
+    waitlistContentSchemas.section,
+    {},
+  );
   const faqSection = getContentValue(sectionsContent, "faqs", waitlistContentSchemas.section, {});
   const countdown = useCountdown(launchContent.deadline);
 
@@ -138,7 +202,9 @@ function WaitListPage() {
       // Validity is confirmed by the database, never by the mere presence of ?ref.
       setReferralCheck({ code: rememberedRef, state: "checking" });
       if (ref) {
-        void waitlistRpc("track_waitlist_event", { _event_type: "referral_click" }).catch(() => undefined);
+        void waitlistRpc("track_waitlist_event", { _event_type: "referral_click" }).catch(
+          () => undefined,
+        );
       }
     }
 
@@ -258,7 +324,9 @@ function WaitListPage() {
       toast.success("Wait-list status found.");
     } catch (error) {
       console.error("WAITLIST STATUS ERROR:", error);
-      setStatusError(friendlyErrorMessage(error, "We couldn't check your status right now. Please try again."));
+      setStatusError(
+        friendlyErrorMessage(error, "We couldn't check your status right now. Please try again."),
+      );
     } finally {
       setStatusLoading(false);
     }
@@ -270,14 +338,9 @@ function WaitListPage() {
   const currentPosition = memberPosition ?? count + 1;
 
   const currentReward =
-    joinedProfile?.reward ??
-    statusData?.reward ??
-    getFoundingReward(currentPosition);
+    joinedProfile?.reward ?? statusData?.reward ?? getFoundingReward(currentPosition);
 
-  const referralCount =
-    joinedProfile?.referrals_count ??
-    statusData?.referrals_count ??
-    0;
+  const referralCount = joinedProfile?.referrals_count ?? statusData?.referrals_count ?? 0;
 
   const continueToAccountSetup = () => {
     saveWaitlistAccountContext(form.email, form.user_type);
@@ -338,7 +401,8 @@ function WaitListPage() {
       toast.success("You're in! Your founding-member reward is locked in. 🎉");
       void qc.invalidateQueries({ queryKey: ["waitlist-page-data"] });
     },
-    onError: (error: Error) => showError(error, "We couldn't join the wait-list right now. Please try again."),
+    onError: (error: Error) =>
+      showError(error, "We couldn't join the wait-list right now. Please try again."),
   });
 
   const submit = (event: React.FormEvent) => {
@@ -393,16 +457,25 @@ function WaitListPage() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button size="sm" onClick={scrollToForm}>Join the Waitlist</Button>
+            <Button size="sm" onClick={scrollToForm}>
+              Join the Waitlist
+            </Button>
           )}
         </div>
       </header>
 
-      <section className={cn("relative overflow-hidden", !statusHydrated && "min-h-[18rem] sm:min-h-[20rem]")}>
+      <section
+        className={cn(
+          "relative overflow-hidden",
+          !statusHydrated && "min-h-[18rem] sm:min-h-[20rem]",
+        )}
+      >
         <div
           className={cn(
             "container mx-auto max-w-6xl px-4 py-10 sm:py-14 transition-opacity duration-500",
-            statusHydrated ? "pointer-events-none absolute inset-x-0 top-0 opacity-0" : "opacity-100",
+            statusHydrated
+              ? "pointer-events-none absolute inset-x-0 top-0 opacity-0"
+              : "opacity-100",
           )}
           aria-hidden={statusHydrated}
         >
@@ -417,7 +490,9 @@ function WaitListPage() {
         <div
           className={cn(
             "border-b border-border/60 bg-primary/[0.03] transition-opacity duration-500",
-            showReturningHero ? "relative opacity-100" : "pointer-events-none absolute inset-x-0 top-0 opacity-0",
+            showReturningHero
+              ? "relative opacity-100"
+              : "pointer-events-none absolute inset-x-0 top-0 opacity-0",
           )}
           aria-hidden={!showReturningHero}
         >
@@ -428,10 +503,12 @@ function WaitListPage() {
                   <BadgeCheck className="mr-1.5 h-3.5 w-3.5" /> Founding member
                 </Badge>
                 <h1 className="text-3xl font-black tracking-tight sm:text-5xl">
-                  Welcome back{joinedProfile?.full_name ? `, ${joinedProfile.full_name.split(" ")[0]}` : ""}.
+                  Welcome back
+                  {joinedProfile?.full_name ? `, ${joinedProfile.full_name.split(" ")[0]}` : ""}.
                 </h1>
                 <p className="mt-2 max-w-2xl text-muted-foreground">
-                  Your Tile wait-list spot is safe. Check your position, rewards or referral activity below.
+                  Your Tile wait-list spot is safe. Check your position, rewards or referral
+                  activity below.
                 </p>
               </div>
               <Button size="lg" onClick={() => scrollToProfile("referrals")}>
@@ -445,77 +522,92 @@ function WaitListPage() {
         <div
           className={cn(
             "transition-opacity duration-500",
-            showGuestHero ? "relative opacity-100" : "pointer-events-none absolute inset-x-0 top-0 opacity-0",
+            showGuestHero
+              ? "relative opacity-100"
+              : "pointer-events-none absolute inset-x-0 top-0 opacity-0",
           )}
           aria-hidden={!showGuestHero}
         >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-10%,hsl(var(--primary)/0.22),transparent_45%),radial-gradient(circle_at_85%_10%,hsl(var(--primary)/0.12),transparent_40%)]" />
-            <div className="container relative mx-auto max-w-6xl px-4 py-20 sm:py-28">
-              <Badge variant="secondary" className="mb-6 animate-in fade-in slide-in-from-bottom-2 rounded-full px-3 py-1">
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" /> {heroContent.badge ?? "Launching soon in Nigeria"}
-              </Badge>
-              <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-tight animate-in fade-in slide-in-from-bottom-3 duration-700 sm:text-6xl lg:text-7xl">
-                {heroContent.title ?? "Buy. Sell. Hire."}
-                <span className="mt-2 block bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
-                  {heroContent.highlight ?? "Everything you need in one trusted marketplace."}
-                </span>
-              </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground animate-in fade-in duration-1000 sm:text-lg">
-                {heroContent.description ?? "Tile connects buyers, sellers and skilled artisans across Nigeria in one powerful platform. Join early and lock in a founding-member reward before the public launch."}
-              </p>
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-10%,hsl(var(--primary)/0.22),transparent_45%),radial-gradient(circle_at_85%_10%,hsl(var(--primary)/0.12),transparent_40%)]" />
+          <div className="container relative mx-auto max-w-6xl px-4 py-20 sm:py-28">
+            <Badge
+              variant="secondary"
+              className="mb-6 animate-in fade-in slide-in-from-bottom-2 rounded-full px-3 py-1"
+            >
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />{" "}
+              {heroContent.badge ?? "Launching soon in Nigeria"}
+            </Badge>
+            <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-tight animate-in fade-in slide-in-from-bottom-3 duration-700 sm:text-6xl lg:text-7xl">
+              {heroContent.title ?? "Buy. Sell. Hire."}
+              <span className="mt-2 block bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
+                {heroContent.highlight ?? "Everything you need in one trusted marketplace."}
+              </span>
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground animate-in fade-in duration-1000 sm:text-lg">
+              {heroContent.description ??
+                "Tile connects buyers, sellers and skilled artisans across Nigeria in one powerful platform. Join early and lock in a founding-member reward before the public launch."}
+            </p>
 
-              <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
-                {FOUNDING_REWARDS.slice(0, 3).map((tier) => (
-                  <div key={`hero-tier-${tier.min}`} className="rounded-2xl border border-border/70 bg-background/70 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                      #{tier.min}–{tier.max}
-                    </p>
-                    <p className="mt-1 text-lg font-black">{tier.plan}</p>
-                    <p className="text-xs text-muted-foreground">1 month free</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 flex flex-wrap items-center gap-2 text-sm">
-                <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary">
-                  <Target className="mr-1.5 h-3.5 w-3.5" /> Limited launch rewards
-                </Badge>
-                <span className="text-muted-foreground">
-                  Your queue position is your advantage.
-                </span>
-              </div>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button size="lg" className="h-12 px-8 text-base" onClick={scrollToForm}>
-                  {heroContent.ctaPrimary ?? "Claim My Founding Spot"} <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button size="lg" variant="outline" className="h-12 px-8 text-base" asChild>
-                  <a href="#why-join">{heroContent.ctaSecondary ?? "Learn More"}</a>
-                </Button>
-              </div>
-              <div className="mt-8 flex flex-col gap-6 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex -space-x-2">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className="h-8 w-8 rounded-full border-2 border-background bg-primary/20" />
-                    ))}
-                  </div>
-                  <span>
-                    {heroContent.countLabel?.replace("{count}", animated.toLocaleString()) ?? `Join ${animated.toLocaleString()} early members preparing for launch`}
-                  </span>
+            <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
+              {FOUNDING_REWARDS.slice(0, 3).map((tier) => (
+                <div
+                  key={`hero-tier-${tier.min}`}
+                  className="rounded-2xl border border-border/70 bg-background/70 p-4"
+                >
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                    #{tier.min}–{tier.max}
+                  </p>
+                  <p className="mt-1 text-lg font-black">{tier.plan}</p>
+                  <p className="text-xs text-muted-foreground">1 month free</p>
                 </div>
-                {launchContent.heading && (
-                  <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-left sm:min-w-[220px]">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{launchContent.heading}</p>
-                    <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <span>{countdown.days}d</span>
-                      <span>{countdown.hours}h</span>
-                      <span>{countdown.minutes}m</span>
-                      <span>{countdown.seconds}s</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-sm">
+              <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary">
+                <Target className="mr-1.5 h-3.5 w-3.5" /> Limited launch rewards
+              </Badge>
+              <span className="text-muted-foreground">Your queue position is your advantage.</span>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button size="lg" className="h-12 px-8 text-base" onClick={scrollToForm}>
+                {heroContent.ctaPrimary ?? "Claim My Founding Spot"}{" "}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 px-8 text-base" asChild>
+                <a href="#why-join">{heroContent.ctaSecondary ?? "Learn More"}</a>
+              </Button>
+            </div>
+            <div className="mt-8 flex flex-col gap-6 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="flex -space-x-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-8 w-8 rounded-full border-2 border-background bg-primary/20"
+                    />
+                  ))}
+                </div>
+                <span>
+                  {heroContent.countLabel?.replace("{count}", animated.toLocaleString()) ??
+                    `Join ${animated.toLocaleString()} early members preparing for launch`}
+                </span>
+              </div>
+              {launchContent.heading && (
+                <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-left sm:min-w-[220px]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                    {launchContent.heading}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span>{countdown.days}d</span>
+                    <span>{countdown.hours}h</span>
+                    <span>{countdown.minutes}m</span>
+                    <span>{countdown.seconds}s</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -578,7 +670,9 @@ function WaitListPage() {
                 <p className="font-bold">201–500</p>
               </div>
               <p className="mt-2 text-2xl font-black">LITE · 1 month free</p>
-              <p className="mt-1 text-sm text-muted-foreground">Join before the public launch closes the window.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Join before the public launch closes the window.
+              </p>
             </div>
           </div>
         </div>
@@ -606,8 +700,16 @@ function WaitListPage() {
                 onChange={(e) => setStatusEmail(e.target.value)}
                 placeholder="you@example.com"
               />
-              <Button onClick={checkWaitlistStatus} disabled={statusLoading} className="sm:min-w-[150px]">
-                {statusLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+              <Button
+                onClick={checkWaitlistStatus}
+                disabled={statusLoading}
+                className="sm:min-w-[150px]"
+              >
+                {statusLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="mr-2 h-4 w-4" />
+                )}
                 {statusLoading ? "Checking…" : "Check my status"}
               </Button>
             </div>
@@ -618,20 +720,28 @@ function WaitListPage() {
               <div className="mt-5 rounded-2xl border bg-muted/30 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Founding member</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      Founding member
+                    </p>
                     <p className="text-lg font-black">{statusData.full_name ?? "Member"}</p>
                   </div>
                   <Badge className="text-sm">#{statusData.queue_position}</Badge>
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Reward: <span className="font-semibold text-foreground">
-                    {statusData.reward?.benefit ?? getFoundingReward(statusData.queue_position).detail}
+                  Reward:{" "}
+                  <span className="font-semibold text-foreground">
+                    {statusData.reward?.benefit ??
+                      getFoundingReward(statusData.queue_position).detail}
                   </span>
                 </p>
                 {statusData.referral_token && (
                   <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your referral code</p>
-                    <p className="mt-1 font-mono font-bold text-foreground">{statusData.referral_token}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      Your referral code
+                    </p>
+                    <p className="mt-1 font-mono font-bold text-foreground">
+                      {statusData.referral_token}
+                    </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Share your personal invite link from your member card above.
                     </p>
@@ -648,8 +758,13 @@ function WaitListPage() {
           <div className="rounded-3xl border border-border/70 bg-background p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <h2 className="text-2xl font-black tracking-tight">{communityContent.title ?? "Live community momentum"}</h2>
-                <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{communityContent.subtitle ?? "Nigerians are already joining the waitlist and preparing for launch."}</p>
+                <h2 className="text-2xl font-black tracking-tight">
+                  {communityContent.title ?? "Live community momentum"}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                  {communityContent.subtitle ??
+                    "Nigerians are already joining the waitlist and preparing for launch."}
+                </p>
               </div>
               <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
                 {count.toLocaleString()} members already in
@@ -657,8 +772,17 @@ function WaitListPage() {
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {communityContent.items?.map((item, index) => (
-                <div key={item.id ?? item.key ?? `community-${index}`} className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-                  <p className="text-2xl font-black text-foreground">{item.key ? pageData?.stats?.[item.key as keyof NonNullable<typeof pageData>["stats"]] ?? 0 : 0}</p>
+                <div
+                  key={item.id ?? item.key ?? `community-${index}`}
+                  className="rounded-2xl border border-border/60 bg-muted/30 p-4"
+                >
+                  <p className="text-2xl font-black text-foreground">
+                    {item.key
+                      ? (pageData?.stats?.[
+                          item.key as keyof NonNullable<typeof pageData>["stats"]
+                        ] ?? 0)
+                      : 0}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">{item.label}</p>
                 </div>
               ))}
@@ -676,14 +800,18 @@ function WaitListPage() {
             The earlier you join, the more you unlock.
           </h2>
           <p className="mt-3 max-w-2xl text-muted-foreground">
-            Your signup position determines your launch reward. Join early and keep your place in Tile's founding community.
+            Your signup position determines your launch reward. Join early and keep your place in
+            Tile's founding community.
           </p>
 
           <div className="mt-10 grid gap-4 md:grid-cols-4">
             {FOUNDING_REWARDS.map((tier) => {
               const Icon = tier.icon;
               return (
-                <Card key={`reward-${tier.min}`} className="relative overflow-hidden border-border/70 p-5">
+                <Card
+                  key={`reward-${tier.min}`}
+                  className="relative overflow-hidden border-border/70 p-5"
+                >
                   <div className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="h-4 w-4" />
                   </div>
@@ -702,13 +830,21 @@ function WaitListPage() {
 
       <section id="why-join" className="py-20">
         <div className="container mx-auto max-w-6xl px-4">
-          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">{benefitsSection.title ?? "Why join early?"}</h2>
-          <p className="mt-2 max-w-xl text-muted-foreground">{benefitsSection.description ?? "Early members get advantages the public launch won't offer."}</p>
+          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+            {benefitsSection.title ?? "Why join early?"}
+          </h2>
+          <p className="mt-2 max-w-xl text-muted-foreground">
+            {benefitsSection.description ??
+              "Early members get advantages the public launch won't offer."}
+          </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {benefits.map((b, index) => {
               const Icon = ICONS[b.icon ?? "Rocket"] ?? Rocket;
               return (
-                <Card key={b.title ? `${b.title}-${index}` : `benefit-${index}`} className="group border-border/70 p-6 transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10">
+                <Card
+                  key={b.title ? `${b.title}-${index}` : `benefit-${index}`}
+                  className="group border-border/70 p-6 transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10"
+                >
                   <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" />
                   </div>
@@ -723,17 +859,29 @@ function WaitListPage() {
 
       <section className="py-20">
         <div className="container mx-auto max-w-6xl px-4">
-          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">{featuresSection.title ?? "Everything Tile will do"}</h2>
-          <p className="mt-2 max-w-xl text-muted-foreground">{featuresSection.description ?? "One platform for goods, services and the people behind them."}</p>
+          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+            {featuresSection.title ?? "Everything Tile will do"}
+          </h2>
+          <p className="mt-2 max-w-xl text-muted-foreground">
+            {featuresSection.description ??
+              "One platform for goods, services and the people behind them."}
+          </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f, index) => {
               const Icon = ICONS[f.icon ?? "Sparkles"] ?? Sparkles;
               return (
-                <Card key={f.title ? `${f.title}-${index}` : `feature-${index}`} className="border-border/70 p-5 transition-colors hover:border-primary/50">
+                <Card
+                  key={f.title ? `${f.title}-${index}` : `feature-${index}`}
+                  className="border-border/70 p-5 transition-colors hover:border-primary/50"
+                >
                   <Icon className="h-6 w-6 text-primary" />
                   <h3 className="mt-4 flex items-center gap-2 font-bold">
                     {f.title}
-                    {f.soon && <Badge variant="secondary" className="text-[10px]">Soon</Badge>}
+                    {f.soon && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Soon
+                      </Badge>
+                    )}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">{f.body}</p>
                 </Card>
@@ -745,8 +893,12 @@ function WaitListPage() {
 
       <section className="border-y border-border/60 bg-muted/20 py-20">
         <div className="container mx-auto max-w-4xl px-4">
-          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">{progressContent.heading ?? "Launch progress"}</h2>
-          <p className="mt-2 text-muted-foreground">{progressContent.description ?? "A live view of the build status keeps momentum high."}</p>
+          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+            {progressContent.heading ?? "Launch progress"}
+          </h2>
+          <p className="mt-2 text-muted-foreground">
+            {progressContent.description ?? "A live view of the build status keeps momentum high."}
+          </p>
           <div className="mt-8 rounded-2xl border border-border/70 bg-background p-6 sm:p-8">
             <div className="flex items-center justify-between text-sm font-semibold">
               <span>Platform development</span>
@@ -755,9 +907,20 @@ function WaitListPage() {
             <Progress value={progressContent.overall ?? 82} className="mt-3 h-3" />
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {(progressContent.milestones ?? []).map((m, index) => (
-                <div key={m.id ?? m.label ?? `milestone-${index}`} className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                <div
+                  key={m.id ?? m.label ?? `milestone-${index}`}
+                  className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3"
+                >
                   <span className="font-medium">{m.label}</span>
-                  <Badge variant={m.status === "Completed" ? "default" : m.status === "In Progress" ? "secondary" : "outline"}>
+                  <Badge
+                    variant={
+                      m.status === "Completed"
+                        ? "default"
+                        : m.status === "In Progress"
+                          ? "secondary"
+                          : "outline"
+                    }
+                  >
                     {m.status}
                   </Badge>
                 </div>
@@ -769,10 +932,15 @@ function WaitListPage() {
 
       <section className="py-20">
         <div className="container mx-auto max-w-3xl px-4">
-          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">{faqSection.title ?? "Frequently asked questions"}</h2>
+          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+            {faqSection.title ?? "Frequently asked questions"}
+          </h2>
           <Accordion type="single" collapsible className="mt-8">
             {faqs.map((f, index) => (
-              <AccordionItem key={f.q ? `${f.q}-${index}` : `faq-${index}`} value={f.q ?? `faq-${index}`}>
+              <AccordionItem
+                key={f.q ? `${f.q}-${index}` : `faq-${index}`}
+                value={f.q ?? `faq-${index}`}
+              >
                 <AccordionTrigger className="text-left font-semibold">{f.q}</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
               </AccordionItem>
@@ -787,7 +955,9 @@ function WaitListPage() {
           <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
             {footerContent.heading ?? "Ready to join Nigeria's next marketplace?"}
           </h2>
-          <p className="mt-3 text-muted-foreground">{footerContent.body ?? "Join the waitlist today — it's free, and it takes 20 seconds."}</p>
+          <p className="mt-3 text-muted-foreground">
+            {footerContent.body ?? "Join the waitlist today — it's free, and it takes 20 seconds."}
+          </p>
           <Button
             size="lg"
             className="mt-8 h-14 px-10 text-base"
@@ -805,15 +975,20 @@ function WaitListPage() {
             {socials.map((s, index) => {
               const Icon = ICONS[s.icon ?? "Facebook"] ?? Facebook;
               return (
-                <a key={s.href ?? s.label ?? `social-${index}`} href={s.href ?? "#"} aria-label={s.label}
-                  className={`grid h-10 w-10 place-items-center rounded-full border border-border/70 text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary ${s.soon ? "opacity-50" : ""}`}>
+                <a
+                  key={s.href ?? s.label ?? `social-${index}`}
+                  href={s.href ?? "#"}
+                  aria-label={s.label}
+                  className={`grid h-10 w-10 place-items-center rounded-full border border-border/70 text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary ${s.soon ? "opacity-50" : ""}`}
+                >
                   <Icon className="h-4 w-4" />
                 </a>
               );
             })}
           </div>
           <p className="text-xs text-muted-foreground">
-            {footerContent.copyright?.replace("{year}", new Date().getFullYear().toString()) ?? `© ${new Date().getFullYear()} Tile. Nigeria's marketplace for buying, selling and hiring artisans.`}
+            {footerContent.copyright?.replace("{year}", new Date().getFullYear().toString()) ??
+              `© ${new Date().getFullYear()} Tile. Nigeria's marketplace for buying, selling and hiring artisans.`}
           </p>
         </div>
       </footer>

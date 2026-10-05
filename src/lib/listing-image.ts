@@ -2,7 +2,11 @@ const MAX_IMAGE_EDGE = 1920;
 const WEBP_QUALITY = 0.82;
 const DIRECT_PREVIEW_SIZE = 450 * 1024;
 
-function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 

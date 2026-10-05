@@ -46,12 +46,19 @@ export type PlanCapability =
 export function hasCapability(plan: PlanLimits | null | undefined, cap: PlanCapability): boolean {
   if (!plan) return false;
   switch (cap) {
-    case "shop": return plan.can_shop;
-    case "promote": return plan.can_promote;
-    case "ai_desc": return plan.can_ai_desc;
-    case "vanity_slug": return plan.can_vanity_slug;
-    case "goods_quota": return plan.used_goods < plan.max_goods;
-    case "services_quota": return plan.used_services < plan.max_services;
-    case "premium_inbox": return plan.tier === "pro" || plan.tier === "vip";
+    case "shop":
+      return plan.can_shop;
+    case "promote":
+      return plan.can_promote;
+    case "ai_desc":
+      return plan.can_ai_desc;
+    case "vanity_slug":
+      return plan.can_vanity_slug;
+    case "goods_quota":
+      return plan.used_goods < plan.max_goods;
+    case "services_quota":
+      return plan.used_services < plan.max_services;
+    case "premium_inbox":
+      return plan.tier === "pro" || plan.tier === "vip";
   }
 }

@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { LOCATIONS } from "@/lib/categories";
 import type { FormContent, ReferralCheck, WaitlistFormValues } from "@/lib/waitlist-utils";
@@ -39,8 +43,13 @@ export function WaitlistForm({
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <fieldset disabled={pending} className="space-y-5">
         <div>
-          <h2 className="text-2xl font-black tracking-tight">{formContent.title ?? "Join the waitlist"}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{formContent.subtitle ?? "Join free. Lock your position. Get a founding-member reward at launch."}</p>
+          <h2 className="text-2xl font-black tracking-tight">
+            {formContent.title ?? "Join the waitlist"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {formContent.subtitle ??
+              "Join free. Lock your position. Get a founding-member reward at launch."}
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -68,7 +77,9 @@ export function WaitlistForm({
             {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone number <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="phone">
+              Phone number <span className="text-muted-foreground">(optional)</span>
+            </Label>
             <Input
               id="phone"
               value={form.phone}
@@ -81,9 +92,15 @@ export function WaitlistForm({
           <div className="space-y-2">
             <Label>State</Label>
             <Select value={form.state} onValueChange={(value) => onChange("state", value)}>
-              <SelectTrigger><SelectValue placeholder="Select your state" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Select your state" />
+              </SelectTrigger>
               <SelectContent className="max-h-64">
-                {LOCATIONS.map((state) => <SelectItem key={state} value={state}>{state}</SelectItem>)}
+                {LOCATIONS.map((state) => (
+                  <SelectItem key={state} value={state}>
+                    {state}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {errors.state && <p className="text-xs text-destructive">{errors.state}</p>}
@@ -100,7 +117,9 @@ export function WaitlistForm({
             {errors.city && <p className="text-xs text-destructive">{errors.city}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="referral">Referral code <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="referral">
+              Referral code <span className="text-muted-foreground">(optional)</span>
+            </Label>
             {referral.state === "valid" && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
                 {referral.referrerName
@@ -137,9 +156,10 @@ export function WaitlistForm({
                 key={option.v}
                 type="button"
                 onClick={() => onChange("user_type", option.v)}
-                className={`rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${form.user_type === option.v
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted"
+                className={`rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
+                  form.user_type === option.v
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-muted"
                 }`}
               >
                 {option.l}
@@ -148,13 +168,25 @@ export function WaitlistForm({
           </div>
         </div>
 
-        <Button type="submit" size="lg" className="h-12 w-full text-base" disabled={pending} aria-busy={pending}>
-          {pending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Joining…</> : (formContent.submit ?? "Join the Waitlist")}
+        <Button
+          type="submit"
+          size="lg"
+          className="h-12 w-full text-base"
+          disabled={pending}
+          aria-busy={pending}
+        >
+          {pending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Joining…
+            </>
+          ) : (
+            (formContent.submit ?? "Join the Waitlist")
+          )}
         </Button>
 
         <p className="text-center text-xs leading-5 text-muted-foreground">
-          Joining the wait-list is free. After joining, you can create a Tile account
-          and prepare your products, shop or artisan profile privately before launch.
+          Joining the wait-list is free. After joining, you can create a Tile account and prepare
+          your products, shop or artisan profile privately before launch.
         </p>
       </fieldset>
     </form>

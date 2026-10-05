@@ -31,6 +31,7 @@ import { Route as ListingIdRouteImport } from './routes/listing.$id'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
 import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
+import { Route as StaffAcceptRouteImport } from './routes/staff.accept'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -142,6 +143,11 @@ const ShopSlugRoute = ShopSlugRouteImport.update({
   path: '/shop/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffAcceptRoute = StaffAcceptRouteImport.update({
+  id: '/staff/accept',
+  path: '/staff/accept',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/staff/accept': typeof StaffAcceptRoute
   '/artisans/': typeof ArtisansIndexRoute
   '/messages/': typeof MessagesIndexRoute
 }
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/staff/accept': typeof StaffAcceptRoute
   '/artisans': typeof ArtisansIndexRoute
   '/messages': typeof MessagesIndexRoute
 }
@@ -212,6 +220,7 @@ export interface FileRoutesById {
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/staff/accept': typeof StaffAcceptRoute
   '/artisans/': typeof ArtisansIndexRoute
   '/messages/': typeof MessagesIndexRoute
 }
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
+    | '/staff/accept'
     | '/artisans/'
     | '/messages/'
   fileRoutesByTo: FileRoutesByTo
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
+    | '/staff/accept'
     | '/artisans'
     | '/messages'
   id:
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
+    | '/staff/accept'
     | '/artisans/'
     | '/messages/'
   fileRoutesById: FileRoutesById
@@ -309,6 +321,7 @@ export interface RootRouteChildren {
   ArtisansIdRoute: typeof ArtisansIdRoute
   ListingIdRoute: typeof ListingIdRoute
   ShopSlugRoute: typeof ShopSlugRoute
+  StaffAcceptRoute: typeof StaffAcceptRoute
   ArtisansIndexRoute: typeof ArtisansIndexRoute
 }
 
@@ -468,6 +481,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/accept': {
+      id: '/staff/accept'
+      path: '/staff/accept'
+      fullPath: '/staff/accept'
+      preLoaderRoute: typeof StaffAcceptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -505,6 +525,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArtisansIdRoute: ArtisansIdRoute,
   ListingIdRoute: ListingIdRoute,
   ShopSlugRoute: ShopSlugRoute,
+  StaffAcceptRoute: StaffAcceptRoute,
   ArtisansIndexRoute: ArtisansIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -10,14 +10,22 @@ export function focusFormField(container: HTMLElement | null, name: string) {
   if (!container) return;
 
   const field = Array.from(container.querySelectorAll<HTMLElement>("[name], [data-field]")).find(
-    (element) => element.getAttribute("name") === name || element.getAttribute("data-field") === name,
+    (element) =>
+      element.getAttribute("name") === name || element.getAttribute("data-field") === name,
   );
   if (!field) return;
 
-  const target = field.hasAttribute("data-field") && !field.matches("input, textarea, select, button, [tabindex]")
-    ? Array.from(field.querySelectorAll<HTMLElement>("input, textarea, select, button, [tabindex]:not([tabindex='-1'])"))
-      .find((element) => element.getClientRects().length > 0 && !element.hasAttribute("disabled")) ?? field
-    : field;
+  const target =
+    field.hasAttribute("data-field") &&
+    !field.matches("input, textarea, select, button, [tabindex]")
+      ? (Array.from(
+          field.querySelectorAll<HTMLElement>(
+            "input, textarea, select, button, [tabindex]:not([tabindex='-1'])",
+          ),
+        ).find(
+          (element) => element.getClientRects().length > 0 && !element.hasAttribute("disabled"),
+        ) ?? field)
+      : field;
 
   target.scrollIntoView({ behavior: "smooth", block: "center" });
   window.setTimeout(() => {

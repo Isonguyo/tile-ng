@@ -17,14 +17,15 @@ import { focusFormField } from "@/lib/form-navigation";
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "Reset your password — Tile" }],
-  links: [
+  head: () => ({
+    meta: [{ title: "Reset your password — Tile" }],
+    links: [
       {
         rel: "icon",
         href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
       },
     ],
-   }),
+  }),
   component: ForgotPage,
 });
 
@@ -47,11 +48,17 @@ function ForgotPage() {
 
   const submit = async (values: ForgotPasswordFormValues) => {
     setBusy(true);
-    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+    const redirectTo =
+      typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
     const { error } = await supabase.auth.resetPasswordForEmail(values.email, { redirectTo });
     setBusy(false);
     if (error) {
-      toast.error(friendlyAuthError(error.message, "We couldn't send a password reset link. Please try again."));
+      toast.error(
+        friendlyAuthError(
+          error.message,
+          "We couldn't send a password reset link. Please try again.",
+        ),
+      );
       return;
     }
     setSent(true);
@@ -64,7 +71,13 @@ function ForgotPage() {
   };
 
   return (
-    <AuthLayout title="Forgot password?" description="Enter your email and we’ll send a secure reset link to your inbox." backTo="/login" backLabel="Back to sign in" compact>
+    <AuthLayout
+      title="Forgot password?"
+      description="Enter your email and we’ll send a secure reset link to your inbox."
+      backTo="/login"
+      backLabel="Back to sign in"
+      compact
+    >
       {sent ? (
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5">
           <div className="flex items-start gap-3">
@@ -78,14 +91,32 @@ function ForgotPage() {
           </div>
         </div>
       ) : (
-        <form ref={formRef} onSubmit={handleSubmit(submit, onInvalid)} className="space-y-4" noValidate>
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit(submit, onInvalid)}
+          className="space-y-4"
+          noValidate
+        >
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input id="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} className="pl-9" {...register("email")} />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                aria-invalid={Boolean(errors.email)}
+                className="pl-9"
+                {...register("email")}
+              />
             </div>
-            {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : <p className="text-xs text-muted-foreground">We’ll never share your email with third parties.</p>}
+            {errors.email ? (
+              <p className="text-sm text-red-600">{errors.email.message}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                We’ll never share your email with third parties.
+              </p>
+            )}
           </div>
 
           <Button type="submit" disabled={busy} className="w-full">
@@ -96,7 +127,10 @@ function ForgotPage() {
       )}
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Remembered it? <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link>
+        Remembered it?{" "}
+        <Link to="/login" className="font-semibold text-primary hover:underline">
+          Sign in
+        </Link>
       </p>
     </AuthLayout>
   );

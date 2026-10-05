@@ -1,12 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  Plus,
-  LogOut,
-  Shield,
-  LayoutDashboard,
-  Store,
-  Users,
-} from "lucide-react";
+import { Plus, LogOut, Shield, LayoutDashboard, Store, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -39,10 +32,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 w-full max-w-full overflow-hidden bg-[#05100B]/90 backdrop-blur-md border-b border-[#163321] text-slate-100 shadow-xl shadow-black/30">
       <div className="container mx-auto flex min-w-0 items-center justify-between gap-3 px-4 py-3">
         {/* Logo */}
-        <Link
-          to="/"
-          className="flex min-w-0 shrink-0 items-center gap-3 group"
-        >
+        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-3 group">
           {/* Logo Container */}
           <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-[#22C55E]/30 bg-[#081810] p-0.5 transition-transform duration-300 group-hover:scale-105 group-hover:border-[#22C55E]">
             <img

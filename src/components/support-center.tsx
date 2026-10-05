@@ -20,7 +20,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/lib/auth-context";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { showError } from "@/lib/user-feedback";
@@ -54,9 +61,7 @@ type SupportMessage = {
 };
 
 function record(value: unknown): UnknownRow | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as UnknownRow
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as UnknownRow) : null;
 }
 
 function text(value: unknown, fallback = ""): string {
@@ -114,11 +119,17 @@ function displayStatus(status: string): string {
     resolved: "Resolved",
     closed: "Closed",
   };
-  return labels[status] ?? status.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return (
+    labels[status] ??
+    status.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
 }
 
 function priorityRank(priority: string): number {
-  return ({ urgent: 0, high: 1, normal: 2, low: 3 } as Record<string, number>)[priority.toLowerCase()] ?? 4;
+  return (
+    ({ urgent: 0, high: 1, normal: 2, low: 3 } as Record<string, number>)[priority.toLowerCase()] ??
+    4
+  );
 }
 
 function dateLabel(value: string | null): string {
@@ -143,9 +154,12 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
     queryKey: ["support-tickets", mode, user?.id, filter],
     enabled: !!user && (mode === "customer" || mode === "admin"),
     queryFn: async () => {
-      const result = mode === "admin"
-        ? await rpcUntyped("admin_list_support_tickets", { _status: filter === "all" ? null : filter })
-        : await rpcUntyped("get_my_support_tickets");
+      const result =
+        mode === "admin"
+          ? await rpcUntyped("admin_list_support_tickets", {
+              _status: filter === "all" ? null : filter,
+            })
+          : await rpcUntyped("get_my_support_tickets");
       if (result.error) throw result.error;
       return unwrapRows(result.data)
         .map(ticketFromRow)
@@ -156,10 +170,11 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
   const tickets = useMemo(() => {
     const rows = ticketQuery.data ?? [];
     if (mode !== "admin") return rows;
-    return [...rows].sort((a, b) =>
-      priorityRank(a.priority) - priorityRank(b.priority) ||
-      new Date(b.updated_at ?? b.created_at ?? 0).getTime() -
-        new Date(a.updated_at ?? a.created_at ?? 0).getTime(),
+    return [...rows].sort(
+      (a, b) =>
+        priorityRank(a.priority) - priorityRank(b.priority) ||
+        new Date(b.updated_at ?? b.created_at ?? 0).getTime() -
+          new Date(a.updated_at ?? a.created_at ?? 0).getTime(),
     );
   }, [mode, ticketQuery.data]);
 
@@ -173,8 +188,16 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
       const root = rows[0] ?? record(result.data);
       if (!root) return { ticket: null, messages: [] as SupportMessage[] };
       const ticket = ticketFromRow(record(root.ticket) ?? root);
-      const rawMessages = root.messages ?? root.support_messages ?? root.conversation ??
-        (rows.some((row) => typeof row.content === "string" || typeof row.message === "string" || typeof row.body === "string")
+      const rawMessages =
+        root.messages ??
+        root.support_messages ??
+        root.conversation ??
+        (rows.some(
+          (row) =>
+            typeof row.content === "string" ||
+            typeof row.message === "string" ||
+            typeof row.body === "string",
+        )
           ? rows
           : []);
       return { ticket, messages: messageRows(rawMessages) };
@@ -200,7 +223,8 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
         _message: initialMessage.trim(),
         _category: category,
       });
-      if (error) return showError(error, "We couldn't create your support ticket. Please try again.");
+      if (error)
+        return showError(error, "We couldn't create your support ticket. Please try again.");
       toast.success("Your support ticket has been created.");
       setSubject("");
       setInitialMessage("");
@@ -250,8 +274,8 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
   };
 
   const isAdmin = mode === "admin";
-  const activeTicket = threadQuery.data?.ticket ??
-    tickets.find((ticket) => ticket.id === activeTicketId) ?? null;
+  const activeTicket =
+    threadQuery.data?.ticket ?? tickets.find((ticket) => ticket.id === activeTicketId) ?? null;
   const cardStyle = isAdmin
     ? "border-border/60 bg-card/70"
     : "border-[#1b3b2a] bg-gradient-to-br from-[#10241a] to-[#0b1a13] text-slate-100";
@@ -262,7 +286,12 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
       <Card className={"p-5 sm:p-6 " + cardStyle}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <span className={"mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl " + (isAdmin ? "bg-primary/10 text-primary" : "bg-emerald-300/10 text-emerald-300")}>
+            <span
+              className={
+                "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl " +
+                (isAdmin ? "bg-primary/10 text-primary" : "bg-emerald-300/10 text-emerald-300")
+              }
+            >
               <LifeBuoy className="h-5 w-5" />
             </span>
             <div>
@@ -277,35 +306,65 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
           <div className="flex flex-wrap items-center gap-2">
             {isAdmin && (
               <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Filter tickets" /></SelectTrigger>
+                <SelectTrigger className="h-9 w-[170px]">
+                  <SelectValue placeholder="Filter tickets" />
+                </SelectTrigger>
                 <SelectContent>
-                  {["all", "open", "awaiting_support", "awaiting_you", "resolved", "closed"].map((status) => (
-                    <SelectItem key={status} value={status}>{displayStatus(status)}</SelectItem>
-                  ))}
+                  {["all", "open", "awaiting_support", "awaiting_you", "resolved", "closed"].map(
+                    (status) => (
+                      <SelectItem key={status} value={status}>
+                        {displayStatus(status)}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             )}
             {!isAdmin && (
-              <Button onClick={() => setCreateOpen(true)} className="h-10 rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]">
-                <Plus className="mr-2 h-4 w-4" />Create ticket
+              <Button
+                onClick={() => setCreateOpen(true)}
+                className="h-10 rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create ticket
               </Button>
             )}
           </div>
         </div>
 
         <div className="mt-5">
-          {ticketQuery.isLoading && <p className={"py-8 text-center text-sm " + mutedStyle}>Loading support requests…</p>}
+          {ticketQuery.isLoading && (
+            <p className={"py-8 text-center text-sm " + mutedStyle}>Loading support requests…</p>
+          )}
           {ticketQuery.isError && (
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-4 text-sm">
               <p>We couldn't load support requests.</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => void ticketQuery.refetch()}>Try again</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => void ticketQuery.refetch()}
+              >
+                Try again
+              </Button>
             </div>
           )}
           {!ticketQuery.isLoading && !ticketQuery.isError && tickets.length === 0 && (
-            <div className={"rounded-xl border border-dashed p-6 text-center " + (isAdmin ? "border-border" : "border-white/10 bg-black/10")}>
+            <div
+              className={
+                "rounded-xl border border-dashed p-6 text-center " +
+                (isAdmin ? "border-border" : "border-white/10 bg-black/10")
+              }
+            >
               <MessageSquare className={"mx-auto h-6 w-6 " + mutedStyle} />
-              <p className="mt-2 text-sm font-medium">{isAdmin ? "No tickets in this view." : "No support tickets yet."}</p>
-              {!isAdmin && <p className={"mt-1 text-xs " + mutedStyle}>Create a ticket and your conversation will appear here.</p>}
+              <p className="mt-2 text-sm font-medium">
+                {isAdmin ? "No tickets in this view." : "No support tickets yet."}
+              </p>
+              {!isAdmin && (
+                <p className={"mt-1 text-xs " + mutedStyle}>
+                  Create a ticket and your conversation will appear here.
+                </p>
+              )}
             </div>
           )}
           {tickets.length > 0 && (
@@ -328,18 +387,42 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
                     <TableBody>
                       {tickets.map((ticket) => (
                         <TableRow key={ticket.id}>
-                          <TableCell><Badge variant="outline" className="capitalize">{ticket.priority}</Badge></TableCell>
-                          <TableCell><Badge variant={ticket.status === "resolved" || ticket.status === "closed" ? "secondary" : "default"}>{displayStatus(ticket.status)}</Badge></TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {ticket.priority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                ticket.status === "resolved" || ticket.status === "closed"
+                                  ? "secondary"
+                                  : "default"
+                              }
+                            >
+                              {displayStatus(ticket.status)}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="max-w-[240px]">
-                            <button type="button" onClick={() => setActiveTicketId(ticket.id)} className="block max-w-full truncate text-left font-semibold text-foreground hover:text-primary">
+                            <button
+                              type="button"
+                              onClick={() => setActiveTicketId(ticket.id)}
+                              className="block max-w-full truncate text-left font-semibold text-foreground hover:text-primary"
+                            >
                               {ticket.subject}
                             </button>
                           </TableCell>
-                          <TableCell className="max-w-[200px] truncate">{ticket.user_name ?? ticket.user_email ?? "—"}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {ticket.user_name ?? ticket.user_email ?? "—"}
+                          </TableCell>
                           <TableCell className="capitalize">{ticket.tier ?? "—"}</TableCell>
                           <TableCell className="capitalize">{ticket.category}</TableCell>
-                          <TableCell className="whitespace-nowrap text-xs">{dateLabel(ticket.created_at)}</TableCell>
-                          <TableCell className="whitespace-nowrap text-xs">{dateLabel(ticket.updated_at)}</TableCell>
+                          <TableCell className="whitespace-nowrap text-xs">
+                            {dateLabel(ticket.created_at)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-xs">
+                            {dateLabel(ticket.updated_at)}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -347,39 +430,56 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
                 </div>
               )}
               <div className={"grid gap-2 " + (isAdmin ? "xl:hidden" : "")}>
-              {tickets.map((ticket) => (
-                <button
-                  key={ticket.id}
-                  type="button"
-                  onClick={() => setActiveTicketId(ticket.id)}
-                  className={"w-full rounded-xl border p-4 text-left transition-colors " +
-                    (isAdmin
-                      ? "border-border/60 bg-background/60 hover:border-primary/40"
-                      : "border-white/[0.08] bg-[#07170f]/70 hover:border-emerald-300/30 hover:bg-[#0b2117]")}
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold">{ticket.subject}</p>
-                      <p className={"mt-1 text-xs " + mutedStyle}>
-                        {ticket.category}{isAdmin && (ticket.user_name || ticket.user_email)
-                          ? " · " + (ticket.user_name ?? ticket.user_email)
-                          : ""}
-                      </p>
+                {tickets.map((ticket) => (
+                  <button
+                    key={ticket.id}
+                    type="button"
+                    onClick={() => setActiveTicketId(ticket.id)}
+                    className={
+                      "w-full rounded-xl border p-4 text-left transition-colors " +
+                      (isAdmin
+                        ? "border-border/60 bg-background/60 hover:border-primary/40"
+                        : "border-white/[0.08] bg-[#07170f]/70 hover:border-emerald-300/30 hover:bg-[#0b2117]")
+                    }
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{ticket.subject}</p>
+                        <p className={"mt-1 text-xs " + mutedStyle}>
+                          {ticket.category}
+                          {isAdmin && (ticket.user_name || ticket.user_email)
+                            ? " · " + (ticket.user_name ?? ticket.user_email)
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <Badge variant="outline" className="capitalize">
+                          {ticket.priority}
+                        </Badge>
+                        {isAdmin && ticket.tier && (
+                          <Badge variant="secondary" className="capitalize">
+                            {ticket.tier}
+                          </Badge>
+                        )}
+                        <Badge
+                          variant={
+                            ticket.status === "resolved" || ticket.status === "closed"
+                              ? "secondary"
+                              : "default"
+                          }
+                        >
+                          {displayStatus(ticket.status)}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                      <Badge variant="outline" className="capitalize">{ticket.priority}</Badge>
-                      {isAdmin && ticket.tier && <Badge variant="secondary" className="capitalize">{ticket.tier}</Badge>}
-                      <Badge variant={ticket.status === "resolved" || ticket.status === "closed" ? "secondary" : "default"}>
-                        {displayStatus(ticket.status)}
-                      </Badge>
+                    <div
+                      className={"mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] " + mutedStyle}
+                    >
+                      <span>Created {dateLabel(ticket.created_at)}</span>
+                      <span>Updated {dateLabel(ticket.updated_at)}</span>
                     </div>
-                  </div>
-                  <div className={"mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] " + mutedStyle}>
-                    <span>Created {dateLabel(ticket.created_at)}</span>
-                    <span>Updated {dateLabel(ticket.updated_at)}</span>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))}
               </div>
             </>
           )}
@@ -388,41 +488,71 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader><DialogTitle>Create a support ticket</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Create a support ticket</DialogTitle>
+          </DialogHeader>
           <form onSubmit={createTicket} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="support-subject">Subject</Label>
-              <Input id="support-subject" value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={120} required />
+              <Input
+                id="support-subject"
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                maxLength={120}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label>Category</Label>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {["general", "account", "payment", "listing", "shop", "safety"].map((item) => (
-                    <SelectItem key={item} value={item}>{displayStatus(item)}</SelectItem>
+                    <SelectItem key={item} value={item}>
+                      {displayStatus(item)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="support-message">Message</Label>
-              <Textarea id="support-message" value={initialMessage} onChange={(event) => setInitialMessage(event.target.value)} rows={5} maxLength={5000} required />
+              <Textarea
+                id="support-message"
+                value={initialMessage}
+                onChange={(event) => setInitialMessage(event.target.value)}
+                rows={5}
+                maxLength={5000}
+                required
+              />
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={sending}>{sending ? "Creating…" : "Send ticket"}</Button>
+              <Button type="submit" disabled={sending}>
+                {sending ? "Creating…" : "Send ticket"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!activeTicketId} onOpenChange={(open) => { if (!open) setActiveTicketId(null); }}>
+      <Dialog
+        open={!!activeTicketId}
+        onOpenChange={(open) => {
+          if (!open) setActiveTicketId(null);
+        }}
+      >
         <DialogContent className="flex max-h-[92dvh] flex-col overflow-hidden p-0 sm:max-w-2xl">
           <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12 sm:px-6">
-            <DialogTitle className="truncate">{activeTicket?.subject ?? "Support conversation"}</DialogTitle>
+            <DialogTitle className="truncate">
+              {activeTicket?.subject ?? "Support conversation"}
+            </DialogTitle>
             {activeTicket && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <Badge variant="outline" className="capitalize">{activeTicket.priority}</Badge>
+                <Badge variant="outline" className="capitalize">
+                  {activeTicket.priority}
+                </Badge>
                 <Badge variant="secondary">{displayStatus(activeTicket.status)}</Badge>
                 <span className={"text-xs " + mutedStyle}>{activeTicket.category}</span>
               </div>
@@ -430,46 +560,82 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
             {isAdmin && activeTicket && (
               <div className="pt-2">
                 <Label className="text-xs">Update status</Label>
-                <Select value={activeTicket.status} onValueChange={(value) => void setStatus(value)}>
-                  <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                <Select
+                  value={activeTicket.status}
+                  onValueChange={(value) => void setStatus(value)}
+                >
+                  <SelectTrigger className="mt-1 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {["open", "awaiting_support", "awaiting_you", "resolved", "closed"].map((status) => (
-                      <SelectItem key={status} value={status}>{displayStatus(status)}</SelectItem>
-                    ))}
+                    {["open", "awaiting_support", "awaiting_you", "resolved", "closed"].map(
+                      (status) => (
+                        <SelectItem key={status} value={status}>
+                          {displayStatus(status)}
+                        </SelectItem>
+                      ),
+                    )}
                   </SelectContent>
                 </Select>
               </div>
             )}
           </DialogHeader>
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-6">
-            {threadQuery.isLoading && <p className={"py-8 text-center text-sm " + mutedStyle}>Loading conversation…</p>}
+            {threadQuery.isLoading && (
+              <p className={"py-8 text-center text-sm " + mutedStyle}>Loading conversation…</p>
+            )}
             {threadQuery.isError && (
               <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-4 text-sm">
                 <p>We couldn't load this conversation.</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => void threadQuery.refetch()}>Try again</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => void threadQuery.refetch()}
+                >
+                  Try again
+                </Button>
               </div>
             )}
             {(threadQuery.data?.messages ?? []).map((message) => {
               const mine = !!user?.id && message.sender_id === user.id;
-              const fromSupport = message.sender_role === "admin" || message.sender_role === "support" || (isAdmin && !mine);
+              const fromSupport =
+                message.sender_role === "admin" ||
+                message.sender_role === "support" ||
+                (isAdmin && !mine);
               return (
-                <div key={message.id} className={"max-w-[92%] rounded-2xl border p-3 sm:max-w-[85%] " +
-                  (mine
-                    ? "ml-auto border-emerald-300/20 bg-emerald-300/[0.09]"
-                    : isAdmin
-                      ? "border-border bg-muted/30"
-                      : "border-white/[0.08] bg-[#07170f]")}>
+                <div
+                  key={message.id}
+                  className={
+                    "max-w-[92%] rounded-2xl border p-3 sm:max-w-[85%] " +
+                    (mine
+                      ? "ml-auto border-emerald-300/20 bg-emerald-300/[0.09]"
+                      : isAdmin
+                        ? "border-border bg-muted/30"
+                        : "border-white/[0.08] bg-[#07170f]")
+                  }
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-semibold">{mine ? "You" : message.sender_name ?? (fromSupport ? "Tile Support" : "Customer")}</p>
+                    <p className="text-xs font-semibold">
+                      {mine
+                        ? "You"
+                        : (message.sender_name ?? (fromSupport ? "Tile Support" : "Customer"))}
+                    </p>
                     <p className={"text-[10px] " + mutedStyle}>{dateLabel(message.created_at)}</p>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">
+                    {message.content}
+                  </p>
                 </div>
               );
             })}
-            {!threadQuery.isLoading && !threadQuery.isError && (threadQuery.data?.messages.length ?? 0) === 0 && (
-              <p className={"py-8 text-center text-sm " + mutedStyle}>No messages are available for this ticket.</p>
-            )}
+            {!threadQuery.isLoading &&
+              !threadQuery.isError &&
+              (threadQuery.data?.messages.length ?? 0) === 0 && (
+                <p className={"py-8 text-center text-sm " + mutedStyle}>
+                  No messages are available for this ticket.
+                </p>
+              )}
           </div>
           <form onSubmit={sendReply} className="shrink-0 border-t p-3 sm:p-4">
             <div className="flex items-end gap-2">
@@ -482,8 +648,13 @@ export function SupportCenter({ mode }: { mode: SupportMode }) {
                 className="min-h-11 resize-y"
                 aria-label="Reply to support ticket"
               />
-              <Button type="submit" className="h-11 shrink-0" disabled={sending || !reply.trim() || threadQuery.isLoading}>
-                <Send className="mr-2 h-4 w-4" />{sending ? "Sending…" : "Reply"}
+              <Button
+                type="submit"
+                className="h-11 shrink-0"
+                disabled={sending || !reply.trim() || threadQuery.isLoading}
+              >
+                <Send className="mr-2 h-4 w-4" />
+                {sending ? "Sending…" : "Reply"}
               </Button>
             </div>
           </form>

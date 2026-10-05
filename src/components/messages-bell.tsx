@@ -16,24 +16,42 @@ export function MessagesBell() {
     setUnread((prev) => {
       if (total > prev && typeof window !== "undefined") {
         try {
-          const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-          const o = ctx.createOscillator(); const g = ctx.createGain();
-          o.connect(g); g.connect(ctx.destination);
-          o.frequency.value = 880; g.gain.value = 0.05;
-          o.start(); setTimeout(() => { o.stop(); ctx.close(); }, 120);
-        } catch { /* ignore */ }
+          const ctx = new (
+            window.AudioContext ||
+            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+          )();
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g);
+          g.connect(ctx.destination);
+          o.frequency.value = 880;
+          g.gain.value = 0.05;
+          o.start();
+          setTimeout(() => {
+            o.stop();
+            ctx.close();
+          }, 120);
+        } catch {
+          /* ignore */
+        }
       }
       return total;
     });
   };
 
   useEffect(() => {
-    if (!user) { setUnread(0); return; }
+    if (!user) {
+      setUnread(0);
+      return;
+    }
     refresh();
-    const ch = supabase.channel(`msg-bell-${user.id}`)
+    const ch = supabase
+      .channel(`msg-bell-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => refresh())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
