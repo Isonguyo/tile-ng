@@ -1222,16 +1222,7 @@ function Index() {
       </div>
 
       {/* FOOTER */}
-<<<<<<< HEAD
-      <footer className="border-t border-white/[0.07] bg-[#050f0a] px-4 py-7 text-center text-xs text-slate-500">
-        <p>
-          &copy; {new Date().getFullYear()} Tile Marketplace. Connecting trustworthy commercial hubs
-          safely across Nigeria.
-        </p>
-      </footer>
-=======
       <LegalFooter />
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
     </div>
   );
 }

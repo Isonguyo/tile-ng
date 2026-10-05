@@ -62,13 +62,10 @@ function ResetPage() {
   const submit = async (values: ResetPasswordFormValues) => {
     const strength = scorePassword(values.password);
     if (strength.score < 3) {
-<<<<<<< HEAD
       setError("password", {
         type: "validate",
         message: "Choose a stronger password before continuing.",
       });
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
       toast.error("Choose a stronger password before continuing.");
       return;
     }
@@ -101,21 +98,16 @@ function ResetPage() {
         </div>
       ) : null}
 
-<<<<<<< HEAD
       <form
         ref={formRef}
         onSubmit={handleSubmit(submit, onInvalid)}
         className="mt-6 space-y-4"
         noValidate
       >
-=======
-      <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4" noValidate>
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
         <div className="space-y-2">
           <Label htmlFor="password">New password</Label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-<<<<<<< HEAD
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -130,10 +122,6 @@ function ResetPage() {
               onClick={() => setShowPassword((value) => !value)}
               className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground"
             >
-=======
-            <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" className="pl-9 pr-10" {...register("password")} />
-            <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
@@ -147,7 +135,6 @@ function ResetPage() {
           <Label htmlFor="confirm_password">Confirm password</Label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-<<<<<<< HEAD
             <Input
               id="confirm_password"
               type={showConfirm ? "text" : "password"}
@@ -162,10 +149,6 @@ function ResetPage() {
               onClick={() => setShowConfirm((value) => !value)}
               className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground"
             >
-=======
-            <Input id="confirm_password" type={showConfirm ? "text" : "password"} autoComplete="new-password" className="pl-9 pr-10" {...register("confirm_password")} />
-            <button type="button" aria-label={showConfirm ? "Hide confirmation password" : "Show confirmation password"} onClick={() => setShowConfirm((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
               {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>

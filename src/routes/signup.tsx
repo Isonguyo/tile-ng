@@ -163,15 +163,16 @@ function SignupPage() {
 
   const onSubmit = async (values: SignupFormValues) => {
     if (busy) return;
+    if (!agreed) {
+      toast.error("Please agree to the applicable Tile terms and privacy policy.");
+      return;
+    }
     const strength = scorePassword(values.password);
     if (strength.score < 3) {
-<<<<<<< HEAD
       setError("password", {
         type: "validate",
         message: "Choose a stronger password before continuing.",
       });
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
       toast.error("Choose a stronger password before continuing.");
       return;
     }
@@ -237,7 +238,6 @@ function SignupPage() {
     );
   };
 
-<<<<<<< HEAD
   const onInvalid = (invalid: FieldErrors<SignupFormValues>) => {
     const first = Object.keys(invalid)[0] as keyof SignupFormValues | undefined;
     if (!first) return;
@@ -247,8 +247,6 @@ function SignupPage() {
     focusFormField(formRef.current, first);
   };
 
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
   const resendEmail = async () => {
     if (!email) {
       toast.error("Enter your email before requesting another verification link.");
@@ -302,16 +300,12 @@ function SignupPage() {
             )}
           </div>
 
-<<<<<<< HEAD
           <form
             ref={formRef}
             onSubmit={handleSubmit(onSubmit, onInvalid)}
             className="space-y-4"
             noValidate
           >
-=======
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
             <div className="space-y-2">
               <Label>I’m signing up as</Label>
               <RadioGroup
@@ -337,7 +331,6 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-<<<<<<< HEAD
               <Label htmlFor="full_name">
                 Full name <span className="text-destructive">*</span>
               </Label>
@@ -363,16 +356,6 @@ function SignupPage() {
                 aria-invalid={Boolean(errors.email)}
                 {...register("email")}
               />
-=======
-              <Label htmlFor="full_name">Full name</Label>
-              <Input id="full_name" autoComplete="name" {...register("full_name")} />
-              {errors.full_name ? <p className="text-sm text-red-600">{errors.full_name.message}</p> : null}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input id="email" type="email" autoComplete="email" {...register("email")} />
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
               {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : null}
             </div>
 
@@ -394,7 +377,6 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-<<<<<<< HEAD
               <Label htmlFor="password">
                 Password <span className="text-destructive">*</span>
               </Label>
@@ -412,12 +394,6 @@ function SignupPage() {
                   onClick={() => setShowPassword((value) => !value)}
                   className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground"
                 >
-=======
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" {...register("password")} />
-                <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -428,7 +404,6 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-<<<<<<< HEAD
               <Label htmlFor="confirm_password">
                 Confirm password <span className="text-destructive">*</span>
               </Label>
@@ -448,12 +423,6 @@ function SignupPage() {
                   onClick={() => setShowConfirm((value) => !value)}
                   className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground"
                 >
-=======
-              <Label htmlFor="confirm_password">Confirm password</Label>
-              <div className="relative">
-                <Input id="confirm_password" type={showConfirm ? "text" : "password"} autoComplete="new-password" {...register("confirm_password")} />
-                <button type="button" aria-label={showConfirm ? "Hide confirmation password" : "Show confirmation password"} onClick={() => setShowConfirm((value) => !value)} className="absolute right-3 top-2.5 text-muted-foreground transition-colors hover:text-foreground">
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -462,23 +431,58 @@ function SignupPage() {
               ) : null}
             </div>
 
-<<<<<<< HEAD
-            <Button
-              type="submit"
-              disabled={busy}
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-            >
-=======
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-              <span>I agree to Tile's <Link to="/terms" className="text-primary underline">Terms of Service</Link> and acknowledge the <Link to="/privacy" className="text-primary underline">Privacy Policy</Link>.{accountType === "merchant" && <> I also agree to the <Link to="/seller-terms" className="text-primary underline">Seller Terms</Link>.</>}{accountType === "artisan" && <> I also agree to the <Link to="/artisan-terms" className="text-primary underline">Artisan Terms</Link>.</>}</span>
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={agreed}
+                onChange={(event) => setAgreed(event.target.checked)}
+              />
+              <span>
+                I agree to Tile&apos;s{" "}
+                <Link to="/terms" className="text-primary underline">
+                  Terms of Service
+                </Link>{" "}
+                and acknowledge the{" "}
+                <Link to="/privacy" className="text-primary underline">
+                  Privacy Policy
+                </Link>
+                .{accountType === "merchant" && (
+                  <>
+                    {" "}
+                    I also agree to the{" "}
+                    <Link to="/seller-terms" className="text-primary underline">
+                      Seller Terms
+                    </Link>
+                    .
+                  </>
+                )}
+                {accountType === "artisan" && (
+                  <>
+                    {" "}
+                    I also agree to the{" "}
+                    <Link to="/artisan-terms" className="text-primary underline">
+                      Artisan Terms
+                    </Link>
+                    .
+                  </>
+                )}
+              </span>
             </label>
             <label className="flex items-start gap-2 text-sm text-muted-foreground">
-              <input type="checkbox" className="mt-1" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={marketing}
+                onChange={(event) => setMarketing(event.target.checked)}
+              />
               <span>I would like to receive promotional messages from Tile. (Optional)</span>
             </label>
-            <Button type="submit" disabled={busy || !canSubmit || !agreed} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
+            <Button
+              type="submit"
+              disabled={busy || !canSubmit || !agreed}
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+            >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {busy ? "Creating account…" : "Create account"}
             </Button>

@@ -56,7 +56,6 @@ import { TierBadge } from "@/components/tier-badge";
 import { QRCodeSVG } from "qrcode.react";
 import { useConfirmAction } from "@/components/confirm-action-provider";
 import { showError } from "@/lib/user-feedback";
-<<<<<<< HEAD
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import {
   useTileEntitlements,
@@ -79,8 +78,6 @@ import {
   VipStaffSection,
 } from "@/components/vip-merchant-tools";
 import { useMerchantStaffContext } from "@/hooks/use-merchant-staff-context";
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -102,7 +99,6 @@ function Dashboard() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
-<<<<<<< HEAD
   const [activeDashboardTab, setActiveDashboardTab] = useState("buyer");
   const {
     data: entitlements,
@@ -131,8 +127,6 @@ function Dashboard() {
     },
   });
   const workspaceShopSlug = isMerchantStaff ? ownerWorkspaceProfile?.shop_slug : profile?.shop_slug;
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
 
   const { data: myListings = [] } = useQuery({
     queryKey: ["my-listings", workspaceOwnerId],
@@ -353,7 +347,6 @@ function Dashboard() {
           </section>
 
           <div className="mt-8 sm:mt-10">
-<<<<<<< HEAD
             <Tabs
               value={activeDashboardTab}
               onValueChange={(value) => {
@@ -361,13 +354,6 @@ function Dashboard() {
                 scrollPageToTop();
               }}
               className="w-full"
-=======
-            <Tabs defaultValue="buyer" className="w-full">
-          <TabsList className="flex h-auto w-full max-w-full items-center justify-start gap-1 overflow-x-auto rounded-2xl border border-[#1b3b2a] bg-[#09170f]/90 p-1.5 shadow-lg shadow-black/20 sm:w-fit [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <TabsTrigger
-              value="buyer"
-              className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/[0.05] hover:text-white data-[state=active]:bg-[#35d879] data-[state=active]:text-[#04120a] data-[state=active]:shadow-[0_4px_16px_rgba(53,216,121,0.18)] sm:px-6"
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
             >
               <TabsList className="flex h-auto w-full max-w-full items-center justify-start gap-1 overflow-x-auto rounded-2xl border border-[#1b3b2a] bg-[#09170f]/90 p-1.5 shadow-lg shadow-black/20 sm:w-fit [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <TabsTrigger
@@ -405,7 +391,6 @@ function Dashboard() {
                 value="buyer"
                 className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6"
               >
-<<<<<<< HEAD
                 <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -417,29 +402,6 @@ function Dashboard() {
                         <p className="mt-0.5 text-xs text-slate-400">
                           Your favorite finds in one place
                         </p>
-=======
-                Artisan Hub
-              </TabsTrigger>
-            )}
-          </TabsList>
-
-          <TabsContent value="buyer" className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6">
-            <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-400/10 text-rose-300"><Heart className="h-5 w-5" /></span>
-                  <div><h3 className="font-semibold text-white">Saved for later</h3><p className="mt-0.5 text-xs text-slate-400">Your favorite finds in one place</p></div>
-                </div>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">{favorites.length} saved</span>
-              </div>
-              {favorites.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-5 text-sm text-slate-400">Tap the heart on any listing to keep it here.</p> : (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {favorites.map((f) => (
-                    <Link key={f.id} to="/listing/$id" params={{ id: f.id }} className="group rounded-2xl border border-white/[0.08] bg-[#07170f]/70 p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-300/30 hover:bg-[#0b2117]">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="line-clamp-2 font-semibold leading-5 text-slate-100 transition-colors group-hover:text-emerald-200">{f.title}</p>
-                        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-500 transition-all group-hover:translate-x-0.5 group-hover:text-emerald-300" />
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
                       </div>
                     </div>
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
@@ -514,7 +476,6 @@ function Dashboard() {
                 </Card>
               </TabsContent>
 
-<<<<<<< HEAD
               <TabsContent
                 value="merchant"
                 className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6"
@@ -854,142 +815,6 @@ function Dashboard() {
                 </Card>
               </TabsContent>
             </Tabs>
-=======
-          <TabsContent value="merchant" className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6">
-            <div className="mb-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300">Merchant workspace</p>
-                <h2 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">Run your business on Tile</h2>
-                <p className="mt-1 text-sm text-slate-400">Your storefront, listings, wallet and growth tools.</p>
-              </div>
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-slate-300">
-                <span className={`h-1.5 w-1.5 rounded-full ${profile.is_merchant ? "bg-emerald-300" : "bg-slate-500"}`} />
-                {profile.is_merchant ? "Merchant account active" : "Shop setup available"}
-              </span>
-            </div>
-            {!profile.is_merchant && <MerchantOnboarding onDone={refreshProfile} />}
-            {profile.is_merchant && profile.shop_slug && <ShopLinkCard slug={profile.shop_slug} />}
-            <div className="grid gap-4 lg:grid-cols-3">
-              <Card className={`p-5 sm:p-6 lg:col-span-2 ${DASHBOARD_CARD_CLASS}`}>
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/10 text-emerald-300"><Package className="h-5 w-5" /></span>
-                    <div><h3 className="font-semibold text-white">Your listings</h3><p className="mt-0.5 text-xs text-slate-400">Manage and track your posts</p></div>
-                  </div>
-                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">{myListings.length} total</span>
-                </div>
-                {myListings.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-5 text-sm text-slate-400">You haven’t posted anything yet. Create a listing to get discovered.</p> : (
-                  <ul className="divide-y divide-white/[0.07]">
-                    {myListings.map((l) => (
-                      <ListingRow key={l.id} l={l} onChange={() => qc.invalidateQueries({ queryKey: ["my-listings", user?.id] })} />
-                    ))}
-                  </ul>
-                )}
-              </Card>
-              <WalletCard balance={profile.wallet_balance} onTopup={() => { refreshProfile(); qc.invalidateQueries(); }} />
-            </div>
-
-            <BillingCard tier={profile.subscription_tier ?? "free"} until={profile.subscription_until} onChange={refreshProfile} />
-
-            {profile.is_artisan && (
-              <ArtisanProfileCard
-                profile={profile}
-                onChange={refreshProfile}
-              />
-            )}
-
-            <KycCard status={profile.kyc_status} onUpload={refreshProfile} />
-
-          </TabsContent>
-
-          <TabsContent value="artisan" className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6">
-
-            <Card className={`overflow-hidden p-5 sm:p-7 ${DASHBOARD_CARD_CLASS}`}>
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Professional profile</p>
-                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                    Your artisan workspace
-                  </h2>
-
-                  <p className="mt-1 text-sm text-slate-400">
-                    Manage your artisan profile and portfolio.
-                  </p>
-                </div>
-
-                <Button asChild className="rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]">
-                  <Link to="/artisans/$id" params={{ id: profile.id }}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Public Profile
-                  </Link>
-                </Button>
-              </div>
-            </Card>
-
-            <Card className={`p-5 sm:p-7 ${DASHBOARD_CARD_CLASS}`}>
-              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">At a glance</p><h3 className="mt-1 font-semibold text-lg text-white">
-                  Artisan Profile
-                </h3></div>
-
-                <Button asChild variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:bg-white/[0.08] hover:text-white">
-                  <Link to="/artisan/edit">
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </Link>
-                </Button>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-
-                <div>
-                  <p className="text-xs font-medium text-slate-400">
-                    Profession
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-100">
-                    {profile.profession || "Not set"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium text-slate-400">
-                    Experience
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-100">
-                    {profile.years_experience ?? 0} Years
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium text-slate-400">
-                    Starting Price
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-100">
-                    {profile.starting_price
-                      ? formatNaira(profile.starting_price)
-                      : "Not set"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium text-slate-400">
-                    Rating
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-100">
-                    ⭐ {(profile.avg_rating ?? 0).toFixed(1)}
-                  </p>
-                </div>
-
-              </div>
-            </Card>
-
-          </TabsContent>
-          </Tabs>
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
           </div>
         </div>
       </main>
@@ -997,7 +822,6 @@ function Dashboard() {
   );
 }
 
-<<<<<<< HEAD
 function SupportPriorityCard({
   entitlements,
   entitlementsLoading,
@@ -1043,8 +867,6 @@ function SupportPriorityCard({
   );
 }
 
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
 function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("5000");
@@ -1488,7 +1310,6 @@ function ShopLinkCard({ slug }: { slug: string }) {
     setOrigin(window.location.origin);
   }, []);
 
-<<<<<<< HEAD
   useEffect(() => {
     setCurrentSlug(slug);
     setCustomSlug(slug);
@@ -1552,9 +1373,6 @@ function ShopLinkCard({ slug }: { slug: string }) {
       setSavingSlug(false);
     }
   };
-=======
-  const url = `${origin}/shop/${slug}`;
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
 
   const copy = async () => {
     try {
@@ -1619,7 +1437,6 @@ function ShopLinkCard({ slug }: { slug: string }) {
               </code>
             </div>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-<<<<<<< HEAD
               <Button
                 onClick={copy}
                 variant="outline"
@@ -1752,28 +1569,6 @@ function ShopLinkCard({ slug }: { slug: string }) {
               )}
             </div>
           )}
-=======
-              <Button onClick={copy} variant="outline" className="h-10 rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:border-emerald-300/25 hover:bg-white/[0.07] hover:text-white"><CopyIcon className="mr-2 h-4 w-4" />Copy shop link</Button>
-              <Button asChild className="h-10 rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]"><Link to="/shop/$slug" params={{ slug }}>Visit storefront<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-            </div>
-          </div>
-        </div>
-
-        <aside className="border-t border-white/[0.07] bg-[#07170f]/55 p-5 sm:p-7 lg:border-l lg:border-t-0">
-          <div className="mx-auto max-w-[240px]">
-            <div className="flex items-center justify-between gap-2">
-              <div><p className="text-sm font-semibold text-white">Shop QR code</p><p className="mt-0.5 text-[11px] text-slate-500">Scan to open your shop</p></div>
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-emerald-300"><Share2 className="h-4 w-4" /></span>
-            </div>
-            <div className="mt-4 rounded-[22px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.22)]">
-              <div className="flex items-center justify-center rounded-2xl bg-[#f8faf9] p-3">
-                <QRCodeSVG ref={qrRef} value={url} size={168} level="H" marginSize={4} bgColor="#f8faf9" fgColor="#07170f" title={`QR code for Tile shop ${slug}`} />
-              </div>
-              <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Tile · {slug}</p>
-            </div>
-            <Button onClick={downloadQr} variant="outline" className="mt-3 h-10 w-full rounded-xl border-white/15 bg-transparent text-xs font-semibold text-slate-200 hover:border-emerald-300/25 hover:bg-white/[0.06] hover:text-white"><Download className="mr-2 h-4 w-4 text-emerald-300" />Download QR code</Button>
-          </div>
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
         </aside>
       </div>
     </Card>
@@ -1825,7 +1620,6 @@ const PLANS: { tier: "lite" | "pro" | "vip"; price: number; perks: string[] }[] 
 
 function BillingCard({ tier, until, onChange }: { tier: string; until?: string | null; onChange: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
-<<<<<<< HEAD
   const qc = useQueryClient();
   const { data: storedPlans = [] } = useQuery({
     queryKey: ["subscription-plans"],
@@ -1847,15 +1641,12 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
       price: plan.tier === "vip" ? 40_000 : stored ? Number(stored.price_ngn) : plan.price,
     };
   });
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
   const activate = async (t: "lite" | "pro" | "vip") => {
     setBusy(t);
     const { error } = await supabase.rpc("activate_subscription", { _tier: t });
     setBusy(null);
     if (error) return showError(error, "We couldn't activate that plan. Please try again.");
     toast.success(`${t.toUpperCase()} plan activated`);
-<<<<<<< HEAD
     await Promise.all([
       Promise.resolve(onChange()),
       qc.invalidateQueries({ queryKey: ["tile-entitlements"] }),
@@ -1954,10 +1745,6 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
       anchor: "#support",
     },
   ];
-=======
-    onChange();
-  };
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
   return (
     <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1987,7 +1774,6 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
         </div>
       </div>
       <div className="grid gap-3 lg:grid-cols-3">
-<<<<<<< HEAD
         {displayPlans.map((p) => (
           <div
             key={p.tier}
@@ -2006,13 +1792,6 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
                   Popular
                 </span>
               ) : null}
-=======
-        {PLANS.map((p) => (
-          <div key={p.tier} className={`flex h-full flex-col rounded-2xl border p-4 transition-all duration-200 sm:p-5 ${tier === p.tier ? "border-emerald-300/40 bg-[linear-gradient(145deg,rgba(52,211,153,0.1),rgba(7,23,15,0.8))] shadow-[0_0_28px_rgba(52,211,153,0.08)]" : "border-white/[0.08] bg-[#07170f]/60 hover:border-white/15 hover:bg-[#0b2016]"}`}>
-            <div className="flex min-h-6 items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{p.tier}</p>
-              {tier === p.tier ? <span className="rounded-full bg-emerald-300/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-200">Your plan</span> : p.tier === "pro" ? <span className="rounded-full bg-emerald-300/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-200">Popular</span> : null}
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
             </div>
             <p className="mt-3 text-2xl font-extrabold tracking-tight text-emerald-300">
               {formatNaira(p.price)}
@@ -2044,7 +1823,6 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
           </div>
         ))}
       </div>
-<<<<<<< HEAD
       <div className="mt-5 rounded-2xl border border-white/[0.08] bg-[#07170f]/65 p-4 sm:p-5">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -2091,9 +1869,6 @@ function BillingCard({ tier, until, onChange }: { tier: string; until?: string |
         <Wallet className="h-3.5 w-3.5 text-emerald-300/70" />
         Plan payments are deducted from your Tile wallet. Add funds before upgrading if needed.
       </p>
-=======
-      <p className="mt-5 flex items-center gap-2 text-xs text-slate-500"><Wallet className="h-3.5 w-3.5 text-emerald-300/70" />Plan payments are deducted from your Tile wallet. Add funds before upgrading if needed.</p>
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
     </Card>
   );
 }
@@ -2125,7 +1900,6 @@ function ListingRow({
     phone_clicks: number;
   } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
-<<<<<<< HEAD
   const [promoting, setPromoting] = useState(false);
   const [promotionExpiry, setPromotionExpiry] = useState(l.promotion_expires_at ?? null);
   const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({
@@ -2140,9 +1914,6 @@ function ListingRow({
   useEffect(() => {
     setPromotionExpiry(l.promotion_expires_at ?? null);
   }, [l.promotion_expires_at]);
-=======
-  const [editForm, setEditForm] = useState<{ title: string; description: string; price: string }>({ title: l.title, description: "", price: "" });
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
 
   useEffect(() => {
     let cancel = false;
@@ -2230,7 +2001,6 @@ function ListingRow({
       toast.error("User not authenticated");
       return;
     }
-<<<<<<< HEAD
     setPromoting(true);
     try {
       const eligibility = await rpcUntyped("can_promote_listing", { _listing_id: l.id });
@@ -2325,18 +2095,6 @@ function ListingRow({
       showError(error, "We couldn't activate this Top Ad. Please try again.");
     } finally {
       setPromoting(false);
-=======
-
-    const { error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>)("promote_listing", {
-      p_listing_id: l.id,
-      p_user_id: userId,
-    });
-
-    if (error) {
-      console.error(error);
-      showError(error, "We couldn't promote this listing. Please try again.");
-      return;
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
     }
 
     toast.success("Listing promoted successfully");
@@ -2378,11 +2136,7 @@ function ListingRow({
               onClick={promote}
             >
               <Sparkles className="h-3 w-3 mr-1" />
-<<<<<<< HEAD
               {promoting ? "Checking…" : hasActiveTopAd ? "Promoted" : "Promote"}
-=======
-              {l.is_promoted ? "Promoted" : "Promote"}
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
             </Button>
           )}
           <Button
@@ -2405,14 +2159,11 @@ function ListingRow({
           </Button>
         </div>
       </div>
-<<<<<<< HEAD
       {hasActiveTopAd && promotionExpiry && (
         <p className="mt-2 text-xs font-medium text-emerald-200">
           Promoted until {new Date(promotionExpiry).toLocaleDateString()}.
         </p>
       )}
-=======
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
       {stats && (
         <details className="group mt-3 rounded-xl border border-white/[0.08] bg-[#07170f]/65 open:border-emerald-300/20">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3.5">

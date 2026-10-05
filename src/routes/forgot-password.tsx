@@ -83,21 +83,16 @@ function ForgotPage() {
           </div>
         </div>
       ) : (
-<<<<<<< HEAD
         <form
           ref={formRef}
           onSubmit={handleSubmit(submit, onInvalid)}
           className="space-y-4"
           noValidate
         >
-=======
-        <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-<<<<<<< HEAD
               <Input
                 id="email"
                 type="email"
@@ -106,9 +101,6 @@ function ForgotPage() {
                 className="pl-9"
                 {...register("email")}
               />
-=======
-              <Input id="email" type="email" autoComplete="email" className="pl-9" {...register("email")} />
->>>>>>> 1ab4d5ae5ec6115909cf1a038ad432e7cdeb087c
             </div>
             {errors.email ? (
               <p className="text-sm text-red-600">{errors.email.message}</p>
