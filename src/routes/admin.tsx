@@ -187,6 +187,7 @@ function Admin() {
   }, [isAdmin, loading, nav]);
 
   // ─── Mission Control aggregated stats ───────────────────────────
+  const { data: pendingPayments = [] } = useAdminPaymentRequests("pending_review");
   const { data: dash } = useQuery({
     queryKey: ["admin-dashboard-stats"],
     enabled: isAdmin,
@@ -945,6 +946,12 @@ function Admin() {
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 📊 Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="payments"
+                className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                💳 Subscription Payments{pendingPayments.length > 0 ? ` (${pendingPayments.length})` : ""}
               </TabsTrigger>
               <TabsTrigger
                 id="tab-moderation"
@@ -2031,7 +2038,12 @@ function Admin() {
           </TabsContent>
 
           {/* ═══ PLATFORM SETTINGS ═══════════════════════════════ */}
+          <TabsContent value="payments" className="space-y-4 mt-0">
+            <SubscriptionPaymentsPanel />
+          </TabsContent>
+
           <TabsContent value="settings" className="space-y-4 mt-0">
+            <ManualPaymentSettingsCard />
             <PlatformSettings
               initial={platform}
               prelaunchListingCount={prelaunchListings.length}
