@@ -1611,12 +1611,13 @@ const PLANS: { tier: "lite" | "pro" | "vip"; price: number; perks: string[] }[] 
     price: 15000,
     perks: [
       "Everything in Lite",
-      "5 Promoted Listings Monthly",
+      "5 Top Ad placements per 30-day billing period",
       "Homepage Priority",
-      "Featured Vendor Placement",
+      "Featured Vendor placement",
       "Product Performance Analytics",
       "Customer Inquiry Dashboard",
       "Social Sharing Tools",
+      "Up to 50 products and 20 services",
     ],
   },
   {
@@ -1651,8 +1652,11 @@ function BillingCard({
   onSelectTab: (tab: string) => void;
   onChange: () => void | Promise<void>;
 }) {
-  const [busy, setBusy] = useState<string | null>(null);
+  const [selected, setSelected] = useState<"lite" | "pro" | "vip" | null>(null);
   const qc = useQueryClient();
+  const myRequests = useMyPaymentRequests();
+  const hasOpenRequest = (myRequests.data ?? []).some(isOpenRequest);
+  const paidActive = tier !== "free" && (!until || new Date(until) > new Date());
   const { data: storedPlans = [] } = useQuery({
     queryKey: ["subscription-plans"],
     staleTime: 60 * 60_000,
@@ -1665,30 +1669,20 @@ function BillingCard({
       return data ?? [];
     },
   });
+  // subscription_plans is the source of truth for prices; PLANS only supplies marketing copy.
   const displayPlans = PLANS.map((plan) => {
     const stored = storedPlans.find((item) => item.tier === plan.tier);
     return {
       ...plan,
       displayName: plan.tier === "vip" ? "VIP" : (stored?.display_name ?? plan.tier),
-      price: plan.tier === "vip" ? 40_000 : stored ? Number(stored.price_ngn) : plan.price,
+      price: stored ? Number(stored.price_ngn) : null,
     };
   });
-  const activate = async (t: "lite" | "pro" | "vip") => {
-    setBusy(t);
-    const { error } = await supabase.rpc("activate_subscription", { _tier: t });
-    setBusy(null);
-    if (error) return showError(error, "We couldn't activate that plan. Please try again.");
-    toast.success(`${t.toUpperCase()} plan activated`);
+  const onPaymentSubmitted = async () => {
+    setSelected(null);
     await Promise.all([
       Promise.resolve(onChange()),
       qc.invalidateQueries({ queryKey: ["tile-entitlements"] }),
-      qc.invalidateQueries({ queryKey: ["tile-top-ad-status"] }),
-      qc.invalidateQueries({ queryKey: ["vendor-analytics"] }),
-      qc.invalidateQueries({ queryKey: ["customer-inquiry-dashboard"] }),
-      qc.invalidateQueries({ queryKey: ["vip-analytics"] }),
-      qc.invalidateQueries({ queryKey: ["staff-accounts"] }),
-      qc.invalidateQueries({ queryKey: ["vip-channel-status"] }),
-      qc.invalidateQueries({ queryKey: ["ai-sales-context"] }),
     ]);
   };
   const currentCapabilities = [
@@ -1826,8 +1820,8 @@ function BillingCard({
               ) : null}
             </div>
             <p className="mt-3 text-2xl font-extrabold tracking-tight text-emerald-300">
-              {formatNaira(p.price)}
-              <span className="ml-1 text-xs font-medium text-slate-500">/ month</span>
+              {p.price == null ? "—" : formatNaira(p.price)}
+              <span className="ml-1 text-xs font-medium text-slate-500">/ 30 days</span>
             </p>
             <div className="my-4 h-px bg-white/[0.07]" />
             <ul className="flex-1 space-y-2.5 text-xs leading-5 text-slate-400">
@@ -1842,19 +1836,28 @@ function BillingCard({
             </ul>
             <Button
               size="sm"
-              disabled={busy === p.tier || tier === p.tier}
-              onClick={() => activate(p.tier)}
-              className={`mt-5 h-10 w-full rounded-xl font-semibold ${tier === p.tier ? "border border-emerald-300/20 bg-emerald-300/[0.08] text-emerald-100 hover:bg-emerald-300/[0.08] disabled:opacity-100" : "bg-[#35d879] text-[#04120a] hover:bg-[#52e98f]"}`}
+              disabled={hasOpenRequest || (paidActive && tier !== p.tier) || p.price == null}
+              onClick={() => setSelected(p.tier)}
+              className={`mt-5 h-10 w-full rounded-xl font-semibold ${tier === p.tier ? "border border-emerald-300/20 bg-emerald-300/[0.08] text-emerald-100 hover:bg-emerald-300/[0.08]" : "bg-[#35d879] text-[#04120a] hover:bg-[#52e98f]"}`}
             >
-              {tier === p.tier
-                ? "Current plan"
-                : busy === p.tier
-                  ? "Activating…"
+              {selected === p.tier
+                ? "Selected"
+                : tier === p.tier && paidActive
+                  ? "Renew plan"
                   : `Choose ${p.tier}`}
             </Button>
           </div>
         ))}
       </div>
+      {paidActive && !hasOpenRequest && (
+        <p className="mt-3 text-xs text-slate-400">
+          Your {tier.toUpperCase()} plan is active until {until ? new Date(until).toLocaleDateString() : "you or an admin change it"}. You can switch to a different paid plan after it ends.
+        </p>
+      )}
+      {hasOpenRequest && (
+        <p className="mt-3 text-xs text-amber-300">Plan changes are paused while a payment is in progress.</p>
+      )}
+      <BankTransferPanel selectedTier={selected} onDone={onPaymentSubmitted} />
       <div className="mt-5 rounded-2xl border border-white/[0.08] bg-[#07170f]/65 p-4 sm:p-5">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
