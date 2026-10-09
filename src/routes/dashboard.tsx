@@ -1,3 +1,4 @@
+import { BankTransferPanel, useMyPaymentRequests, isOpenRequest } from "@/components/billing/bank-transfer-checkout";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -1902,7 +1903,7 @@ function BillingCard({
       </div>
       <p className="mt-5 flex items-center gap-2 text-xs text-slate-500">
         <Wallet className="h-3.5 w-3.5 text-emerald-300/70" />
-        Plan payments are deducted from your Tile wallet. Add funds before upgrading if needed.
+        Plans are paid by bank transfer and activate after an admin confirms your payment.
       </p>
     </Card>
   );
