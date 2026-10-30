@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+﻿import { useEffect, useState, type RefObject } from "react";
 import {
   ArrowRight,
   Copy,
@@ -209,7 +209,7 @@ export function WaitlistProfile({
             >
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Referrals</p>
               <p className="mt-1 text-3xl font-black">{referralCount}</p>
-              <p className="mt-1 text-xs text-primary">View referral tools →</p>
+              <p className="mt-1 text-xs text-primary">View referral tools â†’</p>
             </button>
             <button
               type="button"
@@ -218,7 +218,7 @@ export function WaitlistProfile({
             >
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Reward</p>
               <p className="mt-1 text-xl font-black text-primary">{rewardPlan.toUpperCase()}</p>
-              <p className="mt-1 text-xs text-primary">View reward tiers →</p>
+              <p className="mt-1 text-xs text-primary">View reward tiers â†’</p>
             </button>
             <div className="rounded-xl border bg-muted/30 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Position</p>
@@ -248,7 +248,7 @@ export function WaitlistProfile({
                 Your referral code
               </p>
               <p className="mt-1 font-mono text-xl font-black tracking-wider">
-                {status?.referral_token ?? "—"}
+                {status?.referral_token ?? "â€”"}
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Button
@@ -333,8 +333,8 @@ export function WaitlistProfile({
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {isVendor
-                ? "Create your Tile account and prepare your products, shop or artisan profile privately while Admin reviews the marketplace."
-                : "Create your Tile account now so you're ready for early access when Tile launches."}
+                ? "Create your Tile Marketplace account and prepare your products, shop or artisan profile privately while Admin reviews the marketplace."
+                : "Create your Tile Marketplace account now so you're ready for early access when Tile launches."}
             </p>
           </div>
         </div>

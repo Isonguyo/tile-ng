@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,11 +16,11 @@ import { rpcUntyped } from "@/lib/waitlist-rpc";
 
 export const Route = createFileRoute("/messages/")({
   head: () => ({
-    meta: [{ title: "Inbox — Tile" }],
+    meta: [{ title: "Inbox — Tile Marketplace" }],
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),
@@ -81,7 +81,7 @@ function InboxPage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <LoadingSpinner label="Loading inbox…" />
+        <LoadingSpinner label="Loading inboxâ€¦" />
       </div>
     );
 

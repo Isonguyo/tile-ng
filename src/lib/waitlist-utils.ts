@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import {
   Rocket,
   BadgeCheck,
@@ -26,8 +26,8 @@ import { LOCATIONS } from "@/lib/categories";
 import { siteUrl } from "@/lib/site-url";
 
 export const WAITLIST_ASSETS = {
-  logo: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
-  ogImage: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+  logo: "/tile-marketplace-logo.jpeg",
+  ogImage: siteUrl("/tile-marketplace-logo.jpeg"),
   canonicalUrl: "https://tile-ng.vercel.app/wait-list",
 } as const;
 
@@ -210,7 +210,7 @@ export function isUnboundedRewardMax(max: number) {
 }
 
 export function formatRewardRange(tier: Pick<FoundingReward, "min" | "max">) {
-  return isUnboundedRewardMax(tier.max) ? `#${tier.min}+` : `#${tier.min}–${tier.max}`;
+  return isUnboundedRewardMax(tier.max) ? `#${tier.min}+` : `#${tier.min}â€“${tier.max}`;
 }
 
 export function getFoundingReward(position?: number): FoundingReward {

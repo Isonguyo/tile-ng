@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,7 +46,7 @@ const typeIcons: Record<AccountType, typeof ShoppingBag> = {
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Create your Tile account" },
+      { title: "Create your Tile Marketplace account" },
       {
         name: "description",
         content: "Join Nigeria's marketplace. Buy, sell goods, or offer services in minutes.",
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/signup")({
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),
@@ -167,7 +167,7 @@ function SignupPage() {
   const onSubmit = async (values: SignupFormValues) => {
     if (busy) return;
     if (!agreed) {
-      toast.error("Please agree to the applicable Tile terms and privacy policy.");
+      toast.error("Please agree to the applicable Tile Marketplace terms and privacy policy.");
       return;
     }
     const strength = scorePassword(values.password);
@@ -218,7 +218,7 @@ function SignupPage() {
       toast.success(
         fromWaitlist
           ? "Account created. Your early-access setup is ready."
-          : "Account created. You’re ready to explore Tile.",
+          : "Account created. Youâ€™re ready to explore Tile Marketplace.",
       );
       nav({ to: "/dashboard" });
       return;
@@ -237,7 +237,7 @@ function SignupPage() {
       "Instant-access signup returned no session. Disable Confirm Email in the hosted Supabase Auth provider.",
     );
     toast.error(
-      "Your account was created, but Tile couldn't sign you in yet. Please contact support before trying again.",
+      "Your account was created, but Tile Marketplace couldn't sign you in yet. Please contact support before trying again.",
     );
   };
 
@@ -282,7 +282,7 @@ function SignupPage() {
   return (
     <AuthLayout
       title="Create your account"
-      description="Join Tile to buy, sell, and discover trusted goods and services across Nigeria."
+      description="Join Tile Marketplace to buy, sell, and discover trusted goods and services across Nigeria."
       backTo="/"
       backLabel="Back home"
       compact
@@ -299,12 +299,12 @@ function SignupPage() {
           <div className="mb-6 text-center">
             <p className="text-sm text-muted-foreground">
               {fromWaitlist
-                ? "Create your Tile account now and prepare privately for launch."
+                ? "Create your Tile Marketplace account now and prepare privately for launch."
                 : "Build your profile and start trading with confidence"}
             </p>
             {fromWaitlist && (
               <p className="mt-2 text-xs text-primary font-medium">
-                Your account is being created as part of Tile's early-access program.
+                Your account is being created as part of Tile Marketplace's early-access program.
               </p>
             )}
           </div>
@@ -316,7 +316,7 @@ function SignupPage() {
             noValidate
           >
             <div className="space-y-2">
-              <Label>I’m signing up as</Label>
+              <Label>Iâ€™m signing up as</Label>
               <RadioGroup
                 value={accountType}
                 onValueChange={(value) => setValue("account_type", value as AccountType)}
@@ -448,7 +448,7 @@ function SignupPage() {
                 onChange={(event) => setAgreed(event.target.checked)}
               />
               <span>
-                I agree to Tile&apos;s{" "}
+                I agree to Tile Marketplace&apos;s{" "}
                 <Link to="/terms" className="text-primary underline">
                   Terms of Service
                 </Link>{" "}
@@ -486,7 +486,7 @@ function SignupPage() {
                 checked={marketing}
                 onChange={(event) => setMarketing(event.target.checked)}
               />
-              <span>I would like to receive promotional messages from Tile. (Optional)</span>
+              <span>I would like to receive promotional messages from Tile Marketplace. (Optional)</span>
             </label>
             <Button
               type="submit"
@@ -494,7 +494,7 @@ function SignupPage() {
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
             >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {busy ? "Creating account…" : "Create account"}
+              {busy ? "Creating accountâ€¦" : "Create account"}
             </Button>
           </form>
 

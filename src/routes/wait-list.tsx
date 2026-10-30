@@ -444,12 +444,12 @@ function WaitListPage() {
             <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg transition-transform duration-300 group-hover:scale-105">
               <img
                 src={WAITLIST_ASSETS.logo}
-                alt="Tile Logo"
+                alt="Tile Marketplace logo"
                 className="h-full w-full object-cover"
                 loading="eager"
               />
             </div>
-            <span className="text-lg font-black tracking-tight">Tile</span>
+            <span className="text-lg font-black tracking-tight">Tile Marketplace</span>
           </div>
           {statusHydrated && isReturningMember ? (
             <Button size="sm" onClick={() => scrollToProfile("overview")}>

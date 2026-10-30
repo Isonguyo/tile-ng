@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+﻿import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,7 +138,7 @@ export function WaitlistForm({
               spellCheck={false}
             />
             {referral.state === "checking" && (
-              <p className="text-xs text-muted-foreground">Checking this referral code…</p>
+              <p className="text-xs text-muted-foreground">Checking this referral codeâ€¦</p>
             )}
             {referral.state === "invalid" && (
               <p className="text-xs text-amber-600 dark:text-amber-500">
@@ -177,7 +177,7 @@ export function WaitlistForm({
         >
           {pending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Joining…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Joiningâ€¦
             </>
           ) : (
             (formContent.submit ?? "Join the Waitlist")
@@ -185,7 +185,7 @@ export function WaitlistForm({
         </Button>
 
         <p className="text-center text-xs leading-5 text-muted-foreground">
-          Joining the wait-list is free. After joining, you can create a Tile account and prepare
+          Joining the wait-list is free. After joining, you can create a Tile Marketplace account and prepare
           your products, shop or artisan profile privately before launch.
         </p>
       </fieldset>

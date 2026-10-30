@@ -87,11 +87,11 @@ import { SignedImage } from "@/components/signed-image";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
-    meta: [{ title: "Dashboard â€” Tile" }],
+    meta: [{ title: "Dashboard — Tile Marketplace" }],
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),

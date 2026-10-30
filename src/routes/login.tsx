@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,16 +21,16 @@ export const Route = createFileRoute("/login")({
   validateSearch: z.object({ next: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Sign in — Tile" },
+      { title: "Sign in — Tile Marketplace" },
       {
         name: "description",
-        content: "Sign in to your Tile account to manage your shop, listings and messages.",
+        content: "Sign in to your Tile Marketplace account to manage your shop, listings and messages.",
       },
     ],
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),
@@ -99,7 +99,7 @@ function LoginPage() {
       );
       return;
     }
-    toast.success("Welcome back to Tile");
+    toast.success("Welcome back to Tile Marketplace");
     continueAfterLogin();
   };
 
@@ -111,7 +111,7 @@ function LoginPage() {
   return (
     <AuthLayout
       title="Welcome back"
-      description="Sign in to continue managing your listings, messages, and profile on Tile."
+      description="Sign in to continue managing your listings, messages, and profile on Tile Marketplace."
       backTo="/"
       backLabel="Back home"
     >
@@ -139,7 +139,7 @@ function LoginPage() {
             <p className="text-sm text-red-600">{errors.email.message}</p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              We’ll keep your account secure with Supabase auth.
+              Weâ€™ll keep your account secure with Supabase auth.
             </p>
           )}
         </div>
@@ -186,7 +186,7 @@ function LoginPage() {
           className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
         >
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "Signing inâ€¦" : "Sign in"}
         </Button>
       </form>
 
@@ -202,7 +202,7 @@ function LoginPage() {
       <OAuthButtons disabled={busy} />
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        New to Tile?{" "}
+        New to Tile Marketplace?{" "}
         <Link to="/signup" className="font-semibold text-primary hover:underline">
           Create an account
         </Link>

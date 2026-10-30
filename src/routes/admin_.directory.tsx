@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -34,13 +34,13 @@ import { rpcUntyped } from "@/lib/waitlist-rpc";
 export const Route = createFileRoute("/admin_/directory")({
   head: () => ({
     meta: [
-      { title: "Admin Directory | Tile" },
+      { title: "Admin Directory | Tile Marketplace" },
       {
         name: "description",
         content: "Full directory of Tile users, ads and artisan profiles for admins.",
       },
       { name: "robots", content: "noindex" },
-      { property: "og:title", content: "Admin Directory | Tile" },
+      { property: "og:title", content: "Admin Directory | Tile Marketplace" },
       {
         property: "og:description",
         content: "Full directory of Tile users, ads and artisan profiles.",
@@ -70,9 +70,9 @@ function useAdminRpc(key: string, fn: string, enabled: boolean) {
 }
 
 function fmt(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "â€”";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? "â€”" : date.toLocaleString();
 }
 
 function collectImageCandidates(value: unknown, field = ""): string[] {
@@ -337,7 +337,7 @@ function TierControl({ user }: { user: DirectoryRow }) {
           onClick={() => void setTier("pro", 6)}
           className="h-8 rounded-lg"
         >
-          Pro · 6 mo
+          Pro Â· 6 mo
         </Button>
         <Button
           size="sm"
@@ -346,7 +346,7 @@ function TierControl({ user }: { user: DirectoryRow }) {
           onClick={() => void setTier("lite", 3)}
           className="h-8 rounded-lg"
         >
-          Lite · 3 mo
+          Lite Â· 3 mo
         </Button>
         <Button
           size="sm"
@@ -390,7 +390,7 @@ function UserDirectoryCard({
               <h2 className="break-words font-bold tracking-tight">{name}</h2>
               <Badge className="capitalize">
                 {user.subscription_tier || "free"}
-                {user.tier_locked ? " · locked" : ""}
+                {user.tier_locked ? " Â· locked" : ""}
               </Badge>
               {user.founding_rank && (
                 <Badge variant="secondary">Founder #{user.founding_rank}</Badge>
@@ -451,7 +451,7 @@ function UserDirectoryCard({
             value={
               user.listings_total == null
                 ? null
-                : `${user.listings_total} total · ${user.listings_live ?? 0} live · ${user.listings_pending ?? 0} pending`
+                : `${user.listings_total} total Â· ${user.listings_live ?? 0} live Â· ${user.listings_pending ?? 0} pending`
             }
           />
           <DirectoryField label="Last sign in" value={fmt(user.last_sign_in_at)} />
@@ -509,7 +509,7 @@ function ListingDirectoryCard({
             </p>
             <p className="mt-1 text-xs text-white/75">
               {row.owner_name || "Unknown seller"}
-              {row.owner_email ? ` · ${row.owner_email}` : ""}
+              {row.owner_email ? ` Â· ${row.owner_email}` : ""}
             </p>
           </div>
           <Badge className="shrink-0 capitalize bg-white/15 text-white backdrop-blur">
@@ -703,7 +703,7 @@ function DirectoryPage() {
           </div>
           <h1 className="mt-5 text-2xl font-black">Admins only</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            You don’t have permission to view the platform directory.
+            You donâ€™t have permission to view the platform directory.
           </p>
           <Button asChild className="mt-6 rounded-xl">
             <Link to="/">Go home</Link>
@@ -780,7 +780,7 @@ function DirectoryPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-11 rounded-xl border-border/60 bg-background/70 pl-9 pr-10"
-                placeholder="Search anything…"
+                placeholder="Search anythingâ€¦"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
@@ -926,7 +926,7 @@ function LoadingDirectory() {
     <div className="grid min-h-48 place-items-center rounded-2xl border border-dashed border-border/70 bg-card/30">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
-        Loading directory records…
+        Loading directory recordsâ€¦
       </div>
     </div>
   );

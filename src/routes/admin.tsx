@@ -102,11 +102,11 @@ import {
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
-    meta: [{ title: "Admin Cabin â€” Tile" }],
+    meta: [{ title: "Admin Cabin — Tile Marketplace" }],
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),

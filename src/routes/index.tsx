@@ -38,7 +38,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tile â€” Buy, Sell & Hire Across Nigeria" },
+      { title: "Tile Marketplace — Buy, Sell & Hire Across Nigeria" },
       {
         name: "description",
         content:
@@ -54,12 +54,12 @@ export const Route = createFileRoute("/")({
     links: [
       {
         rel: "icon",
-        type: "image/png",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        type: "image/jpeg",
+        href: "/tile-marketplace-logo.jpeg",
       },
       {
         rel: "apple-touch-icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),

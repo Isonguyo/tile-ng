@@ -36,17 +36,17 @@ export function SiteHeader() {
         <Link to="/" className="flex min-w-0 shrink-0 items-center gap-3 group">
           {/* Logo Container */}
           <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-[#22C55E]/30 bg-[#081810] p-0.5 transition-transform duration-300 group-hover:scale-105 group-hover:border-[#22C55E]">
-            <SignedImage
-              src="https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg"
-              alt="Tile Logo"
+            <img
+              src="/tile-marketplace-logo.jpeg"
+              alt="Tile Marketplace logo"
               className="h-full w-full object-cover rounded-lg"
               loading="eager"
             />
           </div>
 
           {/* Brand Name */}
-          <span className="hidden text-2xl font-black tracking-tight text-white transition-all duration-300 group-hover:text-[#22C55E] sm:inline">
-            Tile
+          <span className="hidden text-lg font-black tracking-tight text-white transition-all duration-300 group-hover:text-[#22C55E] sm:inline lg:text-xl">
+            Tile Marketplace
           </span>
         </Link>
 

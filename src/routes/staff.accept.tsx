@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, CircleAlert, Users } from "lucide-react";
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/staff/accept")({
   validateSearch: (search: Record<string, unknown>) => ({
     token: typeof search.token === "string" ? search.token : "",
   }),
-  head: () => ({ meta: [{ title: "Accept staff invitation — Tile" }] }),
+  head: () => ({ meta: [{ title: "Accept staff invitation — Tile Marketplace" }] }),
   component: AcceptStaffInvitation,
 });
 
@@ -46,7 +46,7 @@ function AcceptStaffInvitation() {
         setState("error");
         return;
       }
-      setMessage("Your Tile merchant workspace access is now active.");
+      setMessage("Your Tile Marketplace merchant workspace access is now active.");
       setState("accepted");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["staff-context", user.id] }),
@@ -85,7 +85,7 @@ function AcceptStaffInvitation() {
             </p>
           )}
           {token && loading && (
-            <p className="mt-3 text-sm text-slate-400">Checking your Tile sign-in…</p>
+            <p className="mt-3 text-sm text-slate-400">Checking your Tile sign-inâ€¦</p>
           )}
           {token && !loading && !user && (
             <>
@@ -108,7 +108,7 @@ function AcceptStaffInvitation() {
           )}
           {state === "accepting" && (
             <p role="status" className="mt-4 text-sm text-slate-300">
-              Accepting your invitation…
+              Accepting your invitationâ€¦
             </p>
           )}
           {state === "error" && (
@@ -147,7 +147,7 @@ function AcceptStaffInvitation() {
           )}
           {token && !user && (
             <p className="mt-4 text-xs text-slate-500">
-              Your invitation token is only sent to Tile’s authenticated acceptance RPC. Never share
+              Your invitation token is only sent to Tileâ€™s authenticated acceptance RPC. Never share
               it publicly.
             </p>
           )}

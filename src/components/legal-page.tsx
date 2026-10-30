@@ -5,7 +5,7 @@ import { LegalFooter } from "@/components/legal-footer";
 
 export function legalHead(slug: string) {
   const doc = LEGAL_DOCS.find((d) => d.slug === slug)!;
-  const title = `${doc.title} | Tile`;
+  const title = `${doc.title} | Tile Marketplace`;
   const description = `Read Tile's ${doc.title} — operated by ${LEGAL_CONFIG.entity}, Nigeria.`;
   return {
     meta: [
@@ -25,7 +25,10 @@ export function LegalPage({ slug }: { slug: string }) {
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-[220px_1fr]">
         <nav className="space-y-1 text-sm md:sticky md:top-6 md:self-start">
-          <Link to="/" className="mb-4 block font-semibold text-primary">← Tile home</Link>
+          <Link to="/" className="mb-4 inline-flex items-center gap-2 font-semibold text-primary">
+            <img src="/tile-marketplace-logo.jpeg" alt="Tile Marketplace logo" className="h-9 w-9 rounded-lg object-cover" />
+            <span>Tile Marketplace</span>
+          </Link>
           {LEGAL_LINKS.map((l) => (
             <Link key={l.to} to={l.to} className={`block rounded-md px-3 py-2 hover:bg-accent ${l.to === `/${slug}` ? "bg-accent font-semibold" : "text-muted-foreground"}`}>
               {l.label}

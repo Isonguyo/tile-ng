@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
@@ -13,11 +13,11 @@ type VerificationState = "checking" | "pending" | "verified" | "error";
 
 export const Route = createFileRoute("/verify-email")({
   head: () => ({
-    meta: [{ title: "Verify your email — Tile" }],
+    meta: [{ title: "Verify your email — Tile Marketplace" }],
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),
@@ -127,7 +127,7 @@ function VerifyEmailPage() {
           // Ignore storage cleanup failures.
         }
 
-        toast.success("Your wait-list and Tile account are now connected.");
+        toast.success("Your wait-list and Tile Marketplace account are now connected.");
       } else {
         // Direct signups may legitimately return "not_found".
         setWaitlistLinked(true);
@@ -184,7 +184,7 @@ function VerifyEmailPage() {
     return (
       <AuthLayout
         title="Checking your email"
-        description="Please wait while we confirm your Tile account."
+        description="Please wait while we confirm your Tile Marketplace account."
         backTo="/login"
         backLabel="Back to login"
         compact
@@ -197,7 +197,7 @@ function VerifyEmailPage() {
           <h2 className="mt-5 text-lg font-semibold">Checking verification status...</h2>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            We're confirming your email with Tile.
+            We're confirming your email with Tile Marketplace.
           </p>
         </div>
       </AuthLayout>
@@ -209,7 +209,7 @@ function VerifyEmailPage() {
     return (
       <AuthLayout
         title="Email verified!"
-        description="Your Tile account has been successfully verified."
+        description="Your Tile Marketplace account has been successfully verified."
         backTo="/"
         backLabel="Back home"
         compact
@@ -219,7 +219,7 @@ function VerifyEmailPage() {
             <CheckCircle2 className="h-9 w-9" />
           </div>
 
-          <h2 className="mt-5 text-xl font-bold">You're verified! 🎉</h2>
+          <h2 className="mt-5 text-xl font-bold">You're verified! ðŸŽ‰</h2>
 
           <p className="mt-2 text-sm text-muted-foreground">
             {email
@@ -228,17 +228,17 @@ function VerifyEmailPage() {
           </p>
 
           <p className="mt-3 text-sm text-muted-foreground">
-            Your Tile account is now ready. You can continue to your dashboard and start using Tile.
+            Your Tile Marketplace account is now ready. You can continue to your dashboard.
           </p>
 
           <p className="mt-3 text-xs text-muted-foreground">
             {waitlistLinked
               ? "Your early-access information has been linked to this account."
-              : "We're finishing your account setup…"}
+              : "We're finishing your account setupâ€¦"}
           </p>
 
           <Button onClick={continueToTile} className="mt-6 w-full">
-            Continue to Tile
+            Continue to Tile Marketplace
           </Button>
         </div>
       </AuthLayout>
@@ -287,7 +287,7 @@ function VerifyEmailPage() {
   return (
     <AuthLayout
       title="Verify your email"
-      description="We've sent a confirmation link to your inbox so you can secure your Tile account."
+      description="We've sent a confirmation link to your inbox so you can secure your Tile Marketplace account."
       backTo="/login"
       backLabel="Back to login"
       compact
@@ -306,7 +306,7 @@ function VerifyEmailPage() {
               <span className="font-semibold text-foreground">{email}</span>.
             </>
           ) : (
-            "Check your inbox for the confirmation link from Tile."
+            "Check your inbox for the confirmation link from Tile Marketplace."
           )}
         </p>
 

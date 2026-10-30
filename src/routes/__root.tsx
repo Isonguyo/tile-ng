@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+﻿import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -17,14 +17,16 @@ import { Toaster } from "@/components/ui/sonner";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ConfirmActionProvider } from "@/components/confirm-action-provider";
 import { CookieBanner } from "@/components/cookie-banner";
+import { siteUrl } from "@/lib/site-url";
 
-const TILE_FAVICON_URL =
-  "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg";
+const TILE_FAVICON_URL = "/tile-marketplace-logo.jpeg";
+const TILE_SOCIAL_IMAGE_URL = siteUrl(TILE_FAVICON_URL);
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
+        <img src="/tile-marketplace-logo.jpeg" alt="Tile Marketplace logo" className="mx-auto mb-5 h-16 w-16 rounded-2xl object-cover" />
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -55,8 +57,9 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
+        <img src="/tile-marketplace-logo.jpeg" alt="Tile Marketplace logo" className="mx-auto mb-5 h-16 w-16 rounded-2xl object-cover" />
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Tile Marketplace couldn't load this page
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Something went wrong on our end. You can try refreshing or head back home.
@@ -88,30 +91,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Tile" },
+      { title: "Tile Marketplace" },
       {
         name: "description",
         content:
-          "Tile is a dual-sided marketplace for buying and selling goods, and hiring services.",
+          "Tile Marketplace is a dual-sided marketplace for buying and selling goods, and hiring services.",
       },
-      { name: "author", content: "Tile" },
-      { property: "og:title", content: "Tile" },
+      { name: "author", content: "Tile Marketplace" },
+      { property: "og:title", content: "Tile Marketplace" },
+      { property: "og:site_name", content: "Tile Marketplace" },
       {
         property: "og:description",
         content:
-          "Tile is a dual-sided marketplace for buying and selling goods, and hiring services.",
+          "Tile Marketplace is a dual-sided marketplace for buying and selling goods, and hiring services.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Tile" },
-      { name: "twitter:title", content: "Tile" },
+      { name: "twitter:title", content: "Tile Marketplace" },
       {
         name: "twitter:description",
         content:
-          "Tile is a dual-sided marketplace for buying and selling goods, and hiring services.",
+          "Tile Marketplace is a dual-sided marketplace for buying and selling goods, and hiring services.",
       },
-      { property: "og:image", content: TILE_FAVICON_URL },
-      { name: "twitter:image", content: TILE_FAVICON_URL },
+      { property: "og:image", content: TILE_SOCIAL_IMAGE_URL },
+      { name: "twitter:image", content: TILE_SOCIAL_IMAGE_URL },
+      { name: "twitter:image:alt", content: "Tile Marketplace logo" },
     ],
     links: [
       { rel: "icon", href: TILE_FAVICON_URL },

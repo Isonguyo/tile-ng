@@ -38,9 +38,7 @@ export function AuthLayout({
             to="/"
             className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/70 px-3 py-2 text-sm font-semibold shadow-sm backdrop-blur"
           >
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-black text-primary-foreground">
-              T
-            </div>
+            <img src="/tile-marketplace-logo.jpeg" alt="Tile Marketplace logo" className="h-9 w-9 rounded-full object-cover" />
             Tile Marketplace
           </Link>
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,11 +15,11 @@ import { usePlan, hasCapability, type PlanLimits } from "@/hooks/use-plan";
 
 export const Route = createFileRoute("/messages/$chatId")({
   head: () => ({
-    meta: [{ title: "Chat — Tile" }],
+    meta: [{ title: "Chat — Tile Marketplace" }],
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),
@@ -199,7 +199,7 @@ function ChatPage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <LoadingSpinner label="Loading chat…" />
+        <LoadingSpinner label="Loading chatâ€¦" />
       </div>
     );
 
@@ -218,7 +218,7 @@ function ChatPage() {
           )}
           {messages.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-8">
-              Say hi to start the conversation 👋
+              Say hi to start the conversation ðŸ‘‹
             </p>
           )}
           {messages.map((m) => {
@@ -252,7 +252,7 @@ function ChatPage() {
           {otherTyping && (
             <div className="flex justify-start">
               <div className="bg-card border rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-muted-foreground italic">
-                typing…
+                typingâ€¦
               </div>
             </div>
           )}
@@ -264,7 +264,7 @@ function ChatPage() {
           <Input
             value={text}
             onChange={(e) => onTyping(e.target.value)}
-            placeholder="Type a message…"
+            placeholder="Type a messageâ€¦"
             disabled={sending}
             autoFocus
           />

@@ -53,20 +53,20 @@ export const Route = createFileRoute("/artisans/$id")({
     const name = (loaderData as { full_name?: string | null } | undefined)?.full_name;
     return {
       meta: [
-        { title: name ? `${name} â€” Artisan on Tile` : "Artisan Profile â€” Tile" },
+        { title: name ? `${name} — Artisan on Tile Marketplace` : "Artisan Profile — Tile Marketplace" },
         {
           name: "description",
           content: name
-            ? `View ${name}'s artisan profile on Tile.`
-            : "View this artisan profile on Tile.",
+            ? `View ${name}'s artisan profile on Tile Marketplace.`
+            : "View this artisan profile on Tile Marketplace.",
         },
         {
           property: "og:title",
-          content: name ? `${name} â€” Artisan on Tile` : "Artisan Profile â€” Tile",
+          content: name ? `${name} — Artisan on Tile Marketplace` : "Artisan Profile — Tile Marketplace",
         },
         {
           property: "og:description",
-          content: "View services, experience and portfolio details on Tile.",
+          content: "View services, experience and portfolio details on Tile Marketplace.",
         },
         { property: "og:type", content: "profile" },
         { name: "twitter:card", content: "summary" },

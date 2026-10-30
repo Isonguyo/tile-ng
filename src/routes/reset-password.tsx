@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,11 +18,11 @@ type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
-    meta: [{ title: "Set a new password — Tile" }],
+    meta: [{ title: "Set a new password — Tile Marketplace" }],
     links: [
       {
         rel: "icon",
-        href: "https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg",
+        href: "/tile-marketplace-logo.jpeg",
       },
     ],
   }),
@@ -87,7 +87,7 @@ function ResetPage() {
   return (
     <AuthLayout
       title="Set a new password"
-      description="Protect your Tile account with a strong password you can remember."
+      description="Protect your Tile Marketplace account with a strong password you can remember."
       backTo="/login"
       backLabel="Back to sign in"
       compact
@@ -155,7 +155,7 @@ function ResetPage() {
 
         <Button type="submit" disabled={busy || !ready || !isValid} className="w-full">
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {busy ? "Updating password…" : "Update password"}
+          {busy ? "Updating passwordâ€¦" : "Update password"}
         </Button>
       </form>
     </AuthLayout>
