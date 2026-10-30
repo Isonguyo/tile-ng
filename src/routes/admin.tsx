@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
@@ -81,6 +81,7 @@ import { toast } from "sonner";
 import { useConfirmAction } from "@/components/confirm-action-provider";
 import { showError } from "@/lib/user-feedback";
 import { getSignedUrls } from "@/lib/storage";
+import { SignedImage } from "@/components/signed-image";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -101,7 +102,7 @@ import {
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
-    meta: [{ title: "Admin Cabin — Tile" }],
+    meta: [{ title: "Admin Cabin â€” Tile" }],
     links: [
       {
         rel: "icon",
@@ -190,7 +191,7 @@ function Admin() {
     if (!loading && !isAdmin) nav({ to: "/" });
   }, [isAdmin, loading, nav]);
 
-  // ─── Mission Control aggregated stats ───────────────────────────
+  // â”€â”€â”€ Mission Control aggregated stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: pendingPayments = [] } = useQuery({
     queryKey: ["admin-subscription-payments", "pending_review"],
     enabled: isAdmin,
@@ -267,7 +268,7 @@ function Admin() {
     },
   });
 
-  // ─── Live Activity Feed (auto refresh) ─────────────────────────
+  // â”€â”€â”€ Live Activity Feed (auto refresh) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: activity = [] } = useQuery({
     queryKey: ["admin-activity-feed"],
     enabled: isAdmin,
@@ -284,7 +285,7 @@ function Admin() {
     },
   });
 
-  // ─── AI Moderation queue (risk-scored) ─────────────────────────
+  // â”€â”€â”€ AI Moderation queue (risk-scored) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: modQueue = [] } = useQuery({
     queryKey: ["admin-mod-queue"],
     enabled: isAdmin,
@@ -358,7 +359,7 @@ function Admin() {
 
   const pending = modQueue;
 
-  // ─── Reports Center ────────────────────────────────────────────
+  // â”€â”€â”€ Reports Center â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [reportFilter, setReportFilter] = useState<"open" | "resolved" | "dismissed">("open");
   const { data: reports = [] } = useQuery({
     queryKey: ["admin-reports", reportFilter],
@@ -379,7 +380,7 @@ function Admin() {
     },
   });
 
-  // ─── Revenue trend (last 30 days) ──────────────────────────────
+  // â”€â”€â”€ Revenue trend (last 30 days) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: trend = [] } = useQuery({
     queryKey: ["admin-revenue-trend"],
     enabled: isAdmin,
@@ -404,7 +405,7 @@ function Admin() {
     },
   });
 
-  // ─── Platform settings (emergency controls) ────────────────────
+  // â”€â”€â”€ Platform settings (emergency controls) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: platform } = useQuery({
     queryKey: ["admin-platform-settings"],
     enabled: isAdmin,
@@ -492,7 +493,7 @@ function Admin() {
     },
   });
 
-  // ─── Approved listings still waiting for public launch ─────────
+  // â”€â”€â”€ Approved listings still waiting for public launch â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: prelaunchListings = [], isFetching: prelaunchFetching } = useQuery({
     queryKey: ["admin-prelaunch-approved-listings"],
     enabled: isAdmin,
@@ -559,7 +560,7 @@ function Admin() {
     },
   });
 
-  // ─── Pending artisan profiles ─────────────────────────────────
+  // â”€â”€â”€ Pending artisan profiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: pendingArtisans = [], isFetching: artisansFetching } = useQuery({
     queryKey: ["admin-pending-artisans"],
     enabled: isAdmin,
@@ -736,7 +737,7 @@ function Admin() {
 
   // Marketplace health score
   const health = useMemo(() => {
-    if (!dash) return { score: 0, label: "—" };
+    if (!dash) return { score: 0, label: "â€”" };
     const reports = dash.reports_open;
     const kyc = dash.kyc_pending;
     const pending = dash.listings_pending;
@@ -766,7 +767,7 @@ function Admin() {
 
       {platform?.maintenance_mode && (
         <div className="bg-destructive/90 backdrop-blur-md text-destructive-foreground text-center text-xs tracking-wider uppercase py-2 font-bold shadow-md animate-pulse">
-          ⚠ Maintenance mode is ACTIVE — public actions are frozen
+          âš  Maintenance mode is ACTIVE â€” public actions are frozen
         </div>
       )}
       {platform?.emergency_banner && (
@@ -896,7 +897,7 @@ function Admin() {
           <MiniStat
             label="Subscribers"
             value={dash?.active_subscribers ?? 0}
-            sub={`VIP ${dash?.vip ?? 0} · Pro ${dash?.pro ?? 0}`}
+            sub={`VIP ${dash?.vip ?? 0} Â· Pro ${dash?.pro ?? 0}`}
             icon={BadgeCheck}
             tint="purple"
           />
@@ -959,97 +960,100 @@ function Admin() {
                 value="overview"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                📊 Overview
+                ðŸ“Š Overview
               </TabsTrigger>
               <TabsTrigger
                 value="payments"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                💳 Subscription Payments{pendingPayments.length > 0 ? ` (${pendingPayments.length})` : ""}
+                ðŸ’³ Subscription Payments{pendingPayments.length > 0 ? ` (${pendingPayments.length})` : ""}
               </TabsTrigger>
               <TabsTrigger
                 id="tab-moderation"
                 value="moderation"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                🛡 Moderation
+                ðŸ›¡ Moderation
+              </TabsTrigger>
+              <TabsTrigger id="tab-shops" value="shops" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Merchant Shop Reviews
               </TabsTrigger>
               <TabsTrigger
                 id="tab-artisans"
                 value="artisans"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                🧰 Artisans
+                ðŸ§° Artisans
               </TabsTrigger>
               <TabsTrigger
                 id="tab-reports"
                 value="reports"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                🚩 Reports
+                ðŸš© Reports
               </TabsTrigger>
               <TabsTrigger
                 id="tab-kyc"
                 value="kyc"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                📄 KYC
+                ðŸ“„ KYC
               </TabsTrigger>
               <TabsTrigger
                 id="tab-money"
                 value="money"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                💳 Revenue
+                ðŸ’³ Revenue
               </TabsTrigger>
               <TabsTrigger
                 id="tab-support"
                 value="support"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                🎧 Support
+                ðŸŽ§ Support
               </TabsTrigger>
               <TabsTrigger
                 id="tab-users"
                 value="users"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                👥 Users
+                ðŸ‘¥ Users
               </TabsTrigger>
               <TabsTrigger
                 value="broadcast"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                📣 Broadcast
+                ðŸ“£ Broadcast
               </TabsTrigger>
               <TabsTrigger
                 value="waitlist"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                🚀 Waitlist
+                ðŸš€ Waitlist
               </TabsTrigger>
               <TabsTrigger
                 value="launch"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                🌐 Launch Review
+                ðŸŒ Launch Review
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ⚙ Platform
+                âš™ Platform
               </TabsTrigger>
               <TabsTrigger
                 value="codes"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                🛡 Roles & Access
+                ðŸ›¡ Roles & Access
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* ═══ OVERVIEW ══════════════════════════════════════════ */}
+          {/* â•â•â• OVERVIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="overview" className="space-y-6 mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card className="p-5 lg:col-span-2 border-border/50 bg-card/60 backdrop-blur-sm shadow-sm">
@@ -1086,7 +1090,7 @@ function Admin() {
                         fontSize={11}
                         stroke="currentColor"
                         className="text-muted-foreground opacity-70"
-                        tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`}
+                        tickFormatter={(v) => `â‚¦${(v / 1000).toFixed(0)}k`}
                       />
                       <RTooltip
                         formatter={(v: number) => formatNaira(v)}
@@ -1153,7 +1157,7 @@ function Admin() {
                     </p>
                   </div>
                   <Badge variant="outline" className="text-[10px] font-mono py-1 px-2.5">
-                    Auto-refresh · 15s
+                    Auto-refresh Â· 15s
                   </Badge>
                 </div>
                 <div className="divide-y divide-border/40 max-h-96 overflow-y-auto pr-1">
@@ -1171,7 +1175,7 @@ function Admin() {
                       <span className="font-medium">{a.title}</span>
                       {a.subtitle && (
                         <span className="text-muted-foreground text-xs truncate max-w-xs">
-                          · {a.subtitle}
+                          Â· {a.subtitle}
                         </span>
                       )}
                       <span className="ml-auto text-xs font-mono text-muted-foreground whitespace-nowrap">
@@ -1184,7 +1188,7 @@ function Admin() {
             </div>
           </TabsContent>
 
-          {/* ═══ MODERATION ══════════════════════════════════════════ */}
+          {/* â•â•â• MODERATION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="moderation" className="space-y-4 mt-0">
             {selected.size > 0 && (
               <Card className="p-3.5 flex flex-wrap items-center gap-3 border-primary/40 bg-primary/10 backdrop-blur-sm">
@@ -1238,7 +1242,7 @@ function Admin() {
                   {pending.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                        🎉 Nothing pending — moderation queue clear
+                        ðŸŽ‰ Nothing pending â€” moderation queue clear
                       </TableCell>
                     </TableRow>
                   )}
@@ -1260,7 +1264,7 @@ function Admin() {
                           onClick={() => setInspectId(l.seller_id)}
                           className="font-medium hover:text-primary underline-offset-2 hover:underline text-left transition-colors"
                         >
-                          {l.seller_name ?? "—"}
+                          {l.seller_name ?? "â€”"}
                         </button>
                         <div className="text-xs text-muted-foreground">
                           {l.account_age_days}d account age
@@ -1299,7 +1303,10 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ ARTISAN MODERATION ══════════════════════════════ */}
+          {/* â•â•â• ARTISAN MODERATION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          <TabsContent value="shops" className="space-y-4 mt-0">
+            <MerchantShopReviewsPanel />
+          </TabsContent>
           <TabsContent value="artisans" className="space-y-4 mt-0">
             <Card className="p-5 border-primary/20 bg-primary/5 backdrop-blur-sm">
               <div className="flex items-start gap-4">
@@ -1314,7 +1321,7 @@ function Admin() {
                   </p>
                 </div>
                 <Badge variant="outline" className="font-mono text-xs font-bold">
-                  {artisansFetching ? "Loading…" : `${pendingArtisans.length} pending`}
+                  {artisansFetching ? "Loadingâ€¦" : `${pendingArtisans.length} pending`}
                 </Badge>
               </div>
             </Card>
@@ -1336,14 +1343,14 @@ function Admin() {
                   {artisansFetching && pendingArtisans.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                        Loading artisan review queue…
+                        Loading artisan review queueâ€¦
                       </TableCell>
                     </TableRow>
                   )}
                   {!artisansFetching && pendingArtisans.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                        🎉 No pending artisan profiles
+                        ðŸŽ‰ No pending artisan profiles
                       </TableCell>
                     </TableRow>
                   )}
@@ -1352,8 +1359,8 @@ function Admin() {
                       <TableCell>
                         <div className="flex items-center gap-3 min-w-[220px]">
                           {artisan.profile_photo ? (
-                            <img
-                              src={artisan.profile_photo}
+                            <SignedImage
+                              path={artisan.profile_photo}
                               alt=""
                               className="h-10 w-10 rounded-full object-cover border border-border"
                             />
@@ -1377,10 +1384,10 @@ function Admin() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm font-medium">
-                        {artisan.profession ?? "—"}
+                        {artisan.profession ?? "â€”"}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "—"}
+                        {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "â€”"}
                       </TableCell>
                       <TableCell className="text-sm">{artisan.years_experience ?? 0} yrs</TableCell>
                       <TableCell>
@@ -1499,7 +1506,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ REPORTS ═════════════════════════════════════════ */}
+          {/* â•â•â• REPORTS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="reports" className="space-y-4 mt-0">
             <div className="flex items-center gap-2">
               {(["open", "resolved", "dismissed"] as const).map((s) => (
@@ -1540,7 +1547,7 @@ function Admin() {
                           {r.entity_type}
                         </Badge>
                         <div className="font-mono text-[10px] text-muted-foreground mt-1">
-                          {r.entity_id.slice(0, 8)}…
+                          {r.entity_id.slice(0, 8)}â€¦
                         </div>
                       </TableCell>
                       <TableCell className="text-sm max-w-xs">
@@ -1549,7 +1556,7 @@ function Admin() {
                           <div className="text-xs text-muted-foreground truncate">{r.details}</div>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs">{r.reporter_name ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{r.reporter_name ?? "â€”"}</TableCell>
                       <TableCell className="text-xs font-mono whitespace-nowrap">
                         {timeAgo(r.created_at)}
                       </TableCell>
@@ -1566,7 +1573,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ KYC ═════════════════════════════════════════ */}
+          {/* â•â•â• KYC â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="kyc" className="space-y-4 mt-0">
             <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
@@ -1597,12 +1604,12 @@ function Admin() {
                           {p.full_name}
                         </button>
                       </TableCell>
-                      <TableCell className="text-sm">{p.phone ?? "—"}</TableCell>
+                      <TableCell className="text-sm">{p.phone ?? "â€”"}</TableCell>
                       <TableCell>
                         <Badge className="capitalize text-[10px]">{p.kyc_status}</Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">
-                        {p.kyc_doc_url ? "uploaded" : "—"}
+                        {p.kyc_doc_url ? "uploaded" : "â€”"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -1621,7 +1628,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ REVENUE ═════════════════════════════════════════ */}
+          {/* â•â•â• REVENUE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="money" className="space-y-4 mt-0">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50">
@@ -1677,24 +1684,24 @@ function Admin() {
                         {formatNaira(Number(t.amount))}
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
-                        {t.reference ?? "—"}
+                        {t.reference ?? "â€”"}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
               <div className="p-3.5 text-xs text-muted-foreground border-t bg-muted/20">
-                Plan price tiers: Lite ₦5,000 · Pro ₦15,000 · VIP ₦40,000
+                Plan price tiers: Lite â‚¦5,000 Â· Pro â‚¦15,000 Â· VIP â‚¦40,000
               </div>
             </Card>
           </TabsContent>
 
-          {/* ═══ USERS ═════════════════════════════════════════ */}
+          {/* â•â•â• USERS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="users" className="space-y-4 mt-0">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Search users by name or email…"
+                placeholder="Search users by name or emailâ€¦"
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
                 className="pl-9 h-10 border-border/60 bg-card/60"
@@ -1728,11 +1735,11 @@ function Admin() {
                           className="hover:text-primary underline-offset-2 hover:underline text-left flex items-center gap-1.5 font-semibold"
                         >
                           <UserSearch className="h-3.5 w-3.5 text-muted-foreground" />
-                          {u.full_name ?? "—"}
+                          {u.full_name ?? "â€”"}
                         </button>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {u.email ?? "—"}
+                        {u.email ?? "â€”"}
                       </TableCell>
                       <TableCell>
                         <Badge className="capitalize text-[10px]">{u.subscription_tier}</Badge>
@@ -1752,7 +1759,7 @@ function Admin() {
                           {u.signupSource}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs capitalize">{u.kyc_status ?? "—"}</TableCell>
+                      <TableCell className="text-xs capitalize">{u.kyc_status ?? "â€”"}</TableCell>
                       <TableCell className="text-right font-mono font-semibold">
                         {u.active_ads}
                       </TableCell>
@@ -1768,12 +1775,12 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ BROADCAST ═══════════════════════════════════════ */}
+          {/* â•â•â• BROADCAST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="broadcast" className="space-y-4 mt-0">
             <BroadcastPanel />
           </TabsContent>
 
-          {/* ═══ WAITLIST ═══════════════════════════════════════ */}
+          {/* â•â•â• WAITLIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="waitlist" className="space-y-4 mt-0">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="p-4 bg-card/60 border-border/50">
@@ -1840,11 +1847,11 @@ function Admin() {
                       className="hover:bg-muted/30 transition-colors"
                     >
                       <TableCell className="font-mono font-bold text-xs">
-                        #{entry.queue_position ?? "—"}
+                        #{entry.queue_position ?? "â€”"}
                       </TableCell>
-                      <TableCell className="font-medium">{entry.full_name ?? "—"}</TableCell>
+                      <TableCell className="font-medium">{entry.full_name ?? "â€”"}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {entry.email ?? "—"}
+                        {entry.email ?? "â€”"}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize text-[10px]">
@@ -1852,7 +1859,7 @@ function Admin() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {[entry.city, entry.state].filter(Boolean).join(", ") || "—"}
+                        {[entry.city, entry.state].filter(Boolean).join(", ") || "â€”"}
                       </TableCell>
                       <TableCell>
                         {entry.auth_user_id ? (
@@ -1866,7 +1873,7 @@ function Admin() {
                         )}
                       </TableCell>
                       <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                        {entry.created_at ? timeAgo(entry.created_at) : "—"}
+                        {entry.created_at ? timeAgo(entry.created_at) : "â€”"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1875,7 +1882,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ LAUNCH REVIEW ═══════════════════════════════════ */}
+          {/* â•â•â• LAUNCH REVIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="launch" className="space-y-4 mt-0">
             <Card className="p-5 border-primary/20 bg-primary/5 backdrop-blur-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -1902,7 +1909,7 @@ function Admin() {
                   Listings
                 </p>
                 <p className="mt-1 text-2xl font-black">
-                  {prelaunchFetching ? "…" : prelaunchListings.length}
+                  {prelaunchFetching ? "â€¦" : prelaunchListings.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Approved and waiting for launch</p>
               </Card>
@@ -1911,7 +1918,7 @@ function Admin() {
                   Artisan Profiles
                 </p>
                 <p className="mt-1 text-2xl font-black">
-                  {prelaunchArtisansFetching ? "…" : prelaunchArtisans.length}
+                  {prelaunchArtisansFetching ? "â€¦" : prelaunchArtisans.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Approved and waiting for launch</p>
               </Card>
@@ -1921,7 +1928,7 @@ function Admin() {
                 </p>
                 <p className="mt-1 text-2xl font-black">
                   {prelaunchFetching || prelaunchArtisansFetching
-                    ? "…"
+                    ? "â€¦"
                     : prelaunchListings.length + prelaunchArtisans.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Private until Marketplace Launch</p>
@@ -1945,7 +1952,7 @@ function Admin() {
                     {prelaunchFetching && prelaunchListings.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                          Loading pre-launch listings…
+                          Loading pre-launch listingsâ€¦
                         </TableCell>
                       </TableRow>
                     )}
@@ -1991,7 +1998,7 @@ function Admin() {
                   </p>
                 </div>
                 <Badge variant="outline" className="w-fit">
-                  {prelaunchArtisansFetching ? "Loading…" : `${prelaunchArtisans.length} profiles`}
+                  {prelaunchArtisansFetching ? "Loadingâ€¦" : `${prelaunchArtisans.length} profiles`}
                 </Badge>
               </div>
               <div className="overflow-x-auto">
@@ -2010,7 +2017,7 @@ function Admin() {
                     {prelaunchArtisansFetching && prelaunchArtisans.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                          Loading approved artisan profiles…
+                          Loading approved artisan profilesâ€¦
                         </TableCell>
                       </TableRow>
                     )}
@@ -2026,11 +2033,11 @@ function Admin() {
                         <TableCell className="font-semibold">
                           {artisan.full_name ?? "Unnamed artisan"}
                         </TableCell>
-                        <TableCell>{artisan.profession ?? "—"}</TableCell>
+                        <TableCell>{artisan.profession ?? "â€”"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {artisan.location ||
                             [artisan.lga, artisan.state].filter(Boolean).join(", ") ||
-                            "—"}
+                            "â€”"}
                         </TableCell>
                         <TableCell>
                           <Badge className="capitalize">
@@ -2051,7 +2058,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* ═══ PLATFORM SETTINGS ═══════════════════════════════ */}
+          {/* â•â•â• PLATFORM SETTINGS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="payments" className="space-y-4 mt-0">
             <SubscriptionPaymentsPanel />
           </TabsContent>
@@ -2076,7 +2083,7 @@ function Admin() {
             />
           </TabsContent>
 
-          {/* ═══ ROLES & ACCESS ═══════════════════════════════════ */}
+          {/* â•â•â• ROLES & ACCESS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <TabsContent value="codes" className="space-y-4 mt-0">
             <RolesPanel />
           </TabsContent>
@@ -2118,7 +2125,7 @@ function RejectArtisanModal({
         <Textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Explain what the artisan needs to update or fix…"
+          placeholder="Explain what the artisan needs to update or fixâ€¦"
           rows={4}
           className="mt-2"
         />
@@ -2187,7 +2194,7 @@ function PendingTitle({
           onClick={() => setOpen(true)}
           className="h-12 w-12 rounded-lg overflow-hidden border border-border/80 hover:border-primary transition-all shrink-0 shadow-sm"
         >
-          <img src={urls[0]} alt="" className="w-full h-full object-cover" />
+          <SignedImage path={urls[0]} alt="" className="w-full h-full object-cover" />
         </button>
       ) : (
         <span className="h-12 w-12 rounded-lg bg-muted border border-border/60 inline-block shrink-0" />
@@ -2212,14 +2219,14 @@ function PendingTitle({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {l.title} — Images ({urls.length})
+              {l.title} â€” Images ({urls.length})
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
             {urls.map((u, i) => (
-              <img
+              <SignedImage
                 key={i}
-                src={u}
+                path={u}
                 alt=""
                 className="w-full h-40 object-cover rounded-lg border border-border"
               />
@@ -2238,7 +2245,7 @@ function PendingTitle({
   );
 }
 
-// ─── Helper UI Components ─────────────────────────────────────────
+// â”€â”€â”€ Helper UI Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TINTS: Record<string, string> = {
   blue: "border-blue-500/20 bg-blue-500/5 text-blue-600 dark:text-blue-400",
@@ -2289,7 +2296,7 @@ function QueueCard({
   icon: React.ComponentType<{ className?: string }>;
   onClick?: () => void;
 }) {
-  const isEmpty = count === 0 || count === "₦0";
+  const isEmpty = count === 0 || count === "â‚¦0";
   return (
     <button
       onClick={onClick}
@@ -2385,7 +2392,7 @@ function ReportActions({
   const resolve = async () => {
     const confirmed = await confirm({
       title: "Resolve this report?",
-      description: `The action “${action}” will be applied to this ${report.entity_type} report.`,
+      description: `The action â€œ${action}â€ will be applied to this ${report.entity_type} report.`,
       confirmLabel: "Resolve report",
       destructive: action !== "dismiss",
     });
@@ -2444,7 +2451,7 @@ function ReportActions({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              placeholder="Provide audit context for this action…"
+              placeholder="Provide audit context for this actionâ€¦"
               className="mt-1"
             />
           </div>
@@ -2548,7 +2555,7 @@ function BroadcastPanel() {
         </div>
         <Button onClick={send} disabled={sending} className="w-full h-10 font-semibold">
           <Bell className="h-4 w-4 mr-2" />
-          {sending ? "Dispatching Broadcast…" : "Dispatch Broadcast"}
+          {sending ? "Dispatching Broadcastâ€¦" : "Dispatch Broadcast"}
         </Button>
       </div>
     </Card>
@@ -2700,7 +2707,7 @@ function PlatformSettings({
               Approved Listings
             </p>
             <p className="mt-1 text-2xl font-black">
-              {prelaunchListingLoading ? "…" : prelaunchListingCount}
+              {prelaunchListingLoading ? "â€¦" : prelaunchListingCount}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">Waiting for Marketplace Launch.</p>
           </div>
@@ -2710,7 +2717,7 @@ function PlatformSettings({
               Approved Artisan Profiles
             </p>
             <p className="mt-1 text-2xl font-black">
-              {prelaunchArtisanLoading ? "…" : prelaunchArtisanCount}
+              {prelaunchArtisanLoading ? "â€¦" : prelaunchArtisanCount}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">Waiting for Marketplace Launch.</p>
           </div>
@@ -2738,7 +2745,7 @@ function PlatformSettings({
 
         <p className="text-xs text-muted-foreground">
           {prelaunchListingLoading || prelaunchArtisanLoading
-            ? "Loading approved content totals…"
+            ? "Loading approved content totalsâ€¦"
             : `${prelaunchListingCount + prelaunchArtisanCount} total approved items are waiting for launch.`}
         </p>
 
@@ -2758,7 +2765,7 @@ function PlatformSettings({
               ) : (
                 <Rocket className="h-4 w-4 mr-2" />
               )}
-              {launching ? "Launching Marketplace…" : "Launch Marketplace Now"}
+              {launching ? "Launching Marketplaceâ€¦" : "Launch Marketplace Now"}
             </Button>
           )}
         </div>
@@ -2815,6 +2822,92 @@ function PlatformSettings({
   );
 }
 
+type ShopReviewRow = {
+  id: string;
+  business_name: string | null;
+  shop_slug: string | null;
+  bio: string | null;
+  state: string | null;
+  lga: string | null;
+  shop_logo_url: string | null;
+  shop_cover_url: string | null;
+  shop_status: string | null;
+  shop_rejection_reason: string | null;
+  updated_at: string | null;
+  created_at: string | null;
+};
+
+function MerchantShopReviewsPanel() {
+  const qc = useQueryClient();
+  const { data: shops = [], isLoading } = useQuery({
+    queryKey: ["admin-shop-reviews"],
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await fromUntyped("profiles")
+        .select("id,business_name,shop_slug,bio,state,lga,shop_logo_url,shop_cover_url,shop_status,shop_rejection_reason,updated_at,created_at")
+        .eq("shop_status", "pending")
+        .order("updated_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ShopReviewRow[];
+    },
+  });
+
+  const review = async (shop: ShopReviewRow, decision: "approved" | "rejected" | "flagged") => {
+    const reason = decision === "approved" ? null : window.prompt(`${decision === "rejected" ? "Rejection" : "Flag"} reason`);
+    if (decision !== "approved" && !reason?.trim()) {
+      if (reason !== null) toast.error("A reason is required.");
+      return;
+    }
+    if (!window.confirm(`${decision === "approved" ? "Approve" : decision === "rejected" ? "Reject" : "Flag"} ${shop.business_name ?? "this shop"}?`)) return;
+    const { error } = await supabase.rpc("admin_review_shop" as never, {
+      _user_id: shop.id,
+      _decision: decision,
+      _reason: reason?.trim() || null,
+    } as never);
+    if (error) return showError(error, "We couldn't update this shop review. Please try again.");
+    toast.success(`Shop ${decision}.`);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["admin-shop-reviews"] }),
+      qc.invalidateQueries({ queryKey: ["shop", shop.shop_slug] }),
+    ]);
+  };
+
+  return (
+    <Card className="space-y-4 p-5">
+      <div>
+        <h2 className="text-lg font-bold">Merchant Shop Reviews</h2>
+        <p className="text-sm text-muted-foreground">Inspect submitted shop branding and business details.</p>
+      </div>
+      {isLoading ? <p className="text-sm text-muted-foreground">Loading shopsâ€¦</p> : shops.length === 0 ? (
+        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">No shops are awaiting review.</p>
+      ) : shops.map((shop) => (
+        <article key={shop.id} className="grid gap-4 rounded-xl border p-4 md:grid-cols-[180px_1fr]">
+          <div className="space-y-2">
+            <SignedImage path={shop.shop_cover_url} alt="Shop cover preview" className="h-24 w-full rounded-lg object-cover" />
+            <SignedImage path={shop.shop_logo_url} alt="Shop logo preview" className="h-20 w-20 rounded-lg object-cover" />
+          </div>
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="font-semibold">{shop.business_name ?? "Unnamed shop"}</h3>
+                <p className="text-xs text-muted-foreground">/{shop.shop_slug ?? "no-url"} Â· Submitted {shop.updated_at ? new Date(shop.updated_at).toLocaleDateString() : shop.created_at ? new Date(shop.created_at).toLocaleDateString() : "date unavailable"}</p>
+              </div>
+              <Badge variant="outline" className="capitalize">{shop.shop_status ?? "draft"}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">{shop.bio || "No description provided."}</p>
+            <p className="text-xs text-muted-foreground">{[shop.lga, shop.state].filter(Boolean).join(", ") || "Location not provided"}</p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button size="sm" onClick={() => void review(shop, "approved")}>Approve</Button>
+              <Button size="sm" variant="outline" onClick={() => void review(shop, "rejected")}>Reject</Button>
+              <Button size="sm" variant="outline" onClick={() => void review(shop, "flagged")}>Flag</Button>
+            </div>
+          </div>
+        </article>
+      ))}
+    </Card>
+  );
+}
+
 function UserInspector({ id, onClose }: { id: string | null; onClose: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-user-inspector", id],
@@ -2857,7 +2950,7 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
         </SheetHeader>
         {isLoading && (
           <div className="py-20 text-center text-muted-foreground text-sm">
-            Fetching user records…
+            Fetching user recordsâ€¦
           </div>
         )}
         {data && (
@@ -2868,7 +2961,7 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-base truncate">{data.full_name ?? "Anonymous User"}</p>
-                <p className="text-xs text-muted-foreground truncate">{data.email ?? "—"}</p>
+                <p className="text-xs text-muted-foreground truncate">{data.email ?? "â€”"}</p>
                 <div className="flex items-center gap-1.5 mt-2">
                   <Badge className="capitalize text-[10px]">{data.subscription_tier}</Badge>
                   {data.is_verified && (
@@ -2905,9 +2998,9 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
               <InspectStat label="Wallet Balance" value={formatNaira(data.wallet_balance)} />
               <InspectStat label="Wallet Transactions" value={data.wallet_txns} />
               <InspectStat label="KYC Status" value={data.kyc_status} />
-              <InspectStat label="Phone Number" value={data.phone ?? "—"} />
-              <InspectStat label="State" value={data.state ?? "—"} />
-              <InspectStat label="Shop Slug" value={data.shop_slug ?? "—"} />
+              <InspectStat label="Phone Number" value={data.phone ?? "â€”"} />
+              <InspectStat label="State" value={data.state ?? "â€”"} />
+              <InspectStat label="Shop Slug" value={data.shop_slug ?? "â€”"} />
               <InspectStat label="Artisan Status" value={data.is_artisan ? "Yes" : "No"} />
               <InspectStat label="Account Created" value={timeAgo(data.created_at)} />
               <InspectStat
@@ -2915,7 +3008,7 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
                 value={
                   data.subscription_until
                     ? new Date(data.subscription_until).toLocaleDateString()
-                    : "—"
+                    : "â€”"
                 }
               />
             </div>
@@ -2966,7 +3059,7 @@ function InspectStat({
   );
 }
 
-// ═══ ROLE MANAGEMENT ═════════════════════════════════════════════
+// â•â•â• ROLE MANAGEMENT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 type StaffRow = {
   user_id: string;
   full_name: string | null;
@@ -3059,7 +3152,7 @@ function RolesPanel() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search user by name or email…"
+            placeholder="Search user by name or emailâ€¦"
             className="h-10 border-border/60 bg-background/50"
           />
           <Button type="submit" className="h-10 font-semibold px-4">
@@ -3070,10 +3163,10 @@ function RolesPanel() {
         {term.trim().length >= 2 && (
           <div className="rounded-xl border border-border/60 divide-y divide-border/40 overflow-hidden bg-background/40">
             {isFetching && (
-              <p className="p-4 text-xs text-muted-foreground">Searching user directory…</p>
+              <p className="p-4 text-xs text-muted-foreground">Searching user directoryâ€¦</p>
             )}
             {!isFetching && results.length === 0 && (
-              <p className="p-4 text-xs text-muted-foreground">No users match “{term}”.</p>
+              <p className="p-4 text-xs text-muted-foreground">No users match â€œ{term}â€.</p>
             )}
             {results.map((r) => (
               <div
@@ -3082,7 +3175,7 @@ function RolesPanel() {
               >
                 <div>
                   <p className="font-bold text-sm">{r.full_name ?? "Unnamed user"}</p>
-                  <p className="text-xs text-muted-foreground">{r.email ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">{r.email ?? "â€”"}</p>
                 </div>
                 <RoleButtons row={r} />
               </div>
@@ -3111,8 +3204,8 @@ function RolesPanel() {
             )}
             {staff.map((s) => (
               <TableRow key={s.user_id} className="hover:bg-muted/30 transition-colors">
-                <TableCell className="font-bold text-sm">{s.full_name ?? "—"}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{s.email ?? "—"}</TableCell>
+                <TableCell className="font-bold text-sm">{s.full_name ?? "â€”"}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{s.email ?? "â€”"}</TableCell>
                 <TableCell className="space-x-1">
                   {(s.roles ?? []).map((r) => (
                     <Badge key={r} className="capitalize text-[10px] font-semibold">

@@ -1,4 +1,4 @@
-import { BankTransferPanel, useMyPaymentRequests, isOpenRequest } from "@/components/billing/bank-transfer-checkout";
+﻿import { BankTransferPanel, useMyPaymentRequests, isOpenRequest } from "@/components/billing/bank-transfer-checkout";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,10 +82,12 @@ import {
 } from "@/components/vip-merchant-tools";
 import { useMerchantStaffContext } from "@/hooks/use-merchant-staff-context";
 import { scrollPageToTop } from "@/lib/form-navigation";
+import { fromUntyped } from "@/lib/db-untyped";
+import { SignedImage } from "@/components/signed-image";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
-    meta: [{ title: "Dashboard — Tile" }],
+    meta: [{ title: "Dashboard â€” Tile" }],
     links: [
       {
         rel: "icon",
@@ -256,7 +258,7 @@ function Dashboard() {
       <div className="min-h-screen bg-[#06120d] text-slate-100">
         <SiteHeader />
         <div className="container mx-auto flex min-h-[40vh] items-center justify-center px-4 text-sm text-slate-400">
-          Preparing your Tile dashboard…
+          Preparing your Tile dashboardâ€¦
         </div>
       </div>
     );
@@ -547,6 +549,9 @@ function Dashboard() {
                     onSlugChanged={refreshProfile}
                   />
                 )}
+                {merchantWorkspace && !isMerchantStaff && profile.is_merchant && user && (
+                  <ShopManagementCard userId={user.id} onSaved={refreshProfile} />
+                )}
                 {entitlements?.verification_required_for_badge === true &&
                   entitlements.verified_vendor_badge !== true && (
                     <Card
@@ -641,7 +646,7 @@ function Dashboard() {
                     </div>
                     {myListings.length === 0 ? (
                       <p className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-5 text-sm text-slate-400">
-                        You haven’t posted anything yet. Create a listing to get discovered.
+                        You havenâ€™t posted anything yet. Create a listing to get discovered.
                       </p>
                     ) : (
                       <ul className="divide-y divide-white/[0.07]">
@@ -812,7 +817,7 @@ function Dashboard() {
                       <p className="text-xs font-medium text-slate-400">Rating</p>
 
                       <p className="mt-1 font-semibold text-slate-100">
-                        ⭐ {(profile.avg_rating ?? 0).toFixed(1)}
+                        â­ {(profile.avg_rating ?? 0).toFixed(1)}
                       </p>
                     </div>
                   </div>
@@ -837,7 +842,7 @@ function SupportPriorityCard({
   const urgent = tier === "vip";
   const priority = entitlements?.priority_support === true;
   const label = urgent
-    ? "Priority Support · Urgent"
+    ? "Priority Support Â· Urgent"
     : priority
       ? "Priority Support"
       : "Standard Support";
@@ -855,7 +860,7 @@ function SupportPriorityCard({
         </span>
         <div>
           <p className="font-semibold text-slate-100">
-            {entitlementsLoading ? "Checking support priority…" : label}
+            {entitlementsLoading ? "Checking support priorityâ€¦" : label}
           </p>
           <p className="mt-1 text-xs text-slate-400">
             {priority
@@ -900,7 +905,7 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
     setLoading(false);
     setConfirming(false);
     if (error) return showError(error, "We couldn't confirm your top-up. Please try again.");
-    toast.success("Payment confirmed — wallet credited");
+    toast.success("Payment confirmed â€” wallet credited");
     setOpen(false);
     onTopup();
   };
@@ -1024,7 +1029,7 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
                     disabled={loading || expiry === 0}
                     className="h-11 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f] disabled:bg-white/10 disabled:text-slate-500"
                   >
-                    {confirming ? "Verifying transfer…" : "I've sent the transfer — confirm"}
+                    {confirming ? "Verifying transferâ€¦" : "I've sent the transfer â€” confirm"}
                   </Button>
                 </>
               )}
@@ -1121,7 +1126,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
         .from("profiles")
         .update({ kyc_status: "pending", kyc_doc_url: path })
         .eq("id", user.id);
-      toast.success("KYC submitted — awaiting review");
+      toast.success("KYC submitted â€” awaiting review");
       onUpload();
     } catch (err) {
       showError(err, "We couldn't upload your verification document. Please try again.");
@@ -1165,7 +1170,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
             variant="outline"
             className="rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:bg-white/[0.08] hover:text-white"
           >
-            <span>{busy ? "Uploading…" : "Upload government ID"}</span>
+            <span>{busy ? "Uploadingâ€¦" : "Upload government ID"}</span>
           </Button>
         </label>
       )}
@@ -1267,7 +1272,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
                 <Input
                   value={form.whatsapp}
                   onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                  placeholder="+234…"
+                  placeholder="+234â€¦"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -1287,7 +1292,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
                 </div>
               </div>
               <div>
-                <Label>Account name (Paystack verified — simulated)</Label>
+                <Label>Account name (Paystack verified â€” simulated)</Label>
                 <Input
                   value={form.bank_account_name}
                   onChange={(e) => setForm({ ...form, bank_account_name: e.target.value })}
@@ -1296,7 +1301,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
             </div>
             <DialogFooter>
               <Button disabled={busy} onClick={submit} className="bg-accent text-accent-foreground">
-                {busy ? "Saving…" : "Open my shop"}
+                {busy ? "Savingâ€¦" : "Open my shop"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1485,7 +1490,7 @@ function ShopLinkCard({
                 <p className="text-sm font-semibold text-slate-200">Custom Shop URL</p>
                 <p className="mt-1 text-xs text-slate-500">
                   {entitlementsLoading
-                    ? "Checking your plan access…"
+                    ? "Checking your plan accessâ€¦"
                     : canUseCustomSlug
                       ? "Choose a short, memorable URL for your storefront."
                       : "Available with Lite and above."}
@@ -1518,7 +1523,7 @@ function ShopLinkCard({
                   disabled={savingSlug || customSlug.trim() === currentSlug}
                   className="h-10 shrink-0 rounded-xl bg-[#35d879] px-4 font-semibold text-[#04120a] hover:bg-[#52e98f]"
                 >
-                  {savingSlug ? "Saving…" : "Save URL"}
+                  {savingSlug ? "Savingâ€¦" : "Save URL"}
                 </Button>
               </div>
             )}
@@ -1531,7 +1536,7 @@ function ShopLinkCard({
         >
           {entitlementsLoading ? (
             <div className="mx-auto flex min-h-[280px] max-w-[240px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/10 p-5 text-center text-sm text-slate-400">
-              Checking shop QR access…
+              Checking shop QR accessâ€¦
             </div>
           ) : hasQrEntitlement ? (
             <div className="mx-auto max-w-[240px]">
@@ -1558,7 +1563,7 @@ function ShopLinkCard({
                   />
                 </div>
                 <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                  Tile · {currentSlug}
+                  Tile Â· {currentSlug}
                 </p>
               </div>
               <Button
@@ -1590,6 +1595,143 @@ function ShopLinkCard({
           )}
         </aside>
       </div>
+    </Card>
+  );
+}
+
+type MerchantShopProfile = {
+  business_name: string | null;
+  shop_slug: string | null;
+  bio: string | null;
+  state: string | null;
+  lga: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  shop_logo_url: string | null;
+  shop_cover_url: string | null;
+  shop_status: string | null;
+  shop_rejection_reason: string | null;
+};
+
+function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () => void | Promise<void> }) {
+  const qc = useQueryClient();
+  const { data: shop, isLoading } = useQuery({
+    queryKey: ["merchant-shop-profile", userId],
+    queryFn: async () => {
+      const { data, error } = await fromUntyped("profiles").select("business_name,shop_slug,bio,state,lga,phone,whatsapp,shop_logo_url,shop_cover_url,shop_status,shop_rejection_reason").eq("id", userId).single();
+      if (error) throw error;
+      return data as MerchantShopProfile;
+    },
+  });
+  const [form, setForm] = useState({ business_name: "", shop_slug: "", bio: "", state: "", lga: "", phone: "", whatsapp: "" });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [coverPath, setCoverPath] = useState<string | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [removeCover, setRemoveCover] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["merchant-shop-listings", userId],
+    queryFn: async () => {
+      const { data, error } = await fromUntyped("listings").select("id,title,status,rejection_reason,shop_pinned_at,expires_at").eq("user_id", userId).eq("type", "goods").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; title: string; status: string; rejection_reason: string | null; shop_pinned_at: string | null; expires_at: string | null }>;
+    },
+  });
+
+  useEffect(() => {
+    if (!shop) return;
+    setForm({ business_name: shop.business_name ?? "", shop_slug: shop.shop_slug ?? "", bio: shop.bio ?? "", state: shop.state ?? "", lga: shop.lga ?? "", phone: shop.phone ?? "", whatsapp: shop.whatsapp ?? "" });
+    setLogoPath(shop.shop_logo_url);
+    setCoverPath(shop.shop_cover_url);
+  }, [shop]);
+  useEffect(() => {
+    const logo = logoFile ? URL.createObjectURL(logoFile) : null;
+    const cover = coverFile ? URL.createObjectURL(coverFile) : null;
+    setLogoPreview(logo);
+    setCoverPreview(cover);
+    return () => { if (logo) URL.revokeObjectURL(logo); if (cover) URL.revokeObjectURL(cover); };
+  }, [logoFile, coverFile]);
+
+  const chooseImage = (kind: "logo" | "cover", file?: File) => {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) return toast.error("Choose a JPEG, PNG, WebP or AVIF image.");
+    if (file.size > 10 * 1024 * 1024) return toast.error("Shop images must be 10 MB or smaller.");
+    if (kind === "logo") { setLogoFile(file); setRemoveLogo(false); } else { setCoverFile(file); setRemoveCover(false); }
+  };
+
+  const uploadShopImage = async (file: File) => {
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${userId}/shop/${crypto.randomUUID()}.${extension}`;
+    const { error } = await supabase.storage.from("listings").upload(path, file, { upsert: false, contentType: file.type });
+    if (error) throw error;
+    return path;
+  };
+
+  const save = async () => {
+    if (!form.business_name.trim()) { toast.error("Business name is required."); return false; }
+    const slug = form.shop_slug.trim().toLowerCase();
+    if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) { toast.error("Use a valid shop URL with lowercase letters, numbers and hyphens."); return false; }
+    setBusy(true);
+    try {
+      let nextLogo = removeLogo ? null : logoPath;
+      let nextCover = removeCover ? null : coverPath;
+      if (logoFile) nextLogo = await uploadShopImage(logoFile);
+      if (coverFile) nextCover = await uploadShopImage(coverFile);
+      const { error } = await fromUntyped("profiles").update({ business_name: form.business_name.trim(), shop_slug: slug, bio: form.bio.trim() || null, state: form.state.trim() || null, lga: form.lga.trim() || null, phone: form.phone.trim() || null, whatsapp: form.whatsapp.trim() || null, shop_logo_url: nextLogo, shop_cover_url: nextCover }).eq("id", userId);
+      if (error) throw error;
+      setLogoPath(nextLogo); setCoverPath(nextCover); setLogoFile(null); setCoverFile(null); setRemoveLogo(false); setRemoveCover(false);
+      await Promise.all([Promise.resolve(onSaved()), qc.invalidateQueries({ queryKey: ["merchant-shop-profile", userId] }), qc.invalidateQueries({ queryKey: ["shop", slug] }), qc.invalidateQueries({ queryKey: ["shop", shop?.shop_slug] })]);
+      toast.success("Shop details saved.");
+      return true;
+    } catch (error) { showError(error, "We couldn't save your shop details. Please try again."); return false; }
+    finally { setBusy(false); }
+  };
+
+  const submitForReview = async () => {
+    if (!(await save())) return;
+    setBusy(true);
+    const { error } = await rpcUntyped("submit_shop_for_review");
+    setBusy(false);
+    if (error) return showError(error, "We couldn't submit your shop for review. Please check your shop details.");
+    toast.success("Your shop has been submitted for review. Tile Admin will inspect your storefront before approval.");
+    await Promise.all([qc.invalidateQueries({ queryKey: ["merchant-shop-profile", userId] }), qc.invalidateQueries({ queryKey: ["shop", form.shop_slug] }), Promise.resolve(onSaved())]);
+  };
+
+  if (isLoading) return <Card className={`p-5 ${DASHBOARD_CARD_CLASS}`}>Loading shop detailsâ€¦</Card>;
+  const statusLabel = shop?.shop_status === "pending" ? "Pending Review" : (shop?.shop_status ?? "draft").replace(/^./, (s) => s.toUpperCase());
+  const uploadField = (kind: "logo" | "cover", label: string, src: string | null, preview: string | null, remove: () => void) => (
+    <div className="space-y-2 rounded-xl border border-white/10 p-3">
+      <Label className="text-slate-200">{label}</Label>
+      <div className="h-28 overflow-hidden rounded-lg bg-black/20">
+        {preview ? <img src={preview} alt={`${label} preview`} className="h-full w-full object-cover" /> : src ? <SignedImage path={src} alt={label} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-xs text-slate-500">No image uploaded</div>}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <label className="cursor-pointer rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-white/5">{kind === "logo" ? "Upload Shop Image" : "Upload Cover Image"}<input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(event) => { chooseImage(kind, event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
+        {(src || preview) && <Button type="button" size="sm" variant="ghost" onClick={remove}>Remove</Button>}
+      </div>
+    </div>
+  );
+
+  return (
+    <Card className={`space-y-5 p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold text-white">Shop management</h3><p className="mt-1 text-sm text-slate-400">Update your storefront and manage product review status.</p></div><Badge variant="outline" className="capitalize">{statusLabel}</Badge></div>
+      {shop?.shop_status === "rejected" && shop.shop_rejection_reason && <p className="rounded-lg border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-200">Review feedback: {shop.shop_rejection_reason}</p>}
+      <div className="grid gap-3 md:grid-cols-2">{uploadField("logo", "Shop image", logoPath, logoPreview, () => { setLogoFile(null); setLogoPath(null); setRemoveLogo(true); })}{uploadField("cover", "Cover image", coverPath, coverPreview, () => { setCoverFile(null); setCoverPath(null); setRemoveCover(true); })}</div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div><Label>Business name</Label><Input value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></div>
+        <div><Label>Shop URL</Label><div className="flex items-center gap-2"><span className="text-xs text-slate-500">/shop/</span><Input value={form.shop_slug} onChange={(e) => setForm({ ...form, shop_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} /></div></div>
+        <div><Label>State</Label><Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} /></div>
+        <div><Label>LGA</Label><Input value={form.lga} onChange={(e) => setForm({ ...form, lga: e.target.value })} /></div>
+        <div><Label>Contact phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+        <div><Label>WhatsApp number</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} /></div>
+        <div className="md:col-span-2"><Label>Business description</Label><Textarea rows={4} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} /></div>
+      </div>
+      <div className="flex flex-wrap gap-2"><Button type="button" disabled={busy} onClick={() => void save()}>{busy ? "Savingâ€¦" : "Save Shop Details"}</Button><Button asChild type="button" variant="outline"><Link to="/post-ad">Upload Product</Link></Button><Button type="button" variant="outline" disabled={busy} onClick={() => void submitForReview()}>{busy ? "Submittingâ€¦" : shop?.shop_status === "rejected" ? "Edit and Resubmit" : "Submit Shop for Review"}</Button></div>
+      <div className="space-y-3 border-t border-white/10 pt-4"><div className="flex items-center justify-between gap-3"><h4 className="font-semibold text-slate-100">Shop products</h4><span className="text-xs text-slate-400">{inventory.length} products</span></div>{inventory.length === 0 ? <p className="text-sm text-slate-400">Your existing and new product ads will appear here automatically.</p> : inventory.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{item.title}</p><Badge variant="outline" className="mt-1 capitalize">{item.status === "pending" ? "Pending Review" : item.status}</Badge>{item.status === "rejected" && item.rejection_reason && <p className="mt-1 text-xs text-red-200">{item.rejection_reason}</p>}</div>{item.status === "approved" && (!item.expires_at || new Date(item.expires_at).getTime() > Date.now()) && <Button size="sm" variant="outline" onClick={async () => { const { error } = await rpcUntyped("set_shop_listing_pin", { _listing_id: item.id, _pin: !item.shop_pinned_at }); if (error) return showError(error, "We couldn't update the shop pin."); toast.success(item.shop_pinned_at ? "Product unpinned" : "Product pinned"); await qc.invalidateQueries({ queryKey: ["merchant-shop-listings", userId] }); await qc.invalidateQueries({ queryKey: ["shop-listings", userId] }); }}>{item.shop_pinned_at ? "Unpin" : "Pin to shop"}</Button>}</div>)}</div>
     </Card>
   );
 }
@@ -1821,7 +1963,7 @@ function BillingCard({
               ) : null}
             </div>
             <p className="mt-3 text-2xl font-extrabold tracking-tight text-emerald-300">
-              {p.price == null ? "—" : formatNaira(p.price)}
+              {p.price == null ? "â€”" : formatNaira(p.price)}
               <span className="ml-1 text-xs font-medium text-slate-500">/ 30 days</span>
             </p>
             <div className="my-4 h-px bg-white/[0.07]" />
@@ -1829,7 +1971,7 @@ function BillingCard({
               {p.perks.map((x) => (
                 <li key={x} className="flex gap-2.5">
                   <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-300/10 text-[10px] text-emerald-300">
-                    ✓
+                    âœ“
                   </span>
                   <span>{x}</span>
                 </li>
@@ -1868,7 +2010,7 @@ function BillingCard({
             </p>
           </div>
           <span className="text-[10px] text-slate-500">
-            {entitlementsLoading ? "Checking access…" : "Updated with your plan"}
+            {entitlementsLoading ? "Checking accessâ€¦" : "Updated with your plan"}
           </span>
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -2026,7 +2168,7 @@ function ListingRow({
       })
       .eq("id", l.id);
     if (error) return showError(error, "We couldn't save your listing changes. Please try again.");
-    toast.success("Ad updated — pending re-review");
+    toast.success("Ad updated â€” pending re-review");
     setEditOpen(false);
     onChange();
   };
@@ -2174,7 +2316,7 @@ function ListingRow({
               onClick={promote}
             >
               <Sparkles className="h-3 w-3 mr-1" />
-              {promoting ? "Checking…" : hasActiveTopAd ? "Promoted" : "Promote"}
+              {promoting ? "Checkingâ€¦" : hasActiveTopAd ? "Promoted" : "Promote"}
             </Button>
           )}
           <Button
@@ -2210,13 +2352,13 @@ function ListingRow({
                 Listing Performance
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                {stats.views} unique view{stats.views === 1 ? "" : "s"} · {stats.chats} chat
+                {stats.views} unique view{stats.views === 1 ? "" : "s"} Â· {stats.chats} chat
                 {stats.chats === 1 ? "" : "s"}
               </p>
             </div>
 
             <span className="text-xs text-slate-500 transition-transform group-open:rotate-180">
-              ▼
+              â–¼
             </span>
           </summary>
 
@@ -2306,7 +2448,7 @@ function ListingRow({
       )}
       {l.status === "expired" && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs text-slate-300">
-          <AlertTriangle className="h-3 w-3" /> Expired — hidden from buyers and deleted 30 days
+          <AlertTriangle className="h-3 w-3" /> Expired â€” hidden from buyers and deleted 30 days
           after expiry. Republished ads get standard (free) visibility.
           <Button
             size="sm"
@@ -2344,7 +2486,7 @@ function ListingRow({
               />
             </div>
             <div>
-              <Label>Price (₦)</Label>
+              <Label>Price (â‚¦)</Label>
               <Input
                 type="number"
                 value={editForm.price}
@@ -2413,7 +2555,7 @@ function ArtisanProfileCard({
 
         <div className="rounded-xl border border-white/[0.07] bg-[#07170f]/60 p-4">
           <p className="text-xs font-medium text-slate-400">Rating</p>
-          <p className="mt-1 font-semibold text-slate-100">⭐ {profile.avg_rating ?? 0}</p>
+          <p className="mt-1 font-semibold text-slate-100">â­ {profile.avg_rating ?? 0}</p>
         </div>
       </div>
 

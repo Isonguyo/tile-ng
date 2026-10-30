@@ -11,8 +11,8 @@ import {
   CheckCircle2,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { getSignedUrl } from "@/lib/storage";
+import { useEffect, useRef } from "react";
+import { SignedImage } from "@/components/signed-image";
 import { formatNaira } from "@/lib/categories";
 
 export type ListingCardData = {
@@ -33,12 +33,7 @@ export type ListingCardData = {
 };
 
 export function ListingCard({ l }: { l: ListingCardData }) {
-  const [url, setUrl] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (l.images[0]) getSignedUrl(l.images[0]).then(setUrl);
-  }, [l.images]);
 
   useEffect(() => {
     const card = cardRef.current;
@@ -100,17 +95,10 @@ export function ListingCard({ l }: { l: ListingCardData }) {
       >
         {/* Image Container */}
         <div className="relative aspect-[4/3] bg-[#05100B] overflow-hidden">
-          {url ? (
-            <img
-              src={url}
-              alt={l.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-              loading="lazy"
-            />
+          {l.images[0] ? (
+            <SignedImage path={l.images[0]} alt={l.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
           ) : (
-            <div className="w-full h-full grid place-items-center text-[#22C55E]/20">
-              <ImageIcon className="h-10 w-10" />
-            </div>
+            <div className="w-full h-full grid place-items-center text-[#22C55E]/20"><ImageIcon className="h-10 w-10" /></div>
           )}
 
           {/* Promoted Tag */}

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import {
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { SignedImage } from "@/components/signed-image";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyErrorMessage } from "@/lib/user-feedback";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/artisans/$id")({
     const name = (loaderData as { full_name?: string | null } | undefined)?.full_name;
     return {
       meta: [
-        { title: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile" },
+        { title: name ? `${name} â€” Artisan on Tile` : "Artisan Profile â€” Tile" },
         {
           name: "description",
           content: name
@@ -61,7 +62,7 @@ export const Route = createFileRoute("/artisans/$id")({
         },
         {
           property: "og:title",
-          content: name ? `${name} — Artisan on Tile` : "Artisan Profile — Tile",
+          content: name ? `${name} â€” Artisan on Tile` : "Artisan Profile â€” Tile",
         },
         {
           property: "og:description",
@@ -284,7 +285,7 @@ function ArtisanDetailPage() {
         <Card className="relative overflow-hidden rounded-[2.5rem] border-0 bg-background shadow-2xl shadow-primary/5 ring-1 ring-border/50">
           <div className="relative h-64 sm:h-80">
             {gallery[0] ? (
-              <img src={gallery[0]} alt="Cover" className="h-full w-full object-cover" />
+              <SignedImage path={gallery[0]} alt="Cover" className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full bg-gradient-to-tr from-primary/90 via-primary/60 to-emerald-400" />
             )}
@@ -315,8 +316,8 @@ function ArtisanDetailPage() {
                 {/* Avatar */}
                 <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-full ring-8 ring-background bg-card shadow-xl">
                   {avatar ? (
-                    <img
-                      src={avatar}
+                    <SignedImage
+                      path={avatar}
                       alt={artisan.full_name ?? "Artisan"}
                       className="h-full w-full object-cover"
                     />
@@ -413,7 +414,7 @@ function ArtisanDetailPage() {
                 label="Starting Price"
                 value={
                   artisan.starting_price
-                    ? `₦${Number(artisan.starting_price).toLocaleString()}`
+                    ? `â‚¦${Number(artisan.starting_price).toLocaleString()}`
                     : "Custom Quote"
                 }
               />
@@ -461,8 +462,8 @@ function ArtisanDetailPage() {
                       onClick={() => setPreview(src)}
                       className="group relative aspect-square overflow-hidden rounded-2xl bg-muted outline-none ring-primary transition-all focus-visible:ring-2"
                     >
-                      <img
-                        src={src}
+                      <SignedImage
+                        path={src}
                         alt={`Portfolio ${i + 1}`}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -674,8 +675,8 @@ function ArtisanDetailPage() {
               <X className="h-6 w-6" />
             </button>
             {preview && (
-              <img
-                src={preview}
+              <SignedImage
+                path={preview}
                 alt="Portfolio preview high-res"
                 className="max-h-[85vh] w-full rounded-2xl object-contain shadow-2xl ring-1 ring-white/10"
               />

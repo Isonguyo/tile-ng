@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
 import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
+import { SignedImage } from "@/components/signed-image";
 import {
   Share2,
   Phone,
@@ -56,11 +57,11 @@ export const Route = createFileRoute("/shop/$slug")({
   component: ShopPage,
 });
 
-type ShopListing = ListingCardData & { views_count?: number | null; clicks_count?: number | null };
+type ShopListing = ListingCardData & { views_count?: number | null; clicks_count?: number | null; user_id?: string; status?: string; rejection_reason?: string | null; shop_pinned_at?: string | null; created_at?: string; expires_at?: string | null };
 
 function ShopPage() {
   const { slug } = Route.useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,6 +75,7 @@ function ShopPage() {
   const [busy, setBusy] = useState(false);
   const [following, setFollowing] = useState<boolean>(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [pinBusyId, setPinBusyId] = useState<string | null>(null);
 
   type Shop = {
     id: string;
@@ -87,6 +89,10 @@ function ShopPage() {
     bio?: string | null;
     portfolio_images?: string[] | null;
     created_at?: string | null;
+    shop_logo_url?: string | null;
+    shop_cover_url?: string | null;
+    shop_status?: string | null;
+    shop_rejection_reason?: string | null;
   };
 
   const { data: shop, isLoading } = useQuery<Shop | null>({
@@ -151,17 +157,17 @@ function ShopPage() {
     queryKey: ["shop-listings", shop?.id],
     enabled: !!shop?.id,
     queryFn: async () => {
-      const { data, error } = await rpcUntyped("search_listings", {
-        _q: null,
-        _location: null,
-        _category: null,
-        _type: null,
-        _limit: 300,
-      });
+      const { data, error } = await supabase.from("listings").select("*").eq("user_id", shop!.id).eq("type", "goods");
       if (error) throw new Error(error.message);
-      return ((data ?? []) as Array<ShopListing & { user_id: string }>)
-        .filter((listing) => listing.user_id === shop!.id)
-        .sort((a, b) => Number(b.is_promoted) - Number(a.is_promoted));
+      return ((data ?? []) as unknown as ShopListing[]).sort((a, b) => {
+        const pinOrder = Number(!!b.shop_pinned_at) - Number(!!a.shop_pinned_at);
+        if (pinOrder) return pinOrder;
+        if (a.shop_pinned_at && b.shop_pinned_at) return b.shop_pinned_at.localeCompare(a.shop_pinned_at);
+        if (sortBy === "price-asc") return (a.price ?? 0) - (b.price ?? 0);
+        if (sortBy === "price-desc") return (b.price ?? 0) - (a.price ?? 0);
+        if (sortBy === "popular") return (b.views_count ?? 0) - (a.views_count ?? 0);
+        return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+      });
     },
   });
 
@@ -234,9 +240,9 @@ function ShopPage() {
   }, [banners.length]);
 
   const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
-  const services = listings.filter((l) => l.type === "service");
   const goods = listings.filter((l) => l.type === "goods");
-  const featuredListings = listings.filter((l) => l.is_promoted);
+  const pinnedListings = listings.filter((l) => l.shop_pinned_at);
+  const promotedListings = listings.filter((l) => l.is_promoted);
   const totalViews = listings.reduce((s, l) => s + (l.views_count ?? 0), 0);
   const totalWishlisted = Object.values(favoritesCounts as Record<string, number>).reduce(
     (s, n) => s + n,
@@ -295,7 +301,7 @@ function ShopPage() {
         label: "Fan Favorite",
         color: "bg-pink-500/10 text-pink-700 border-pink-200",
       });
-    if (featuredListings.length > 0)
+    if (promotedListings.length > 0)
       list.push({
         icon: <Zap className="h-3.5 w-3.5" />,
         label: "Featured",
@@ -310,7 +316,7 @@ function ShopPage() {
     reviews.length,
     totalViews,
     followerCount,
-    featuredListings.length,
+    promotedListings.length,
   ]);
 
   const { data: trustScore = 0 } = useQuery({
@@ -332,20 +338,21 @@ function ShopPage() {
 
   const applySort = useCallback(
     (arr: ShopListing[]) => {
-      const a = [...arr];
+      const pinned = arr.filter((item) => item.shop_pinned_at).sort((a, b) => (b.shop_pinned_at ?? "").localeCompare(a.shop_pinned_at ?? ""));
+      const a = arr.filter((item) => !item.shop_pinned_at);
       switch (sortBy) {
         case "price-asc":
-          return a.sort((x, y) => (x.price ?? 0) - (y.price ?? 0));
+          return [...pinned, ...a.sort((x, y) => (x.price ?? 0) - (y.price ?? 0))];
         case "price-desc":
-          return a.sort((x, y) => (y.price ?? 0) - (x.price ?? 0));
+          return [...pinned, ...a.sort((x, y) => (y.price ?? 0) - (x.price ?? 0))];
         case "popular":
-          return a.sort((x, y) => (y.views_count ?? 0) - (x.views_count ?? 0));
+          return [...pinned, ...a.sort((x, y) => (y.views_count ?? 0) - (x.views_count ?? 0))];
         case "rating":
-          return a; // no per-listing rating column yet
+          return [...pinned, ...a]; // no per-listing rating column yet
         case "newest":
-          return a; // no per-listing created ordering column fetched
+          return [...pinned, ...a.sort((x, y) => (y.created_at ?? "").localeCompare(x.created_at ?? ""))];
         default:
-          return a; // featured (promoted first, from query)
+          return [...pinned, ...a];
       }
     },
     [sortBy],
@@ -369,19 +376,6 @@ function ShopPage() {
     });
     return applySort(base);
   }, [goods, searchQuery, selectedCategory, priceRange, sortBy]);
-
-  const filteredServices = useMemo(() => {
-    const base = services.filter((item) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        !q ||
-        item.title.toLowerCase().includes(q) ||
-        (item.category ?? "").toLowerCase().includes(q);
-      const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-    return applySort(base);
-  }, [services, searchQuery, selectedCategory, sortBy]);
 
   if (isLoading)
     return (
@@ -416,6 +410,19 @@ function ShopPage() {
 
   const mine = user ? reviews.find((r) => r.reviewer_id === user.id) : null;
   const isOwn = user?.id === shop.id;
+
+  const togglePin = async (listing: ShopListing) => {
+    if (!isOwn) return;
+    setPinBusyId(listing.id);
+    const { error } = await rpcUntyped("set_shop_listing_pin", {
+      _listing_id: listing.id,
+      _pin: !listing.shop_pinned_at,
+    });
+    setPinBusyId(null);
+    if (error) return showError(error, "We couldn't update this shop pin. Please try again.");
+    toast.success(listing.shop_pinned_at ? "Product unpinned" : "Product pinned to your shop");
+    await qc.invalidateQueries({ queryKey: ["shop-listings", shop.id] });
+  };
 
   const toggleFollow = async () => {
     if (!user) return toast.error("Sign in to follow this shop");
@@ -467,15 +474,12 @@ function ShopPage() {
       {/* HERO WITH CAROUSEL */}
       <div className="relative bg-background border-b shadow-sm">
         <div className="h-48 md:h-64 w-full bg-gradient-to-r from-primary/20 via-accent/10 to-primary/30 relative overflow-hidden">
-          {banners.length > 0 ? (
+          {shop.shop_cover_url ? (
+            <SignedImage path={shop.shop_cover_url} alt={`${shop.business_name ?? "Shop"} cover`} className="absolute inset-0 h-full w-full object-cover" />
+          ) : banners.length > 0 ? (
             <>
               {banners.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt={`Store banner ${i + 1}`}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === bannerIdx ? "opacity-100" : "opacity-0"}`}
-                />
+                <SignedImage key={i} path={src} alt={`Store banner ${i + 1}`} className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === bannerIdx ? "opacity-100" : "opacity-0"}`} />
               ))}
               {banners.length > 1 && (
                 <>
@@ -513,10 +517,10 @@ function ShopPage() {
 
         <div className="container mx-auto px-4 pb-6 relative">
           <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16 md:-mt-20 z-10 relative">
-            {shop.avatar_url ? (
-              <img
-                src={shop.avatar_url}
-                alt="Logo"
+            {shop.shop_logo_url || shop.avatar_url ? (
+              <SignedImage
+                path={shop.shop_logo_url ?? shop.avatar_url}
+                alt="Shop image"
                 className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-background border-4 border-background shadow-md object-cover"
               />
             ) : (
@@ -538,6 +542,12 @@ function ShopPage() {
                 )}
                 <TierBadge tier={effectiveTier ?? "free"} />
               </div>
+              {(isOwn || isAdmin) && shop.shop_status && (
+                <div className="mt-2 inline-flex flex-col gap-1 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
+                  <span className="font-semibold">Shop status: {shop.shop_status === "pending" ? "Pending Review" : shop.shop_status.charAt(0).toUpperCase() + shop.shop_status.slice(1)}</span>
+                  {shop.shop_status === "rejected" && shop.shop_rejection_reason && <span className="text-muted-foreground">{shop.shop_rejection_reason}</span>}
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
                 {shop.state && (
@@ -802,13 +812,13 @@ function ShopPage() {
           </Card>
 
           {/* FEATURED */}
-          {featuredListings.length > 0 && !searchQuery && selectedCategory === "all" && (
+          {pinnedListings.length > 0 && !searchQuery && selectedCategory === "all" && (
             <div className="space-y-3">
               <h2 className="text-sm font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
                 <Star className="h-4 w-4 text-amber-500 fill-amber-500" /> Featured Displays
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {featuredListings.slice(0, 3).map((l) => (
+                {pinnedListings.slice(0, 3).map((l) => (
                   <Link
                     key={l.id}
                     to="/listing/$id"
@@ -817,11 +827,7 @@ function ShopPage() {
                   >
                     <div className="aspect-square bg-muted">
                       {l.images?.[0] && (
-                        <img
-                          src={l.images[0]}
-                          alt={l.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
-                        />
+                        <SignedImage path={l.images[0]} alt={l.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
                       )}
                     </div>
                     <div className="p-3">
@@ -848,12 +854,6 @@ function ShopPage() {
                   >
                     Products ({filteredGoods.length})
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="portfolio"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent p-2 font-bold text-sm data-[state=active]:shadow-none"
-                  >
-                    Services ({filteredServices.length})
-                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -871,9 +871,9 @@ function ShopPage() {
                       const favs = (favoritesCounts as Record<string, number>)[l.id] ?? 0;
                       const views = l.views_count ?? 0;
                       const lowStock = views > 20 && views < 60;
-                      return (
+                        return (
+                          <div key={`product-${l.id}`} className="min-w-0">
                         <Link
-                          key={l.id}
                           to="/listing/$id"
                           params={{ id: l.id }}
                           className="group relative rounded-xl border border-border bg-background overflow-hidden transition-all duration-200 hover:shadow-md flex flex-col justify-between"
@@ -881,21 +881,14 @@ function ShopPage() {
                           <div>
                             <div className="aspect-square bg-muted relative overflow-hidden">
                               {l.images && l.images[0] ? (
-                                <img
-                                  src={l.images[0]}
-                                  alt={l.title}
-                                  className="object-cover w-full h-full transition group-hover:scale-105"
-                                />
+                                <SignedImage path={l.images[0]} alt={l.title} className="object-cover w-full h-full transition group-hover:scale-105" />
                               ) : (
                                 <div className="w-full h-full bg-muted/60 flex items-center justify-center text-muted-foreground/40 text-xs">
                                   No Image
                                 </div>
                               )}
-                              {l.is_promoted && (
-                                <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-[10px] font-bold">
-                                  Premium
-                                </Badge>
-                              )}
+                              {l.shop_pinned_at && <Badge className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold">Pinned</Badge>}
+                              {l.is_promoted && <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground text-[10px] font-bold">Top Ad</Badge>}
                               {lowStock && (
                                 <Badge className="absolute bottom-2 left-2 bg-orange-500 text-white text-[10px] font-bold border-0">
                                   <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
@@ -916,6 +909,12 @@ function ShopPage() {
                               <h3 className="text-sm font-semibold tracking-tight text-foreground line-clamp-2 min-h-[40px] group-hover:text-primary transition-colors">
                                 {l.title}
                               </h3>
+                              {(isOwn || isAdmin) && l.status && (
+                                <div className="space-y-1">
+                                  <Badge variant="outline" className="capitalize">{l.status === "pending" ? "Pending Review" : l.status}</Badge>
+                                  {l.status === "rejected" && l.rejection_reason && <p className="text-xs text-destructive">{l.rejection_reason}</p>}
+                                </div>
+                              )}
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-0.5">
                                   <Eye className="h-3 w-3" /> {views} views
@@ -941,57 +940,25 @@ function ShopPage() {
                             )}
                           </div>
                         </Link>
+                        {isOwn && l.status === "approved" && (!l.expires_at || new Date(l.expires_at).getTime() > Date.now()) && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={l.shop_pinned_at ? "secondary" : "outline"}
+                            className="mt-2 w-full"
+                            disabled={pinBusyId === l.id}
+                            onClick={(event) => { event.preventDefault(); event.stopPropagation(); void togglePin(l); }}
+                          >
+                            {pinBusyId === l.id ? "Saving…" : l.shop_pinned_at ? "Unpin" : "Pin"}
+                          </Button>
+                        )}
+                          </div>
                       );
                     })}
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="portfolio" className="mt-4 focus-visible:outline-none">
-                {filteredServices.length === 0 ? (
-                  <div className="text-center py-12 bg-background rounded-xl border border-dashed">
-                    <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-60" />
-                    <p className="text-muted-foreground font-medium text-sm">
-                      No services listed yet.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
-                    {filteredServices.map((l) => (
-                      <Link
-                        key={l.id}
-                        to="/listing/$id"
-                        params={{ id: l.id }}
-                        className="rounded-xl overflow-hidden border border-border bg-background shadow-sm hover:shadow-md transition"
-                      >
-                        <div className="aspect-video bg-muted relative">
-                          {l.images && l.images[0] ? (
-                            <img
-                              src={l.images[0]}
-                              alt={l.title}
-                              className="object-cover w-full h-full"
-                            />
-                          ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
-                          )}
-                        </div>
-                        <div className="p-3.5 space-y-1">
-                          <span className="text-[10px] font-bold uppercase text-primary tracking-wider">
-                            {l.category || "Service"}
-                          </span>
-                          <p className="text-sm font-semibold text-foreground line-clamp-1">
-                            {l.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {l.location || "Remote"}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
             </Tabs>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t pt-4 mt-6">

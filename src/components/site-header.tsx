@@ -1,7 +1,8 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+﻿import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus, LogOut, Shield, LayoutDashboard, Store, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SignedImage } from "@/components/signed-image";
 
 import {
   DropdownMenu,
@@ -35,7 +36,7 @@ export function SiteHeader() {
         <Link to="/" className="flex min-w-0 shrink-0 items-center gap-3 group">
           {/* Logo Container */}
           <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-[#22C55E]/30 bg-[#081810] p-0.5 transition-transform duration-300 group-hover:scale-105 group-hover:border-[#22C55E]">
-            <img
+            <SignedImage
               src="https://res.cloudinary.com/dbozz4sgv/image/upload/v1781367385/tile-logo_vv2c8v.jpg"
               alt="Tile Logo"
               className="h-full w-full object-cover rounded-lg"
@@ -103,8 +104,8 @@ export function SiteHeader() {
                 >
                   {/* Profile Photo */}
                   {profile?.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
+                    <SignedImage
+                      path={profile.avatar_url}
                       alt={profile.full_name ?? "Account"}
                       className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#22C55E]/40"
                     />

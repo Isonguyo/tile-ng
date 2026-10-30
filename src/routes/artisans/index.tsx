@@ -1,4 +1,4 @@
-import { rpcUntyped } from "@/lib/waitlist-rpc";
+﻿import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
+import { SignedImage } from "@/components/signed-image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -209,8 +210,8 @@ function ArtisanDirectoryPage() {
               {artisans.slice(0, 4).map((artisan, index) => (
                 <article key={artisan.id} className={"tile-pro-card tile-pro-card-" + (index + 1)}>
                   <div className="tile-pro-photo-wrap">
-                    <img
-                      src={
+                    <SignedImage
+                      path={
                         artisan.profile_photo ||
                         artisan.avatar_url ||
                         "https://images.unsplash.com/photo-" +
@@ -252,7 +253,7 @@ function ArtisanDirectoryPage() {
                 <>
                   <article className="tile-pro-card tile-pro-card-1 tile-pro-card-fallback">
                     <div className="tile-pro-photo-wrap">
-                      <img
+                      <SignedImage
                         src="https://images.unsplash.com/photo-1581092921461-eab62e97a780?auto=format&fit=crop&w=600&q=82"
                         alt="Electrician at work"
                       />
@@ -278,7 +279,7 @@ function ArtisanDirectoryPage() {
                   </article>
                   <article className="tile-pro-card tile-pro-card-2 tile-pro-card-fallback">
                     <div className="tile-pro-photo-wrap">
-                      <img
+                      <SignedImage
                         src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=82"
                         alt="Barber"
                       />
@@ -304,7 +305,7 @@ function ArtisanDirectoryPage() {
                   </article>
                   <article className="tile-pro-card tile-pro-card-3 tile-pro-card-fallback">
                     <div className="tile-pro-photo-wrap">
-                      <img
+                      <SignedImage
                         src="https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=600&q=82"
                         alt="Professional artisan at work"
                       />
@@ -330,7 +331,7 @@ function ArtisanDirectoryPage() {
                   </article>
                   <article className="tile-pro-card tile-pro-card-4 tile-pro-card-fallback">
                     <div className="tile-pro-photo-wrap">
-                      <img
+                      <SignedImage
                         src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=82"
                         alt="Mechanic"
                       />
@@ -370,8 +371,8 @@ function ArtisanDirectoryPage() {
                       params={{ id: artisan.id }}
                       className="tile-top-person-row"
                     >
-                      <img
-                        src={
+                      <SignedImage
+                        path={
                           artisan.profile_photo ||
                           artisan.avatar_url ||
                           "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80"
@@ -393,7 +394,7 @@ function ArtisanDirectoryPage() {
                 ) : (
                   <>
                     <div className="tile-top-person-row">
-                      <img
+                      <SignedImage
                         src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80"
                         alt=""
                       />
@@ -409,7 +410,7 @@ function ArtisanDirectoryPage() {
                       </b>
                     </div>
                     <div className="tile-top-person-row">
-                      <img
+                      <SignedImage
                         src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
                         alt=""
                       />
@@ -425,7 +426,7 @@ function ArtisanDirectoryPage() {
                       </b>
                     </div>
                     <div className="tile-top-person-row">
-                      <img
+                      <SignedImage
                         src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80"
                         alt=""
                       />
@@ -599,8 +600,8 @@ function ArtisanDirectoryPage() {
                 <div className="relative px-6 pb-6">
                   {/* Avatar */}
                   <div className="-mt-12 mb-4">
-                    <img
-                      src={
+                    <SignedImage
+                      path={
                         artisan.profile_photo ||
                         artisan.avatar_url ||
                         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80"
@@ -632,7 +633,7 @@ function ArtisanDirectoryPage() {
                   {/* Rating */}
                   <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/[0.06] bg-black/15 p-3">
                     <div className="text-center">
-                      <p className="text-lg font-bold">⭐ {artisan.avg_rating ?? "5.0"}</p>
+                      <p className="text-lg font-bold">â­ {artisan.avg_rating ?? "5.0"}</p>
                       <p className="text-xs text-slate-500">Rating</p>
                     </div>
 
@@ -643,7 +644,7 @@ function ArtisanDirectoryPage() {
 
                     <div className="text-center">
                       <p className="text-lg font-bold">
-                        ₦{Number(artisan.starting_price ?? 0).toLocaleString()}
+                        â‚¦{Number(artisan.starting_price ?? 0).toLocaleString()}
                       </p>
                       <p className="text-xs text-slate-500">From</p>
                     </div>
@@ -666,7 +667,7 @@ function ArtisanDirectoryPage() {
 
                     <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-center">
                       <div className="text-lg font-bold text-emerald-300">
-                        ⭐ {artisan.avg_rating ?? "5.0"}
+                        â­ {artisan.avg_rating ?? "5.0"}
                       </div>
                       <div className="text-xs text-slate-500">Customer Rating</div>
                     </div>
@@ -707,7 +708,7 @@ function ArtisanDirectoryPage() {
                     <div>
                       <p className="text-xs text-slate-500">Starting From</p>
                       <p className="text-lg font-bold text-emerald-300">
-                        ₦{Number(artisan.starting_price ?? 0).toLocaleString()}
+                        â‚¦{Number(artisan.starting_price ?? 0).toLocaleString()}
                       </p>
                     </div>
 
@@ -786,9 +787,9 @@ function ArtisanDirectoryPage() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="h-11 rounded-xl border border-white/10 bg-[#07150e] px-3 py-2 text-sm text-slate-200 outline-none focus:ring-2 focus:ring-emerald-300/40"
               >
-                <option value="rating">⭐ Top Rated</option>
-                <option value="experience">💼 Most Experienced</option>
-                <option value="price_low">💰 Lowest Price</option>
+                <option value="rating">â­ Top Rated</option>
+                <option value="experience">ðŸ’¼ Most Experienced</option>
+                <option value="price_low">ðŸ’° Lowest Price</option>
               </select>
 
               <Button
@@ -938,8 +939,8 @@ function ArtisanDirectoryPage() {
                       <div className="flex items-start gap-4">
                         <div className="relative h-16 w-16 flex-shrink-0">
                           {artisan.profile_photo || artisan.avatar_url ? (
-                            <img
-                              src={artisan.profile_photo || artisan.avatar_url || undefined}
+                            <SignedImage
+                              path={artisan.profile_photo || artisan.avatar_url || undefined}
                               alt={artisan.full_name || "Artisan"}
                               className="h-full w-full rounded-2xl border border-white/10 object-cover shadow-lg"
                             />
@@ -971,7 +972,7 @@ function ArtisanDirectoryPage() {
                             <MapPin className="h-3.5 w-3.5" />
                             <span>
                               {artisan.state || "Nigeria"}
-                              {artisan.lga && ` • ${artisan.lga}`}
+                              {artisan.lga && ` â€¢ ${artisan.lga}`}
                             </span>
                           </div>
                         </div>
@@ -982,13 +983,13 @@ function ArtisanDirectoryPage() {
                       <div className="mt-5 flex flex-wrap gap-2">
                         {artisan.is_verified && (
                           <Badge className="border border-emerald-300/15 bg-emerald-300/[0.08] text-emerald-100 hover:bg-emerald-300/[0.08]">
-                            ✔ Verified
+                            âœ” Verified
                           </Badge>
                         )}
 
                         {isPremium && (
                           <Badge className="border border-amber-200/15 bg-amber-200/[0.08] text-amber-100 hover:bg-amber-200/[0.08]">
-                            👑 Premium
+                            ðŸ‘‘ Premium
                           </Badge>
                         )}
 
@@ -997,7 +998,7 @@ function ArtisanDirectoryPage() {
                             variant="secondary"
                             className="border border-white/[0.07] bg-white/[0.04] text-slate-300"
                           >
-                            ⭐ Top Rated
+                            â­ Top Rated
                           </Badge>
                         )}
                       </div>
@@ -1023,7 +1024,7 @@ function ArtisanDirectoryPage() {
                         <div className="flex-1 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 text-center">
                           <p className="text-lg font-bold text-emerald-300">
                             {artisan.starting_price
-                              ? `₦${Number(artisan.starting_price).toLocaleString()}`
+                              ? `â‚¦${Number(artisan.starting_price).toLocaleString()}`
                               : "Quote"}
                           </p>
 

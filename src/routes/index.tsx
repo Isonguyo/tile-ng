@@ -1,5 +1,6 @@
-import { LegalFooter } from "@/components/legal-footer";
+﻿import { LegalFooter } from "@/components/legal-footer";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
+import { SignedImage } from "@/components/signed-image";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -37,7 +38,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tile — Buy, Sell & Hire Across Nigeria" },
+      { title: "Tile â€” Buy, Sell & Hire Across Nigeria" },
       {
         name: "description",
         content:
@@ -152,7 +153,7 @@ function Index() {
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings", { q, loc, cat, type: activeTab }],
     queryFn: async () => {
-      // Ranking (plan tier → promotion → trust → relevance → recency) happens in the database.
+      // Ranking (plan tier â†’ promotion â†’ trust â†’ relevance â†’ recency) happens in the database.
       const { data, error } = await rpcUntyped("search_listings", {
         _q: q || null,
         _location: loc && loc !== "all" ? loc : null,
@@ -488,8 +489,8 @@ function Index() {
                       &#10024; {featuredListing ? "Trending" : "Popular Finds"}
                     </div>
                     {featuredProductImage ? (
-                      <img
-                        src={featuredProductImage}
+                      <SignedImage
+                        path={featuredProductImage}
                         alt={featuredListing?.title || "Featured local product"}
                       />
                     ) : (
@@ -510,7 +511,7 @@ function Index() {
                     </div>
                   </article>
                   <article className="tile-feature-store">
-                    <img
+                    <SignedImage
                       className="tile-store-photo"
                       src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=85"
                       alt="Modern local shop"
@@ -518,7 +519,7 @@ function Index() {
                     <div className="tile-store-info">
                       <div className="tile-store-mark">
                         {featuredStore?.avatar_url ? (
-                          <img src={featuredStore.avatar_url} alt="" />
+                          <SignedImage path={featuredStore.avatar_url} alt="" />
                         ) : (
                           (featuredStore?.business_name || "Tile").slice(0, 2).toUpperCase()
                         )}
@@ -543,8 +544,8 @@ function Index() {
                     </div>
                   </article>
                   <article className="tile-feature-artisan">
-                    <img
-                      src={
+                    <SignedImage
+                      path={
                         featuredArtisan?.avatar_url ||
                         "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=800&q=85"
                       }
@@ -694,8 +695,8 @@ function Index() {
                         className={`absolute h-20 w-20 rounded-full ${isVipVendor ? "border border-amber-200/20" : "border border-emerald-300/10"}`}
                       />
                       {v.avatar_url ? (
-                        <img
-                          src={v.avatar_url}
+                        <SignedImage
+                          path={v.avatar_url}
                           alt={v.business_name || v.full_name || "Store owner"}
                           className={`relative h-14 w-14 rounded-2xl border object-cover shadow-lg transition-transform duration-300 group-hover:scale-105 ${isVipVendor ? "border-amber-200/50" : "border-emerald-200/30"}`}
                         />
@@ -833,7 +834,7 @@ function Index() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
                 <Badge className="mb-3 gap-1 rounded-full border border-emerald-300/15 bg-emerald-300/[0.07] px-3 text-emerald-200">
-                  🔥 Trending Professionals
+                  ðŸ”¥ Trending Professionals
                 </Badge>
                 <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Find Skilled Artisans Near You
@@ -863,8 +864,8 @@ function Index() {
                 >
                   <div className="relative flex h-28 items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_15%,rgba(52,211,153,0.2),transparent_65%),linear-gradient(145deg,#102b1e,#0a1912)]">
                     {artisan.avatar_url ? (
-                      <img
-                        src={artisan.avatar_url}
+                      <SignedImage
+                        path={artisan.avatar_url}
                         alt={
                           artisan.full_name ? `Photo of ${artisan.full_name}` : "Artisan profile"
                         }
@@ -889,7 +890,7 @@ function Index() {
                     </p>
 
                     <p className="mt-2 flex items-center justify-center gap-1 text-xs text-slate-400 sm:justify-start">
-                      📍 {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "Nigeria"}
+                      ðŸ“ {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "Nigeria"}
                     </p>
 
                     <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-3">

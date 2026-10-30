@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
@@ -93,6 +93,7 @@ const CATEGORY_META: Record<string, { icon: string; subtitle: string }> = {
 
 function PostAd() {
   const { user, loading, profile } = useAuth();
+  const queryClient = useQueryClient();
   const nav = useNavigate();
   const staffContextQuery = useMerchantStaffContext(user?.id);
   const isMerchantStaff = staffContextQuery.data?.is_staff === true;
@@ -607,6 +608,11 @@ function PostAd() {
       setPromotionStats(null);
       setSubmitted(true);
       toast.success("Listing submitted for review");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["my-listings", merchantOwnerId] }),
+        queryClient.invalidateQueries({ queryKey: ["merchant-shop-listings", merchantOwnerId] }),
+        queryClient.invalidateQueries({ queryKey: ["shop-listings", merchantOwnerId] }),
+      ]);
     } catch (e) {
       console.error("POST AD ERROR:", e);
       showError(e, "We couldn't post your ad. Please check the details and try again.");

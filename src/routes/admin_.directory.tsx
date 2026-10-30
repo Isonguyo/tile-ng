@@ -95,6 +95,15 @@ function isDirectImageUrl(value: string) {
   return /^(https?:\/\/|data:image\/|blob:|\/\/)/i.test(value);
 }
 
+function isPrivateListingUrl(value: string) {
+  return /\/storage\/v1\/object\/(?:public|sign)\/listings\//i.test(value);
+}
+
+function listingObjectPath(value: string) {
+  const match = value.match(/\/storage\/v1\/object\/(?:public|sign)\/listings\/(.+?)(?:\?.*)?$/i);
+  return match ? decodeURIComponent(match[1]) : value;
+}
+
 function imageList(value: unknown): string[] {
   if (Array.isArray(value))
     return value
@@ -106,7 +115,7 @@ function imageList(value: unknown): string[] {
 function displayImage(value: unknown, resolved: Record<string, string>) {
   if (typeof value !== "string" || !value.trim()) return "";
   const source = value.trim();
-  return resolved[source] ?? (isDirectImageUrl(source) ? source : "");
+  return resolved[source] ?? (isDirectImageUrl(source) && !isPrivateListingUrl(source) ? source : "");
 }
 
 function useResolvedDirectoryImages(rows: unknown[]) {
@@ -119,9 +128,9 @@ function useResolvedDirectoryImages(rows: unknown[]) {
   useEffect(() => {
     let cancelled = false;
     const direct = Object.fromEntries(
-      candidates.filter(isDirectImageUrl).map((source) => [source, source]),
+      candidates.filter((source) => isDirectImageUrl(source) && !isPrivateListingUrl(source)).map((source) => [source, source]),
     );
-    const paths = candidates.filter((source) => !isDirectImageUrl(source));
+    const paths = candidates.filter((source) => !isDirectImageUrl(source) || isPrivateListingUrl(source));
     setResolved(direct);
 
     const resolve = async () => {
@@ -135,7 +144,7 @@ function useResolvedDirectoryImages(rows: unknown[]) {
           try {
             const { data, error } = await supabase.storage
               .from("listings")
-              .createSignedUrls(chunk, 60 * 60);
+              .createSignedUrls(chunk.map(listingObjectPath), 60 * 60);
             return { chunk, data, failed: !!error };
           } catch {
             return { chunk, data: null, failed: true };
@@ -146,13 +155,10 @@ function useResolvedDirectoryImages(rows: unknown[]) {
       signedChunks.forEach(({ chunk, data, failed }) => {
         chunk.forEach((path, index) => {
           const signed = !failed
-            ? (data?.find((item) => item.path === path)?.signedUrl ?? data?.[index]?.signedUrl)
+            ? (data?.find((item) => item.path === listingObjectPath(path))?.signedUrl ?? data?.[index]?.signedUrl)
             : null;
           if (signed) {
             next[path] = signed;
-          } else {
-            const { data: publicData } = supabase.storage.from("listings").getPublicUrl(path);
-            next[path] = publicData.publicUrl;
           }
         });
       });

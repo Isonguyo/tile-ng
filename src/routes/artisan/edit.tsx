@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Camera } from "lucide-react";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
 import { fromUntyped } from "@/lib/db-untyped";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
+import { SignedImage } from "@/components/signed-image";
 
 export const Route = createFileRoute("/artisan/edit")({
   component: EditArtisanProfilePage,
@@ -104,11 +105,7 @@ function EditArtisanProfilePage() {
 
         if (uploadError) throw uploadError;
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("listings").getPublicUrl(filePath);
-
-        avatarUrl = publicUrl;
+        avatarUrl = filePath;
       }
 
       // Existing images that were NOT deleted
@@ -126,11 +123,7 @@ function EditArtisanProfilePage() {
 
         if (uploadError) throw uploadError;
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("listings").getPublicUrl(filePath);
-
-        portfolioUrls.push(publicUrl);
+        portfolioUrls.push(filePath);
       }
 
       // Update profile
@@ -155,7 +148,7 @@ function EditArtisanProfilePage() {
       // Delete removed portfolio images from Storage
       for (const url of deletedPortfolio) {
         try {
-          const path = url.split("/storage/v1/object/public/listings/")[1];
+          const path = url.match(/\/storage\/v1\/object\/(?:public|sign)\/listings\/(.+?)(?:\?.*)?$/i)?.[1] ?? url;
 
           if (path) {
             await supabase.storage.from("listings").remove([path]);
@@ -187,7 +180,7 @@ function EditArtisanProfilePage() {
       <div className="min-h-screen bg-[#06120d] text-slate-100">
         <SiteHeader />
         <div className="container mx-auto max-w-3xl px-4 py-24 text-center text-slate-400">
-          Loading your artisan profile…
+          Loading your artisan profileâ€¦
         </div>
       </div>
     );
@@ -235,8 +228,8 @@ function EditArtisanProfilePage() {
           <div className="flex flex-col gap-6 border-b border-white/[0.07] pb-7 sm:flex-row sm:items-center">
             <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.06] shadow-lg">
               {photoPreview ? (
-                <img
-                  src={photoPreview}
+                <SignedImage
+                  path={photoPreview}
                   alt="Artisan profile"
                   className="h-full w-full object-cover"
                 />
@@ -250,7 +243,7 @@ function EditArtisanProfilePage() {
               </p>
               <h2 className="mt-1 text-xl font-bold text-white">Make a strong first impression</h2>
               <p className="mt-1 max-w-xl text-sm leading-5 text-slate-400">
-                Use a clear, well-lit photo so customers can recognize who they’re contacting.
+                Use a clear, well-lit photo so customers can recognize who theyâ€™re contacting.
               </p>
 
               <label className="mt-4 inline-flex">
@@ -321,8 +314,8 @@ function EditArtisanProfilePage() {
                   key={url}
                   className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-[#07150e]"
                 >
-                  <img
-                    src={url}
+                  <SignedImage
+                    path={url}
                     alt="Portfolio project"
                     className="aspect-square w-full object-cover"
                   />
@@ -346,8 +339,8 @@ function EditArtisanProfilePage() {
                   key={index}
                   className="group relative aspect-square overflow-hidden rounded-2xl border border-emerald-300/20 bg-[#07150e]"
                 >
-                  <img
-                    src={newPortfolioPreviews[index]}
+                  <SignedImage
+                    path={newPortfolioPreviews[index]}
                     alt="New portfolio project"
                     className="aspect-square w-full object-cover"
                   />
@@ -443,7 +436,7 @@ function EditArtisanProfilePage() {
               disabled={saving}
               className="h-11 rounded-xl bg-[#35d879] px-6 font-bold text-[#04120a] hover:bg-[#52e98f]"
             >
-              {saving ? "Saving profile…" : "Save changes"}
+              {saving ? "Saving profileâ€¦" : "Save changes"}
             </Button>
           </div>
         </Card>

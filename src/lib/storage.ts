@@ -25,7 +25,10 @@ export async function getSignedUrls(paths: string[]): Promise<string[]> {
 }
 
 export async function getSignedUrl(path: string): Promise<string | null> {
-  const { data } = await supabase.storage.from("listings").createSignedUrl(path, 60 * 60);
+  const legacyStorageUrl = path.match(/\/storage\/v1\/object\/(?:public|sign)\/listings\/(.+?)(?:\?.*)?$/i);
+  const objectPath = legacyStorageUrl ? decodeURIComponent(legacyStorageUrl[1]) : path;
+  if (!legacyStorageUrl && /^(?:https?:\/\/|data:image\/|blob:)/i.test(path)) return path;
+  const { data } = await supabase.storage.from("listings").createSignedUrl(objectPath, 60 * 60);
   return data?.signedUrl ?? null;
 }
 
