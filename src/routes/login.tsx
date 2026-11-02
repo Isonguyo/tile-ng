@@ -207,6 +207,7 @@ function LoginPage() {
           Create an account
         </Link>
       </p>
+      <p className="mt-3 text-center text-xs text-muted-foreground">If you cannot access your account, contact Tile Support to request a secure recovery link.</p>
     </AuthLayout>
   );
 }

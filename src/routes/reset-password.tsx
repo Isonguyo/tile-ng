@@ -29,7 +29,7 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPage,
 });
 
-function ResetPage() {
+export function ResetPage() {
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);

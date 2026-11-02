@@ -35,6 +35,8 @@ import { Route as ArtisanCreateRouteImport } from './routes/artisan/create'
 import { Route as ArtisanEditRouteImport } from './routes/artisan/edit'
 import { Route as ArtisansIndexRouteImport } from './routes/artisans/index'
 import { Route as ArtisansIdRouteImport } from './routes/artisans.$id'
+import { Route as AuthCompleteInviteRouteImport } from './routes/auth.complete-invite'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as ListingIdRouteImport } from './routes/listing.$id'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
 import { Route as MessagesChatIdRouteImport } from './routes/messages.$chatId'
@@ -171,6 +173,16 @@ const ArtisansIdRoute = ArtisansIdRouteImport.update({
   path: '/artisans/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCompleteInviteRoute = AuthCompleteInviteRouteImport.update({
+  id: '/complete-invite',
+  path: '/complete-invite',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ListingIdRoute = ListingIdRouteImport.update({
   id: '/listing/$id',
   path: '/listing/$id',
@@ -202,7 +214,7 @@ export interface FileRoutesByFullPath {
   '/acceptable-use': typeof AcceptableUseRoute
   '/admin': typeof AdminRoute
   '/artisan-terms': typeof ArtisanTermsRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/billing-terms': typeof BillingTermsRoute
   '/complaints': typeof ComplaintsRoute
   '/cookies': typeof CookiesRoute
@@ -223,6 +235,8 @@ export interface FileRoutesByFullPath {
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
+  '/auth/complete-invite': typeof AuthCompleteInviteRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -235,7 +249,7 @@ export interface FileRoutesByTo {
   '/acceptable-use': typeof AcceptableUseRoute
   '/admin': typeof AdminRoute
   '/artisan-terms': typeof ArtisanTermsRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/billing-terms': typeof BillingTermsRoute
   '/complaints': typeof ComplaintsRoute
   '/cookies': typeof CookiesRoute
@@ -255,6 +269,8 @@ export interface FileRoutesByTo {
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
+  '/auth/complete-invite': typeof AuthCompleteInviteRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -268,7 +284,7 @@ export interface FileRoutesById {
   '/acceptable-use': typeof AcceptableUseRoute
   '/admin': typeof AdminRoute
   '/artisan-terms': typeof ArtisanTermsRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/billing-terms': typeof BillingTermsRoute
   '/complaints': typeof ComplaintsRoute
   '/cookies': typeof CookiesRoute
@@ -289,6 +305,8 @@ export interface FileRoutesById {
   '/artisan/create': typeof ArtisanCreateRoute
   '/artisan/edit': typeof ArtisanEditRoute
   '/artisans/$id': typeof ArtisansIdRoute
+  '/auth/complete-invite': typeof AuthCompleteInviteRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/listing/$id': typeof ListingIdRoute
   '/messages/$chatId': typeof MessagesChatIdRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -324,6 +342,8 @@ export interface FileRouteTypes {
     | '/artisan/create'
     | '/artisan/edit'
     | '/artisans/$id'
+    | '/auth/complete-invite'
+    | '/auth/reset-password'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
@@ -356,6 +376,8 @@ export interface FileRouteTypes {
     | '/artisan/create'
     | '/artisan/edit'
     | '/artisans/$id'
+    | '/auth/complete-invite'
+    | '/auth/reset-password'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
@@ -389,6 +411,8 @@ export interface FileRouteTypes {
     | '/artisan/create'
     | '/artisan/edit'
     | '/artisans/$id'
+    | '/auth/complete-invite'
+    | '/auth/reset-password'
     | '/listing/$id'
     | '/messages/$chatId'
     | '/shop/$slug'
@@ -402,7 +426,7 @@ export interface RootRouteChildren {
   AcceptableUseRoute: typeof AcceptableUseRoute
   AdminRoute: typeof AdminRoute
   ArtisanTermsRoute: typeof ArtisanTermsRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   BillingTermsRoute: typeof BillingTermsRoute
   ComplaintsRoute: typeof ComplaintsRoute
   CookiesRoute: typeof CookiesRoute
@@ -613,6 +637,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtisansIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/complete-invite': {
+      id: '/auth/complete-invite'
+      path: '/complete-invite'
+      fullPath: '/auth/complete-invite'
+      preLoaderRoute: typeof AuthCompleteInviteRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/listing/$id': {
       id: '/listing/$id'
       path: '/listing/$id'
@@ -651,6 +689,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthCompleteInviteRoute: typeof AuthCompleteInviteRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCompleteInviteRoute: AuthCompleteInviteRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface MessagesRouteChildren {
   MessagesChatIdRoute: typeof MessagesChatIdRoute
   MessagesIndexRoute: typeof MessagesIndexRoute
@@ -670,7 +720,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcceptableUseRoute: AcceptableUseRoute,
   AdminRoute: AdminRoute,
   ArtisanTermsRoute: ArtisanTermsRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   BillingTermsRoute: BillingTermsRoute,
   ComplaintsRoute: ComplaintsRoute,
   CookiesRoute: CookiesRoute,

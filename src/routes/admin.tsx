@@ -99,6 +99,7 @@ import {
   SubscriptionPaymentsPanel,
   ManualPaymentSettingsCard,
 } from "@/components/admin/subscription-payments-panel";
+import { UserOnboardingPanel } from "@/components/admin/user-onboarding-panel";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -976,8 +977,9 @@ function Admin() {
                 ðŸ›¡ Moderation
               </TabsTrigger>
               <TabsTrigger id="tab-shops" value="shops" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                Merchant Shop Reviews
+                Shop Reviews
               </TabsTrigger>
+              <TabsTrigger value="onboarding" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">User Onboarding</TabsTrigger>
               <TabsTrigger
                 id="tab-artisans"
                 value="artisans"
@@ -1307,6 +1309,7 @@ function Admin() {
           <TabsContent value="shops" className="space-y-4 mt-0">
             <MerchantShopReviewsPanel />
           </TabsContent>
+          <TabsContent value="onboarding" className="space-y-4 mt-0"><UserOnboardingPanel /></TabsContent>
           <TabsContent value="artisans" className="space-y-4 mt-0">
             <Card className="p-5 border-primary/20 bg-primary/5 backdrop-blur-sm">
               <div className="flex items-start gap-4">
@@ -2823,7 +2826,8 @@ function PlatformSettings({
 }
 
 type ShopReviewRow = {
-  id: string;
+  user_id: string;
+  full_name: string | null;
   business_name: string | null;
   shop_slug: string | null;
   bio: string | null;
@@ -2833,20 +2837,22 @@ type ShopReviewRow = {
   shop_cover_url: string | null;
   shop_status: string | null;
   shop_rejection_reason: string | null;
-  updated_at: string | null;
-  created_at: string | null;
+  shop_submitted_at: string | null;
+  shop_reviewed_at: string | null;
+  product_count: number;
+  pending_product_count: number;
+  approved_product_count: number;
 };
 
 function MerchantShopReviewsPanel() {
   const qc = useQueryClient();
+  const [status, setStatus] = useState("pending");
+  const [search, setSearch] = useState("");
   const { data: shops = [], isLoading } = useQuery({
-    queryKey: ["admin-shop-reviews"],
+    queryKey: ["admin-shop-reviews", status],
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await fromUntyped("profiles")
-        .select("id,business_name,shop_slug,bio,state,lga,shop_logo_url,shop_cover_url,shop_status,shop_rejection_reason,updated_at,created_at")
-        .eq("shop_status", "pending")
-        .order("updated_at", { ascending: true });
+      const { data, error } = await rpcUntyped("admin_list_shop_reviews", { _status: status });
       if (error) throw error;
       return (data ?? []) as ShopReviewRow[];
     },
@@ -2859,29 +2865,31 @@ function MerchantShopReviewsPanel() {
       return;
     }
     if (!window.confirm(`${decision === "approved" ? "Approve" : decision === "rejected" ? "Reject" : "Flag"} ${shop.business_name ?? "this shop"}?`)) return;
-    const { error } = await supabase.rpc("admin_review_shop" as never, {
-      _user_id: shop.id,
+    const { error } = await rpcUntyped("admin_review_shop", {
+      _user_id: shop.user_id,
       _decision: decision,
       _reason: reason?.trim() || null,
-    } as never);
+    });
     if (error) return showError(error, "We couldn't update this shop review. Please try again.");
     toast.success(`Shop ${decision}.`);
     await Promise.all([
       qc.invalidateQueries({ queryKey: ["admin-shop-reviews"] }),
       qc.invalidateQueries({ queryKey: ["shop", shop.shop_slug] }),
+      qc.invalidateQueries({ queryKey: ["merchant-shop-profile", shop.user_id] }),
     ]);
   };
 
   return (
     <Card className="space-y-4 p-5">
       <div>
-        <h2 className="text-lg font-bold">Merchant Shop Reviews</h2>
+        <h2 className="text-lg font-bold">Shop Reviews <Badge variant="secondary">{shops.filter((s) => s.shop_status === "pending").length} pending</Badge></h2>
         <p className="text-sm text-muted-foreground">Inspect submitted shop branding and business details.</p>
       </div>
-      {isLoading ? <p className="text-sm text-muted-foreground">Loading shopsâ€¦</p> : shops.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">No shops are awaiting review.</p>
-      ) : shops.map((shop) => (
-        <article key={shop.id} className="grid gap-4 rounded-xl border p-4 md:grid-cols-[180px_1fr]">
+      <div className="flex flex-wrap gap-2"><Select value={status} onValueChange={setStatus}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent>{["pending", "approved", "rejected", "flagged", "draft", "all"].map((s) => <SelectItem key={s} value={s}>{s === "all" ? "All statuses" : s[0].toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent></Select><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search business or owner" className="max-w-sm" /></div>
+      {isLoading ? <p className="text-sm text-muted-foreground">Loading shops...</p> : shops.filter((shop) => `${shop.business_name ?? ""} ${shop.full_name ?? ""}`.toLowerCase().includes(search.toLowerCase())).length === 0 ? (
+        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">No shops found for this filter.</p>
+      ) : shops.filter((shop) => `${shop.business_name ?? ""} ${shop.full_name ?? ""}`.toLowerCase().includes(search.toLowerCase())).map((shop) => (
+        <article key={shop.user_id} className="grid gap-4 rounded-xl border p-4 md:grid-cols-[180px_1fr]">
           <div className="space-y-2">
             <SignedImage path={shop.shop_cover_url} alt="Shop cover preview" className="h-24 w-full rounded-lg object-cover" />
             <SignedImage path={shop.shop_logo_url} alt="Shop logo preview" className="h-20 w-20 rounded-lg object-cover" />
@@ -2889,17 +2897,19 @@ function MerchantShopReviewsPanel() {
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h3 className="font-semibold">{shop.business_name ?? "Unnamed shop"}</h3>
-                <p className="text-xs text-muted-foreground">/{shop.shop_slug ?? "no-url"} Â· Submitted {shop.updated_at ? new Date(shop.updated_at).toLocaleDateString() : shop.created_at ? new Date(shop.created_at).toLocaleDateString() : "date unavailable"}</p>
+                <h3 className="font-semibold">{shop.business_name ?? "Unnamed shop"} <span className="font-normal text-muted-foreground">by {shop.full_name ?? "Unknown owner"}</span></h3>
+                <p className="text-xs text-muted-foreground">/{shop.shop_slug ?? "no-url"} · Submitted {shop.shop_submitted_at ? new Date(shop.shop_submitted_at).toLocaleDateString() : "date unavailable"} · <a className="underline" href={`/shop/${shop.shop_slug}`} target="_blank" rel="noreferrer">Preview shop</a></p>
               </div>
               <Badge variant="outline" className="capitalize">{shop.shop_status ?? "draft"}</Badge>
             </div>
             <p className="text-sm text-muted-foreground">{shop.bio || "No description provided."}</p>
             <p className="text-xs text-muted-foreground">{[shop.lga, shop.state].filter(Boolean).join(", ") || "Location not provided"}</p>
+            <p className="text-xs text-muted-foreground">Products: {shop.product_count} total · {shop.pending_product_count} pending · {shop.approved_product_count} approved</p>
+            {shop.shop_rejection_reason && <p className="text-xs text-destructive">Review note: {shop.shop_rejection_reason}</p>}
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button size="sm" onClick={() => void review(shop, "approved")}>Approve</Button>
-              <Button size="sm" variant="outline" onClick={() => void review(shop, "rejected")}>Reject</Button>
-              <Button size="sm" variant="outline" onClick={() => void review(shop, "flagged")}>Flag</Button>
+              {shop.shop_status !== "approved" && <Button size="sm" onClick={() => void review(shop, "approved")}>Approve</Button>}
+              {shop.shop_status !== "rejected" && <Button size="sm" variant="outline" onClick={() => void review(shop, "rejected")}>Reject</Button>}
+              {shop.shop_status !== "flagged" && <Button size="sm" variant="outline" onClick={() => void review(shop, "flagged")}>Flag</Button>}
             </div>
           </div>
         </article>

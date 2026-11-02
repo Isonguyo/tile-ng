@@ -517,9 +517,9 @@ function ShopPage() {
 
         <div className="container mx-auto px-4 pb-6 relative">
           <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16 md:-mt-20 z-10 relative">
-            {shop.shop_logo_url || shop.avatar_url ? (
+            {shop.shop_logo_url ? (
               <SignedImage
-                path={shop.shop_logo_url ?? shop.avatar_url}
+                path={shop.shop_logo_url}
                 alt="Shop image"
                 className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-background border-4 border-background shadow-md object-cover"
               />

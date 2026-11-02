@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatNaira } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
+import { getSignedUrls } from "@/lib/storage";
 
 export const Route = createFileRoute("/admin_/directory")({
   head: () => ({
@@ -99,11 +100,6 @@ function isPrivateListingUrl(value: string) {
   return /\/storage\/v1\/object\/(?:public|sign)\/listings\//i.test(value);
 }
 
-function listingObjectPath(value: string) {
-  const match = value.match(/\/storage\/v1\/object\/(?:public|sign)\/listings\/(.+?)(?:\?.*)?$/i);
-  return match ? decodeURIComponent(match[1]) : value;
-}
-
 function imageList(value: unknown): string[] {
   if (Array.isArray(value))
     return value
@@ -123,56 +119,18 @@ function useResolvedDirectoryImages(rows: unknown[]) {
     () => Array.from(new Set(rows.flatMap((row) => collectImageCandidates(row)))),
     [rows],
   );
-  const [resolved, setResolved] = useState<Record<string, string>>({});
+  const { data = {} } = useQuery({
+    queryKey: ["admin-directory-signed-images", candidates],
+    enabled: candidates.length > 0,
+    queryFn: async () => {
+      const urls = await getSignedUrls(candidates);
+      return Object.fromEntries(candidates.map((path, index) => [path, urls[index]]).filter(([, url]) => !!url)) as Record<string, string>;
+    },
+    staleTime: 50 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    const direct = Object.fromEntries(
-      candidates.filter((source) => isDirectImageUrl(source) && !isPrivateListingUrl(source)).map((source) => [source, source]),
-    );
-    const paths = candidates.filter((source) => !isDirectImageUrl(source) || isPrivateListingUrl(source));
-    setResolved(direct);
-
-    const resolve = async () => {
-      const next = { ...direct };
-      const chunks: string[][] = [];
-      for (let index = 0; index < paths.length; index += 100)
-        chunks.push(paths.slice(index, index + 100));
-
-      const signedChunks = await Promise.all(
-        chunks.map(async (chunk) => {
-          try {
-            const { data, error } = await supabase.storage
-              .from("listings")
-              .createSignedUrls(chunk.map(listingObjectPath), 60 * 60);
-            return { chunk, data, failed: !!error };
-          } catch {
-            return { chunk, data: null, failed: true };
-          }
-        }),
-      );
-
-      signedChunks.forEach(({ chunk, data, failed }) => {
-        chunk.forEach((path, index) => {
-          const signed = !failed
-            ? (data?.find((item) => item.path === listingObjectPath(path))?.signedUrl ?? data?.[index]?.signedUrl)
-            : null;
-          if (signed) {
-            next[path] = signed;
-          }
-        });
-      });
-
-      if (!cancelled) setResolved(next);
-    };
-
-    void resolve();
-    return () => {
-      cancelled = true;
-    };
-  }, [candidates]);
-
-  return resolved;
+  return data;
 }
 
 function useDirectorySearch(rows: DirectoryRow[] | undefined, query: string) {
@@ -470,6 +428,7 @@ function ListingDirectoryCard({
   row: DirectoryRow;
   resolved: Record<string, string>;
 }) {
+  const [imageFailed, setImageFailed] = useState(false);
   const listing = (row.listing ?? {}) as DirectoryRow;
   if (!listing.id) return null;
   const images = [...imageList(listing.images), ...imageList(listing.image_url)];
@@ -486,12 +445,13 @@ function ListingDirectoryCard({
   return (
     <Card className="group overflow-hidden rounded-2xl border-border/60 bg-card/75 shadow-sm backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:border-emerald-500/35 hover:shadow-xl hover:shadow-emerald-950/5">
       <div className="relative aspect-[16/8] overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-800">
-        {primaryImage ? (
+        {primaryImage && !imageFailed ? (
           <img
             src={primaryImage}
             alt={listing.title || "Listing"}
             loading="lazy"
             decoding="async"
+            onError={() => setImageFailed(true)}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
           />
         ) : (

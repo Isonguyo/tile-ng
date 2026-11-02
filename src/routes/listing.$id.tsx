@@ -59,7 +59,7 @@ function ListingDetail() {
   const { id } = Route.useParams();
   const { user, loading: authLoading } = useAuth();
   const [imgIdx, setImgIdx] = useState(0);
-  const [imgUrls, setImgUrls] = useState<string[]>([]);
+  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const [showPhone, setShowPhone] = useState(false);
   const [favored, setFavored] = useState(false);
 
@@ -102,6 +102,15 @@ function ListingDetail() {
     },
   });
 
+  const imagePaths = listing?.images ?? [];
+  const { data: imgUrls = [] } = useQuery({
+    queryKey: ["signed-listing-images", imagePaths],
+    enabled: imagePaths.length > 0,
+    queryFn: () => getSignedUrls(imagePaths),
+    staleTime: 50 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+
   const { data: reviews = [] } = useQuery({
     queryKey: ["reviews", id],
     queryFn: async () => {
@@ -109,10 +118,6 @@ function ListingDetail() {
       return data ?? [];
     },
   });
-
-  useEffect(() => {
-    if (listing?.images?.length) getSignedUrls(listing.images).then(setImgUrls);
-  }, [listing]);
 
   useEffect(() => {
     if (!listing?.id) return;
@@ -203,12 +208,13 @@ function ListingDetail() {
           {/* Gallery */}
           <Card className="relative min-w-0 overflow-hidden p-0">
             <div className="relative aspect-[4/3] bg-muted sm:aspect-video">
-              {imgUrls.length ? (
+              {imgUrls[imgIdx] && !failedImages.has(imgUrls[imgIdx]) ? (
                 <img
                   src={imgUrls[imgIdx]}
                   alt={listing.title}
                   decoding="async"
                   fetchPriority="high"
+                  onError={() => setFailedImages((current) => new Set(current).add(imgUrls[imgIdx]))}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -252,6 +258,7 @@ function ListingDetail() {
                       alt=""
                       loading="lazy"
                       decoding="async"
+                      onError={() => setFailedImages((current) => new Set(current).add(u))}
                       className="h-full w-full rounded-md object-cover"
                     />
                   </button>

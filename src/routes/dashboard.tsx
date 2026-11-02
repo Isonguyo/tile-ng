@@ -1638,7 +1638,12 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
     queryFn: async () => {
       const { data, error } = await fromUntyped("listings").select("id,title,status,rejection_reason,shop_pinned_at,expires_at").eq("user_id", userId).eq("type", "goods").order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; title: string; status: string; rejection_reason: string | null; shop_pinned_at: string | null; expires_at: string | null }>;
+      return ((data ?? []) as Array<{ id: string; title: string; status: string; rejection_reason: string | null; shop_pinned_at: string | null; expires_at: string | null }>).sort((a, b) => {
+        const pinOrder = Number(!!b.shop_pinned_at) - Number(!!a.shop_pinned_at);
+        if (pinOrder) return pinOrder;
+        if (a.shop_pinned_at && b.shop_pinned_at) return b.shop_pinned_at.localeCompare(a.shop_pinned_at);
+        return 0;
+      });
     },
   });
 
@@ -1663,9 +1668,9 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
     if (kind === "logo") { setLogoFile(file); setRemoveLogo(false); } else { setCoverFile(file); setRemoveCover(false); }
   };
 
-  const uploadShopImage = async (file: File) => {
+  const uploadShopImage = async (file: File, kind: "logo" | "cover") => {
     const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${userId}/shop/${crypto.randomUUID()}.${extension}`;
+    const path = `${userId}/shop/${kind}/${crypto.randomUUID()}.${extension}`;
     const { error } = await supabase.storage.from("listings").upload(path, file, { upsert: false, contentType: file.type });
     if (error) throw error;
     return path;
@@ -1679,8 +1684,8 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
     try {
       let nextLogo = removeLogo ? null : logoPath;
       let nextCover = removeCover ? null : coverPath;
-      if (logoFile) nextLogo = await uploadShopImage(logoFile);
-      if (coverFile) nextCover = await uploadShopImage(coverFile);
+      if (logoFile) nextLogo = await uploadShopImage(logoFile, "logo");
+      if (coverFile) nextCover = await uploadShopImage(coverFile, "cover");
       const { error } = await fromUntyped("profiles").update({ business_name: form.business_name.trim(), shop_slug: slug, bio: form.bio.trim() || null, state: form.state.trim() || null, lga: form.lga.trim() || null, phone: form.phone.trim() || null, whatsapp: form.whatsapp.trim() || null, shop_logo_url: nextLogo, shop_cover_url: nextCover }).eq("id", userId);
       if (error) throw error;
       setLogoPath(nextLogo); setCoverPath(nextCover); setLogoFile(null); setCoverFile(null); setRemoveLogo(false); setRemoveCover(false);
