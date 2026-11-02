@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -768,7 +769,7 @@ function Admin() {
 
       {platform?.maintenance_mode && (
         <div className="bg-destructive/90 backdrop-blur-md text-destructive-foreground text-center text-xs tracking-wider uppercase py-2 font-bold shadow-md animate-pulse">
-          âš  Maintenance mode is ACTIVE â€” public actions are frozen
+          Warning: Maintenance mode is active. Public actions are frozen.
         </div>
       )}
       {platform?.emergency_banner && (
@@ -898,7 +899,7 @@ function Admin() {
           <MiniStat
             label="Subscribers"
             value={dash?.active_subscribers ?? 0}
-            sub={`VIP ${dash?.vip ?? 0} Â· Pro ${dash?.pro ?? 0}`}
+            sub={`VIP ${dash?.vip ?? 0} | Pro ${dash?.pro ?? 0}`}
             icon={BadgeCheck}
             tint="purple"
           />
@@ -961,20 +962,20 @@ function Admin() {
                 value="overview"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ“Š Overview
+                Overview
               </TabsTrigger>
               <TabsTrigger
                 value="payments"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ’³ Subscription Payments{pendingPayments.length > 0 ? ` (${pendingPayments.length})` : ""}
+                Subscription Payments{pendingPayments.length > 0 ? ` (${pendingPayments.length})` : ""}
               </TabsTrigger>
               <TabsTrigger
                 id="tab-moderation"
                 value="moderation"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ›¡ Moderation
+                Moderation
               </TabsTrigger>
               <TabsTrigger id="tab-shops" value="shops" className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 Shop Reviews
@@ -985,72 +986,72 @@ function Admin() {
                 value="artisans"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ§° Artisans
+                Artisans
               </TabsTrigger>
               <TabsTrigger
                 id="tab-reports"
                 value="reports"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸš© Reports
+                Reports
               </TabsTrigger>
               <TabsTrigger
                 id="tab-kyc"
                 value="kyc"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ“„ KYC
+                KYC
               </TabsTrigger>
               <TabsTrigger
                 id="tab-money"
                 value="money"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ’³ Revenue
+                Revenue
               </TabsTrigger>
               <TabsTrigger
                 id="tab-support"
                 value="support"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸŽ§ Support
+                Support
               </TabsTrigger>
               <TabsTrigger
                 id="tab-users"
                 value="users"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ‘¥ Users
+                Users
               </TabsTrigger>
               <TabsTrigger
                 value="broadcast"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ“£ Broadcast
+                Broadcast
               </TabsTrigger>
               <TabsTrigger
                 value="waitlist"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸš€ Waitlist
+                Waitlist
               </TabsTrigger>
               <TabsTrigger
                 value="launch"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸŒ Launch Review
+                Launch Review
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                âš™ Platform
+                Platform
               </TabsTrigger>
               <TabsTrigger
                 value="codes"
                 className="rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
-                ðŸ›¡ Roles & Access
+                Roles & Access
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1159,7 +1160,7 @@ function Admin() {
                     </p>
                   </div>
                   <Badge variant="outline" className="text-[10px] font-mono py-1 px-2.5">
-                    Auto-refresh Â· 15s
+                    Auto-refresh | 15s
                   </Badge>
                 </div>
                 <div className="divide-y divide-border/40 max-h-96 overflow-y-auto pr-1">
@@ -1177,7 +1178,7 @@ function Admin() {
                       <span className="font-medium">{a.title}</span>
                       {a.subtitle && (
                         <span className="text-muted-foreground text-xs truncate max-w-xs">
-                          Â· {a.subtitle}
+                          | {a.subtitle}
                         </span>
                       )}
                       <span className="ml-auto text-xs font-mono text-muted-foreground whitespace-nowrap">
@@ -1244,7 +1245,7 @@ function Admin() {
                   {pending.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                        ðŸŽ‰ Nothing pending â€” moderation queue clear
+                        Nothing pending. The moderation queue is clear.
                       </TableCell>
                     </TableRow>
                   )}
@@ -1353,7 +1354,7 @@ function Admin() {
                   {!artisansFetching && pendingArtisans.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                        ðŸŽ‰ No pending artisan profiles
+                        No pending artisan profiles.
                       </TableCell>
                     </TableRow>
                   )}
@@ -1694,7 +1695,7 @@ function Admin() {
                 </TableBody>
               </Table>
               <div className="p-3.5 text-xs text-muted-foreground border-t bg-muted/20">
-                Plan price tiers: Lite â‚¦5,000 Â· Pro â‚¦15,000 Â· VIP â‚¦40,000
+                Plan price tiers: Lite ₦5,000 | Pro ₦15,000 | VIP ₦40,000
               </div>
             </Card>
           </TabsContent>
@@ -2846,8 +2847,12 @@ type ShopReviewRow = {
 
 function MerchantShopReviewsPanel() {
   const qc = useQueryClient();
+  const confirm = useConfirmAction();
   const [status, setStatus] = useState("pending");
   const [search, setSearch] = useState("");
+  const [reviewTarget, setReviewTarget] = useState<{ shop: ShopReviewRow; decision: "rejected" | "flagged" } | null>(null);
+  const [reviewReason, setReviewReason] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
   const { data: shops = [], isLoading } = useQuery({
     queryKey: ["admin-shop-reviews", status],
     staleTime: 30_000,
@@ -2859,17 +2864,29 @@ function MerchantShopReviewsPanel() {
   });
 
   const review = async (shop: ShopReviewRow, decision: "approved" | "rejected" | "flagged") => {
-    const reason = decision === "approved" ? null : window.prompt(`${decision === "rejected" ? "Rejection" : "Flag"} reason`);
-    if (decision !== "approved" && !reason?.trim()) {
-      if (reason !== null) toast.error("A reason is required.");
+    if (decision !== "approved") {
+      setReviewReason("");
+      setReviewTarget({ shop, decision });
       return;
     }
-    if (!window.confirm(`${decision === "approved" ? "Approve" : decision === "rejected" ? "Reject" : "Flag"} ${shop.business_name ?? "this shop"}?`)) return;
+
+    const approved = await confirm({
+      title: "Approve this shop?",
+      description: `${shop.business_name ?? "This shop"} will be marked approved. Marketplace visibility still follows the global launch rules.`,
+      confirmLabel: "Approve shop",
+    });
+    if (!approved) return;
+    await saveReview(shop, decision, null);
+  };
+
+  const saveReview = async (shop: ShopReviewRow, decision: "approved" | "rejected" | "flagged", reason: string | null) => {
+    setReviewBusy(true);
     const { error } = await rpcUntyped("admin_review_shop", {
       _user_id: shop.user_id,
       _decision: decision,
-      _reason: reason?.trim() || null,
+      _reason: reason,
     });
+    setReviewBusy(false);
     if (error) return showError(error, "We couldn't update this shop review. Please try again.");
     toast.success(`Shop ${decision}.`);
     await Promise.all([
@@ -2879,7 +2896,20 @@ function MerchantShopReviewsPanel() {
     ]);
   };
 
+  const confirmReasonReview = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const target = reviewTarget;
+    const reason = reviewReason.trim();
+    if (!target || !reason) {
+      toast.error("Enter a reason before continuing.");
+      return;
+    }
+    setReviewTarget(null);
+    await saveReview(target.shop, target.decision, reason);
+  };
+
   return (
+    <>
     <Card className="space-y-4 p-5">
       <div>
         <h2 className="text-lg font-bold">Shop Reviews <Badge variant="secondary">{shops.filter((s) => s.shop_status === "pending").length} pending</Badge></h2>
@@ -2915,6 +2945,22 @@ function MerchantShopReviewsPanel() {
         </article>
       ))}
     </Card>
+    <Dialog open={!!reviewTarget} onOpenChange={(open) => { if (!open) setReviewTarget(null); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{reviewTarget?.decision === "rejected" ? "Reject shop" : "Flag shop for review"}</DialogTitle>
+            <DialogDescription>{reviewTarget?.shop.business_name ?? "This shop"} requires a written reason. The owner will see the reason you submit.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={(event) => void confirmReasonReview(event)} className="space-y-4">
+          <Textarea autoFocus value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} placeholder="Enter the reason for this decision" maxLength={1000} rows={4} />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setReviewTarget(null)}>Cancel</Button>
+            <Button type="submit" variant="destructive" disabled={!reviewReason.trim() || reviewBusy}>{reviewBusy ? "Saving…" : reviewTarget?.decision === "rejected" ? "Reject shop" : "Flag shop"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

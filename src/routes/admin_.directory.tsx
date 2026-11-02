@@ -295,7 +295,7 @@ function TierControl({ user }: { user: DirectoryRow }) {
           onClick={() => void setTier("pro", 6)}
           className="h-8 rounded-lg"
         >
-          Pro Â· 6 mo
+          Pro | 6 mo
         </Button>
         <Button
           size="sm"
@@ -304,7 +304,7 @@ function TierControl({ user }: { user: DirectoryRow }) {
           onClick={() => void setTier("lite", 3)}
           className="h-8 rounded-lg"
         >
-          Lite Â· 3 mo
+          Lite | 3 mo
         </Button>
         <Button
           size="sm"
@@ -348,7 +348,7 @@ function UserDirectoryCard({
               <h2 className="break-words font-bold tracking-tight">{name}</h2>
               <Badge className="capitalize">
                 {user.subscription_tier || "free"}
-                {user.tier_locked ? " Â· locked" : ""}
+                {user.tier_locked ? " | locked" : ""}
               </Badge>
               {user.founding_rank && (
                 <Badge variant="secondary">Founder #{user.founding_rank}</Badge>
@@ -409,7 +409,7 @@ function UserDirectoryCard({
             value={
               user.listings_total == null
                 ? null
-                : `${user.listings_total} total Â· ${user.listings_live ?? 0} live Â· ${user.listings_pending ?? 0} pending`
+                : `${user.listings_total} total | ${user.listings_live ?? 0} live | ${user.listings_pending ?? 0} pending`
             }
           />
           <DirectoryField label="Last sign in" value={fmt(user.last_sign_in_at)} />
@@ -469,7 +469,7 @@ function ListingDirectoryCard({
             </p>
             <p className="mt-1 text-xs text-white/75">
               {row.owner_name || "Unknown seller"}
-              {row.owner_email ? ` Â· ${row.owner_email}` : ""}
+              {row.owner_email ? ` | ${row.owner_email}` : ""}
             </p>
           </div>
           <Badge className="shrink-0 capitalize bg-white/15 text-white backdrop-blur">
