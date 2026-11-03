@@ -65,6 +65,7 @@ function ShopPage() {
   const { slug } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
+  const nav = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -519,17 +520,27 @@ function ShopPage() {
 
         <div className="container mx-auto px-4 pb-6 relative">
           <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16 md:-mt-20 z-10 relative">
-            {shop.shop_logo_url ? (
-              <SignedImage
-                path={shop.shop_logo_url}
-                alt="Shop image"
-                className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-background border-4 border-background shadow-md object-cover"
-              />
-            ) : (
-              <div className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-primary text-primary-foreground border-4 border-background shadow-md grid place-items-center text-4xl font-bold">
-                {(shop.business_name ?? shop.full_name ?? "S")[0]}
-              </div>
-            )}
+            <div className="relative shrink-0">
+              {shop.shop_logo_url ? (
+                <SignedImage
+                  path={shop.shop_logo_url}
+                  alt="Shop image"
+                  className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-background border-4 border-background shadow-md object-cover"
+                />
+              ) : (
+                <div className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-primary text-primary-foreground border-4 border-background shadow-md grid place-items-center text-4xl font-bold">
+                  {(shop.business_name ?? shop.full_name ?? "S")[0]}
+                </div>
+              )}
+              {isOwn && shop.id && (
+                <ShopLogoEditor
+                  ownerId={shop.id}
+                  slug={slug}
+                  currentPath={shop.shop_logo_url ?? null}
+                  shopStatus={shop.shop_status ?? null}
+                />
+              )}
+            </div>
 
             <div className="flex-1 space-y-2 w-full">
               <div className="flex flex-wrap items-center gap-2">
