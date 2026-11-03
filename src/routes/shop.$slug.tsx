@@ -1,5 +1,5 @@
 ﻿import { rpcUntyped } from "@/lib/waitlist-rpc";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
@@ -17,6 +17,7 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { ShopLogoEditor } from "@/components/shop/shop-logo-editor";
 import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
 import { SignedImage } from "@/components/signed-image";
 import {
@@ -30,6 +31,7 @@ import {
   Search,
   SlidersHorizontal,
   Package,
+  Plus,
   Users,
   Heart,
   Eye,
@@ -63,6 +65,7 @@ function ShopPage() {
   const { slug } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
+  const nav = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -517,17 +520,27 @@ function ShopPage() {
 
         <div className="container mx-auto px-4 pb-6 relative">
           <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16 md:-mt-20 z-10 relative">
-            {shop.shop_logo_url ? (
-              <SignedImage
-                path={shop.shop_logo_url}
-                alt="Shop image"
-                className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-background border-4 border-background shadow-md object-cover"
-              />
-            ) : (
-              <div className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-primary text-primary-foreground border-4 border-background shadow-md grid place-items-center text-4xl font-bold">
-                {(shop.business_name ?? shop.full_name ?? "S")[0]}
-              </div>
-            )}
+            <div className="relative shrink-0">
+              {shop.shop_logo_url ? (
+                <SignedImage
+                  path={shop.shop_logo_url}
+                  alt="Shop image"
+                  className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-background border-4 border-background shadow-md object-cover"
+                />
+              ) : (
+                <div className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-primary text-primary-foreground border-4 border-background shadow-md grid place-items-center text-4xl font-bold">
+                  {(shop.business_name ?? shop.full_name ?? "S")[0]}
+                </div>
+              )}
+              {isOwn && shop.id && (
+                <ShopLogoEditor
+                  ownerId={shop.id}
+                  slug={slug}
+                  currentPath={shop.shop_logo_url ?? null}
+                  shopStatus={shop.shop_status ?? null}
+                />
+              )}
+            </div>
 
             <div className="flex-1 space-y-2 w-full">
               <div className="flex flex-wrap items-center gap-2">
@@ -858,12 +871,39 @@ function ShopPage() {
               </div>
 
               <TabsContent value="listings" className="mt-4 focus-visible:outline-none">
+                {isOwn && (
+                  <div className="mb-6 flex justify-center">
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="h-12 px-8 text-base font-bold shadow-md"
+                      onClick={() => nav({ to: "/post-ad", search: { type: "goods" } })}
+                    >
+                      <Plus className="h-5 w-5" /> Add Product
+                    </Button>
+                  </div>
+                )}
                 {filteredGoods.length === 0 ? (
                   <div className="text-center py-12 bg-background rounded-xl border border-dashed">
                     <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-60" />
-                    <p className="text-muted-foreground font-medium text-sm">
-                      No matching products found.
-                    </p>
+                    {isOwn && listings.length === 0 ? (
+                      <>
+                        <p className="text-muted-foreground font-medium text-sm">
+                          Your shop has no products yet.
+                        </p>
+                        <Button
+                          type="button"
+                          className="mt-4 h-11 px-6 font-bold"
+                          onClick={() => nav({ to: "/post-ad", search: { type: "goods" } })}
+                        >
+                          <Plus className="h-4 w-4" /> Add Product
+                        </Button>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground font-medium text-sm">
+                        No matching products found.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
