@@ -871,12 +871,39 @@ function ShopPage() {
               </div>
 
               <TabsContent value="listings" className="mt-4 focus-visible:outline-none">
+                {isOwn && (
+                  <div className="mb-6 flex justify-center">
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="h-12 px-8 text-base font-bold shadow-md"
+                      onClick={() => nav({ to: "/post-ad", search: { type: "goods" } })}
+                    >
+                      <Plus className="h-5 w-5" /> Add Product
+                    </Button>
+                  </div>
+                )}
                 {filteredGoods.length === 0 ? (
                   <div className="text-center py-12 bg-background rounded-xl border border-dashed">
                     <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-60" />
-                    <p className="text-muted-foreground font-medium text-sm">
-                      No matching products found.
-                    </p>
+                    {isOwn && listings.length === 0 ? (
+                      <>
+                        <p className="text-muted-foreground font-medium text-sm">
+                          Your shop has no products yet.
+                        </p>
+                        <Button
+                          type="button"
+                          className="mt-4 h-11 px-6 font-bold"
+                          onClick={() => nav({ to: "/post-ad", search: { type: "goods" } })}
+                        >
+                          <Plus className="h-4 w-4" /> Add Product
+                        </Button>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground font-medium text-sm">
+                        No matching products found.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
