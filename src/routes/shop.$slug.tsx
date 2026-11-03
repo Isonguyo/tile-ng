@@ -32,7 +32,6 @@ import {
   SlidersHorizontal,
   Package,
   Plus,
-  Plus,
   Users,
   Heart,
   Eye,
