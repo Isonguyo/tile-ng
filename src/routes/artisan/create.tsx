@@ -330,8 +330,8 @@ function ArtisanCreatePage() {
       if (profilePhoto) {
         const fileExt = profilePhoto.name.split(".").pop();
 
-        // âŒ OLD: `artisans/${user.id}/avatar-${Date.now()}.${fileExt}`
-        // New: NEW: Start directly with user.id
+        // OLD: `artisans/${user.id}/avatar-${Date.now()}.${fileExt}`
+        // New: Use the user ID as the storage path.
         const filePath = `${user.id}/artisan-avatar-${Date.now()}.${fileExt}`;
 
         const { error: avatarErr } = await supabase.storage
@@ -347,8 +347,8 @@ function ArtisanCreatePage() {
         for (const file of portfolioImages) {
           const fileExt = file.name.split(".").pop();
 
-          // âŒ OLD: `artisans/${user.id}/portfolio-${crypto.randomUUID()}.${fileExt}`
-          // New: NEW: Start directly with user.id
+          // OLD: `artisans/${user.id}/portfolio-${crypto.randomUUID()}.${fileExt}`
+          // New: Use the user ID as the storage path.
           const filePath = `${user.id}/artisan-portfolio-${crypto.randomUUID()}.${fileExt}`;
 
           const { error: portErr } = await supabase.storage.from("listings").upload(filePath, file);

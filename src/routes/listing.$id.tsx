@@ -427,7 +427,7 @@ function ChatWithVendorButton({ listingId, sellerId }: { listingId: string; sell
       return showError(error, "We couldn't open this conversation. Please try again.");
     }
 
-    // ✅ Record chat analytics
+    // Record chat analytics
     const { error: trackError } = await supabase.rpc("track_listing_event", {
       p_listing_id: listingId,
       p_event_type: "chat",

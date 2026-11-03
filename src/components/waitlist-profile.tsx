@@ -209,7 +209,7 @@ export function WaitlistProfile({
             >
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Referrals</p>
               <p className="mt-1 text-3xl font-black">{referralCount}</p>
-              <p className="mt-1 text-xs text-primary">View referral tools â†’</p>
+              <p className="mt-1 text-xs text-primary">Open referral tools</p>
             </button>
             <button
               type="button"
@@ -218,7 +218,7 @@ export function WaitlistProfile({
             >
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Reward</p>
               <p className="mt-1 text-xl font-black text-primary">{rewardPlan.toUpperCase()}</p>
-              <p className="mt-1 text-xs text-primary">View reward tiers â†’</p>
+              <p className="mt-1 text-xs text-primary">View reward tiers</p>
             </button>
             <div className="rounded-xl border bg-muted/30 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Position</p>

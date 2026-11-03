@@ -153,7 +153,7 @@ function Index() {
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings", { q, loc, cat, type: activeTab }],
     queryFn: async () => {
-      // Ranking (plan tier â†’ promotion â†’ trust â†’ relevance â†’ recency) happens in the database.
+      // Listings are ranked by plan tier, promotion, trust, relevance and recency in the database.
       const { data, error } = await rpcUntyped("search_listings", {
         _q: q || null,
         _location: loc && loc !== "all" ? loc : null,

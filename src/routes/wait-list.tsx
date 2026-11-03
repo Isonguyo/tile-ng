@@ -391,14 +391,14 @@ function WaitListPage() {
         setDone("exists");
         setStatusData(result);
         persistWaitlistStatus(result);
-        toast.success("You're already on the wait-list 🎉");
+        toast.success("You're already on the wait-list.");
         return;
       }
 
       setDone("joined");
       persistWaitlistStatus(result);
       clearPendingReferral();
-      toast.success("You're in! Your founding-member reward is locked in. 🎉");
+      toast.success("You're in! Your founding-member reward is locked in.");
       void qc.invalidateQueries({ queryKey: ["waitlist-page-data"] });
     },
     onError: (error: Error) =>

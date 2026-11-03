@@ -104,7 +104,7 @@ import { UserOnboardingPanel } from "@/components/admin/user-onboarding-panel";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
-    meta: [{ title: "Admin Cabin — Tile Marketplace" }],
+    meta: [{ title: "Admin Dashboard — Tile Marketplace" }],
     links: [
       {
         rel: "icon",
@@ -193,7 +193,7 @@ function Admin() {
     if (!loading && !isAdmin) nav({ to: "/" });
   }, [isAdmin, loading, nav]);
 
-  // â”€â”€â”€ Mission Control aggregated stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Mission Control aggregated stats
   const { data: pendingPayments = [] } = useQuery({
     queryKey: ["admin-subscription-payments", "pending_review"],
     enabled: isAdmin,
@@ -270,7 +270,7 @@ function Admin() {
     },
   });
 
-  // â”€â”€â”€ Live Activity Feed (auto refresh) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Live Activity Feed (auto refresh)
   const { data: activity = [] } = useQuery({
     queryKey: ["admin-activity-feed"],
     enabled: isAdmin,
@@ -287,7 +287,7 @@ function Admin() {
     },
   });
 
-  // â”€â”€â”€ AI Moderation queue (risk-scored) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // AI Moderation queue (risk-scored)
   const { data: modQueue = [] } = useQuery({
     queryKey: ["admin-mod-queue"],
     enabled: isAdmin,
@@ -361,7 +361,7 @@ function Admin() {
 
   const pending = modQueue;
 
-  // â”€â”€â”€ Reports Center â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Reports Center
   const [reportFilter, setReportFilter] = useState<"open" | "resolved" | "dismissed">("open");
   const { data: reports = [] } = useQuery({
     queryKey: ["admin-reports", reportFilter],
@@ -382,7 +382,7 @@ function Admin() {
     },
   });
 
-  // â”€â”€â”€ Revenue trend (last 30 days) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Revenue trend (last 30 days)
   const { data: trend = [] } = useQuery({
     queryKey: ["admin-revenue-trend"],
     enabled: isAdmin,
@@ -407,7 +407,7 @@ function Admin() {
     },
   });
 
-  // â”€â”€â”€ Platform settings (emergency controls) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Platform settings (emergency controls)
   const { data: platform } = useQuery({
     queryKey: ["admin-platform-settings"],
     enabled: isAdmin,
@@ -495,7 +495,7 @@ function Admin() {
     },
   });
 
-  // â”€â”€â”€ Approved listings still waiting for public launch â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Approved listings still waiting for public launch
   const { data: prelaunchListings = [], isFetching: prelaunchFetching } = useQuery({
     queryKey: ["admin-prelaunch-approved-listings"],
     enabled: isAdmin,
@@ -562,7 +562,7 @@ function Admin() {
     },
   });
 
-  // â”€â”€â”€ Pending artisan profiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Pending artisan profiles
   const { data: pendingArtisans = [], isFetching: artisansFetching } = useQuery({
     queryKey: ["admin-pending-artisans"],
     enabled: isAdmin,
@@ -1056,7 +1056,7 @@ function Admin() {
             </TabsList>
           </div>
 
-          {/* â•â•â• OVERVIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  OVERVIEW  */}
           <TabsContent value="overview" className="space-y-6 mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card className="p-5 lg:col-span-2 border-border/50 bg-card/60 backdrop-blur-sm shadow-sm">
@@ -1191,7 +1191,7 @@ function Admin() {
             </div>
           </TabsContent>
 
-          {/* â•â•â• MODERATION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  MODERATION  */}
           <TabsContent value="moderation" className="space-y-4 mt-0">
             {selected.size > 0 && (
               <Card className="p-3.5 flex flex-wrap items-center gap-3 border-primary/40 bg-primary/10 backdrop-blur-sm">
@@ -1306,7 +1306,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• ARTISAN MODERATION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  ARTISAN MODERATION  */}
           <TabsContent value="shops" className="space-y-4 mt-0">
             <MerchantShopReviewsPanel />
           </TabsContent>
@@ -1510,7 +1510,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• REPORTS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  REPORTS  */}
           <TabsContent value="reports" className="space-y-4 mt-0">
             <div className="flex items-center gap-2">
               {(["open", "resolved", "dismissed"] as const).map((s) => (
@@ -1577,7 +1577,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• KYC â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  KYC  */}
           <TabsContent value="kyc" className="space-y-4 mt-0">
             <Card className="p-0 overflow-hidden border-border/50 shadow-sm">
               <Table>
@@ -1632,7 +1632,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• REVENUE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  REVENUE  */}
           <TabsContent value="money" className="space-y-4 mt-0">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="p-4 bg-card/60 backdrop-blur-sm border-border/50">
@@ -1700,7 +1700,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• USERS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  USERS  */}
           <TabsContent value="users" className="space-y-4 mt-0">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -1779,12 +1779,12 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• BROADCAST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  BROADCAST  */}
           <TabsContent value="broadcast" className="space-y-4 mt-0">
             <BroadcastPanel />
           </TabsContent>
 
-          {/* â•â•â• WAITLIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  WAITLIST  */}
           <TabsContent value="waitlist" className="space-y-4 mt-0">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="p-4 bg-card/60 border-border/50">
@@ -1886,7 +1886,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• LAUNCH REVIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  LAUNCH REVIEW  */}
           <TabsContent value="launch" className="space-y-4 mt-0">
             <Card className="p-5 border-primary/20 bg-primary/5 backdrop-blur-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -2062,7 +2062,7 @@ function Admin() {
             </Card>
           </TabsContent>
 
-          {/* â•â•â• PLATFORM SETTINGS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  PLATFORM SETTINGS  */}
           <TabsContent value="payments" className="space-y-4 mt-0">
             <SubscriptionPaymentsPanel />
           </TabsContent>
@@ -2087,7 +2087,7 @@ function Admin() {
             />
           </TabsContent>
 
-          {/* â•â•â• ROLES & ACCESS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/*  ROLES & ACCESS  */}
           <TabsContent value="codes" className="space-y-4 mt-0">
             <RolesPanel />
           </TabsContent>
@@ -2249,7 +2249,7 @@ function PendingTitle({
   );
 }
 
-// â”€â”€â”€ Helper UI Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Helper UI Components
 
 const TINTS: Record<string, string> = {
   blue: "border-blue-500/20 bg-blue-500/5 text-blue-600 dark:text-blue-400",
@@ -3115,7 +3115,7 @@ function InspectStat({
   );
 }
 
-// â•â•â• ROLE MANAGEMENT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ROLE MANAGEMENT
 type StaffRow = {
   user_id: string;
   full_name: string | null;

@@ -142,7 +142,7 @@ export function SiteHeader() {
                     onClick={() => navigate({ to: "/admin" })}
                   >
                     <Shield className="mr-2 h-4 w-4 text-[#22C55E]" />
-                    Admin Cabin
+                    Admin Dashboard
                   </DropdownMenuItem>
                 )}
 

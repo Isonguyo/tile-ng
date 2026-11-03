@@ -805,8 +805,8 @@ function ShopPage() {
               >
                 <option value="featured">Featured</option>
                 <option value="popular">Most Viewed</option>
-                <option value="price-asc">Price: Low â†’ High</option>
-                <option value="price-desc">Price: High â†’ Low</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
               </select>
             </div>
           </Card>
@@ -972,7 +972,7 @@ function ShopPage() {
                 to="/"
                 className="text-accent hover:underline text-sm font-semibold flex items-center gap-1"
               >
-                â† Back to marketplace
+                Back to marketplace
               </Link>
             </div>
           </section>

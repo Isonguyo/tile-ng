@@ -1178,7 +1178,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
   );
 }
 
-function MerchantOnboarding({ onDone }: { onDone: () => void }) {
+function MerchantOnboarding({ onDone }: { onDone: () => void | Promise<void> }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1193,26 +1193,46 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
   });
 
   const submit = async () => {
-    if (!user || !form.business_name) return toast.error("Business name required");
+    if (!user) return toast.error("Sign in before creating your shop.");
+    const businessName = form.business_name.trim();
+    if (!businessName) return toast.error("Enter a business name to create your shop.");
+
     setBusy(true);
-    const { data: slug } = await supabase.rpc("gen_shop_slug", { _name: form.business_name });
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        ...form,
-        is_merchant: true,
-        shop_slug: slug,
-      })
-      .eq("id", user.id);
-    setBusy(false);
-    if (error)
-      return showError(
-        error,
-        "We couldn't create your shop. Please check your details and try again.",
+    try {
+      const { data: slug, error: slugError } = await supabase.rpc("gen_shop_slug", {
+        _name: businessName,
+      });
+      if (slugError) throw slugError;
+      if (typeof slug !== "string" || !slug.trim()) {
+        throw new Error("A shop URL could not be generated. Please try a different business name.");
+      }
+
+      const { data: updatedProfile, error } = await supabase
+        .from("profiles")
+        .update({
+          ...form,
+          business_name: businessName,
+          is_merchant: true,
+          shop_slug: slug,
+        })
+        .eq("id", user.id)
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!updatedProfile) {
+        throw new Error("Your profile could not be updated. Sign in again and retry.");
+      }
+
+      toast.success(
+        "Shop created as a draft. Review the details in Merchant Hub, then choose Submit for Review.",
       );
-    toast.success("Your shop is live");
-    setOpen(false);
-    onDone();
+      setOpen(false);
+      await onDone();
+    } catch (error) {
+      showError(error, "We couldn't create your shop. Please check your details and try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -1240,6 +1260,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
               <div>
                 <Label>Business name *</Label>
                 <Input
+                  required
                   value={form.business_name}
                   onChange={(e) => setForm({ ...form, business_name: e.target.value })}
                 />
@@ -1292,7 +1313,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
                 </div>
               </div>
               <div>
-                <Label>Account name (Paystack verified  -  simulated)</Label>
+                  <Label>Account holder name</Label>
                 <Input
                   value={form.bank_account_name}
                   onChange={(e) => setForm({ ...form, bank_account_name: e.target.value })}
@@ -1301,7 +1322,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
             </div>
             <DialogFooter>
               <Button disabled={busy} onClick={submit} className="bg-accent text-accent-foreground">
-                {busy ? "Saving..." : "Open my shop"}
+                {busy ? "Creating Draft..." : "Create Shop Draft"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1615,6 +1636,7 @@ type MerchantShopProfile = {
 
 function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () => void | Promise<void> }) {
   const qc = useQueryClient();
+  const { user: authUser } = useAuth();
   const { data: shop, isLoading } = useQuery({
     queryKey: ["merchant-shop-profile", userId],
     queryFn: async () => {
@@ -1633,6 +1655,8 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submissionInFlight = useRef(false);
   const { data: inventory = [] } = useQuery({
     queryKey: ["merchant-shop-listings", userId],
     queryFn: async () => {
@@ -1677,17 +1701,18 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
   };
 
   const save = async () => {
-    if (!form.business_name.trim()) { toast.error("Business name is required."); return false; }
+    if (!form.business_name.trim()) { toast.error("Enter a business name before saving or submitting your shop."); return false; }
     const slug = form.shop_slug.trim().toLowerCase();
-    if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) { toast.error("Use a valid shop URL with lowercase letters, numbers and hyphens."); return false; }
+    if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) { toast.error("Enter a shop URL using lowercase letters and numbers, with single hyphens between words."); return false; }
     setBusy(true);
     try {
       let nextLogo = removeLogo ? null : logoPath;
       let nextCover = removeCover ? null : coverPath;
       if (logoFile) nextLogo = await uploadShopImage(logoFile, "logo");
       if (coverFile) nextCover = await uploadShopImage(coverFile, "cover");
-      const { error } = await fromUntyped("profiles").update({ business_name: form.business_name.trim(), shop_slug: slug, bio: form.bio.trim() || null, state: form.state.trim() || null, lga: form.lga.trim() || null, phone: form.phone.trim() || null, whatsapp: form.whatsapp.trim() || null, shop_logo_url: nextLogo, shop_cover_url: nextCover }).eq("id", userId);
+      const { data: updatedShop, error } = await fromUntyped("profiles").update({ business_name: form.business_name.trim(), shop_slug: slug, bio: form.bio.trim() || null, state: form.state.trim() || null, lga: form.lga.trim() || null, phone: form.phone.trim() || null, whatsapp: form.whatsapp.trim() || null, shop_logo_url: nextLogo, shop_cover_url: nextCover }).eq("id", userId).select("id").maybeSingle();
       if (error) throw error;
+      if (!updatedShop) throw new Error("Your shop details were not saved. Sign in as the shop owner and try again.");
       setLogoPath(nextLogo); setCoverPath(nextCover); setLogoFile(null); setCoverFile(null); setRemoveLogo(false); setRemoveCover(false);
       await Promise.all([Promise.resolve(onSaved()), qc.invalidateQueries({ queryKey: ["merchant-shop-profile", userId] }), qc.invalidateQueries({ queryKey: ["shop", slug] }), qc.invalidateQueries({ queryKey: ["shop", shop?.shop_slug] })]);
       toast.success("Shop details saved.");
@@ -1697,17 +1722,44 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
   };
 
   const submitForReview = async () => {
-    if (!(await save())) return;
-    setBusy(true);
-    const { error } = await rpcUntyped("submit_shop_for_review");
-    setBusy(false);
-    if (error) return showError(error, "We couldn't submit your shop for review. Please check your shop details.");
-    toast.success("Your shop has been submitted for review. Tile Admin will inspect your storefront before approval.");
-    await Promise.all([qc.invalidateQueries({ queryKey: ["merchant-shop-profile", userId] }), qc.invalidateQueries({ queryKey: ["shop", form.shop_slug] }), Promise.resolve(onSaved())]);
+    const currentStatus = shop?.shop_status ?? "draft";
+    if (submissionInFlight.current || !["draft", "rejected"].includes(currentStatus)) return;
+    submissionInFlight.current = true;
+    setSubmitting(true);
+
+    try {
+      if (!authUser || authUser.id !== userId) {
+        throw new Error("Sign in as the shop owner to submit this shop for review.");
+      }
+      const { data: { user: sessionUser }, error: sessionError } = await supabase.auth.getUser();
+      if (sessionError) throw sessionError;
+      if (!sessionUser || sessionUser.id !== userId) {
+        throw new Error("Your shop owner session could not be confirmed. Sign in again and retry.");
+      }
+
+      if (!(await save())) return;
+
+      const { error } = await rpcUntyped("submit_shop_for_review");
+      if (error) throw error;
+
+      toast.success("Your shop was submitted for review. Its status will show Pending Review while Tile Admin reviews it.");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["merchant-shop-profile", userId] }),
+        qc.invalidateQueries({ queryKey: ["shop", form.shop_slug] }),
+        Promise.resolve(onSaved()),
+      ]);
+    } catch (error) {
+      showError(error, "We couldn't submit your shop for review. Check the business name and shop URL, then try again.");
+    } finally {
+      submissionInFlight.current = false;
+      setSubmitting(false);
+    }
   };
 
   if (isLoading) return <Card className={`p-5 ${DASHBOARD_CARD_CLASS}`}>Loading shop details...</Card>;
-  const statusLabel = shop?.shop_status === "pending" ? "Pending Review" : (shop?.shop_status ?? "draft").replace(/^./, (s) => s.toUpperCase());
+  const shopStatus = shop?.shop_status ?? "draft";
+  const canSubmitForReview = shopStatus === "draft" || shopStatus === "rejected";
+  const statusLabel = shopStatus === "pending" ? "Pending Review" : shopStatus.replace(/^./, (s) => s.toUpperCase());
   const uploadField = (kind: "logo" | "cover", label: string, src: string | null, preview: string | null, remove: () => void) => (
     <div className="space-y-2 rounded-xl border border-white/10 p-3">
       <Label className="text-slate-200">{label}</Label>
@@ -1724,18 +1776,23 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
   return (
     <Card className={`space-y-5 p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
       <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold text-white">Shop management</h3><p className="mt-1 text-sm text-slate-400">Update your storefront and manage product review status.</p></div><Badge variant="outline" className="capitalize">{statusLabel}</Badge></div>
-      {shop?.shop_status === "rejected" && shop.shop_rejection_reason && <p className="rounded-lg border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-200">Review feedback: {shop.shop_rejection_reason}</p>}
+      {shopStatus === "draft" && <p className="rounded-lg border border-amber-300/20 bg-amber-300/[0.05] p-3 text-sm text-amber-100">Your shop is a draft and is private. Complete the required details below, save them, and submit the shop for review when you are ready.</p>}
+      {shopStatus === "pending" && <p role="status" className="rounded-lg border border-sky-300/20 bg-sky-300/[0.05] p-3 text-sm text-sky-100">Your shop has been submitted and is awaiting admin review. You cannot submit it again while review is in progress.</p>}
+      {shopStatus === "approved" && <p role="status" className="rounded-lg border border-emerald-300/20 bg-emerald-300/[0.05] p-3 text-sm text-emerald-100">Your shop is approved. Changes are saved through the existing shop moderation rules.</p>}
+      {shopStatus === "rejected" && <p className="rounded-lg border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-200">Your shop was not approved. Update the details below and submit it again for review.</p>}
+      {shopStatus === "flagged" && <p className="rounded-lg border border-amber-300/20 bg-amber-300/[0.05] p-3 text-sm text-amber-100">Your shop has been flagged for admin follow-up. Check the review feedback below or contact Tile Support for help.</p>}
+      {(shopStatus === "rejected" || shopStatus === "flagged") && shop?.shop_rejection_reason && <p className="rounded-lg border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-200">Review feedback: {shop.shop_rejection_reason}</p>}
       <div className="grid gap-3 md:grid-cols-2">{uploadField("logo", "Shop image", logoPath, logoPreview, () => { setLogoFile(null); setLogoPath(null); setRemoveLogo(true); })}{uploadField("cover", "Cover image", coverPath, coverPreview, () => { setCoverFile(null); setCoverPath(null); setRemoveCover(true); })}</div>
       <div className="grid gap-3 md:grid-cols-2">
-        <div><Label>Business name</Label><Input value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></div>
-        <div><Label>Shop URL</Label><div className="flex items-center gap-2"><span className="text-xs text-slate-500">/shop/</span><Input value={form.shop_slug} onChange={(e) => setForm({ ...form, shop_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} /></div></div>
+        <div><Label>Business name *</Label><Input required aria-required="true" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></div>
+        <div><Label>Shop URL *</Label><div className="flex items-center gap-2"><span className="text-xs text-slate-500">/shop/</span><Input required aria-required="true" value={form.shop_slug} onChange={(e) => setForm({ ...form, shop_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} /></div></div>
         <div><Label>State</Label><Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} /></div>
         <div><Label>LGA</Label><Input value={form.lga} onChange={(e) => setForm({ ...form, lga: e.target.value })} /></div>
         <div><Label>Contact phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
         <div><Label>WhatsApp number</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} /></div>
         <div className="md:col-span-2"><Label>Business description</Label><Textarea rows={4} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} /></div>
       </div>
-      <div className="flex flex-wrap gap-2"><Button type="button" disabled={busy} onClick={() => void save()}>{busy ? "Saving..." : "Save Shop Details"}</Button><Button asChild type="button" variant="outline"><Link to="/post-ad">Upload Product</Link></Button><Button type="button" variant="outline" disabled={busy} onClick={() => void submitForReview()}>{busy ? "Submitting..." : shop?.shop_status === "rejected" ? "Edit and Resubmit" : "Submit Shop for Review"}</Button></div>
+      <div className="flex flex-wrap gap-2"><Button type="button" disabled={busy || submitting} onClick={() => void save()}>{busy ? "Saving..." : "Save Shop Details"}</Button><Button asChild type="button" variant="outline"><Link to="/post-ad">Upload Product</Link></Button>{canSubmitForReview && <Button type="button" variant="outline" disabled={busy || submitting} onClick={() => void submitForReview()}>{submitting ? "Submitting..." : shopStatus === "rejected" ? "Save Changes and Resubmit" : "Submit for Review"}</Button>}</div>
       <div className="space-y-3 border-t border-white/10 pt-4"><div className="flex items-center justify-between gap-3"><h4 className="font-semibold text-slate-100">Shop products</h4><span className="text-xs text-slate-400">{inventory.length} products</span></div>{inventory.length === 0 ? <p className="text-sm text-slate-400">Your existing and new product ads will appear here automatically.</p> : inventory.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{item.title}</p><Badge variant="outline" className="mt-1 capitalize">{item.status === "pending" ? "Pending Review" : item.status}</Badge>{item.status === "rejected" && item.rejection_reason && <p className="mt-1 text-xs text-red-200">{item.rejection_reason}</p>}</div>{item.status === "approved" && (!item.expires_at || new Date(item.expires_at).getTime() > Date.now()) && <Button size="sm" variant="outline" onClick={async () => { const { error } = await rpcUntyped("set_shop_listing_pin", { _listing_id: item.id, _pin: !item.shop_pinned_at }); if (error) return showError(error, "We couldn't update the shop pin."); toast.success(item.shop_pinned_at ? "Product unpinned" : "Product pinned"); await qc.invalidateQueries({ queryKey: ["merchant-shop-listings", userId] }); await qc.invalidateQueries({ queryKey: ["shop-listings", userId] }); }}>{item.shop_pinned_at ? "Unpin" : "Pin to shop"}</Button>}</div>)}</div>
     </Card>
   );
@@ -2360,9 +2417,7 @@ function ListingRow({
               </p>
             </div>
 
-            <span className="text-xs text-slate-500 transition-transform group-open:rotate-180">
-              â–¼
-            </span>
+            <span className="text-xs text-slate-500">Details</span>
           </summary>
 
           <div className="border-t border-white/[0.07] p-3">

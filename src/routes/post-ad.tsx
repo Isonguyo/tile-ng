@@ -86,7 +86,7 @@ const CATEGORY_META: Record<string, { icon: string; subtitle: string }> = {
   phones: { icon: "", subtitle: "Electronics, mobile and accessories" },
   fashion: { icon: "", subtitle: "Style, wearables and beauty" },
   cars: { icon: "", subtitle: "Vehicles and auto gear" },
-  property: { icon: " ", subtitle: "Homes, apartments and rentals" },
+  property: { icon: "", subtitle: "Homes, apartments and rentals" },
   furniture: { icon: "", subtitle: "Interior pieces and decor" },
   electronics: { icon: "", subtitle: "Laptops, consoles and gadgets" },
 };
@@ -767,7 +767,7 @@ function PostAd() {
                   onClick={() => nav({ to: "/artisan/create" })}
                 >
                   <div className="text-left">
-                    <h3 className="font-bold text-lg">  Offer a Service</h3>
+                    <h3 className="font-bold text-lg">Offer a Service</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Create an artisan profile with portfolios and bookings.
                     </p>
