@@ -1,5 +1,5 @@
 ﻿import { rpcUntyped } from "@/lib/waitlist-rpc";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
@@ -17,6 +17,7 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
+import { ShopLogoEditor } from "@/components/shop/shop-logo-editor";
 import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
 import { SignedImage } from "@/components/signed-image";
 import {
@@ -30,6 +31,7 @@ import {
   Search,
   SlidersHorizontal,
   Package,
+  Plus,
   Plus,
   Users,
   Heart,
