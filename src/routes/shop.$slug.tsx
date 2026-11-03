@@ -30,6 +30,7 @@ import {
   Search,
   SlidersHorizontal,
   Package,
+  Plus,
   Users,
   Heart,
   Eye,
