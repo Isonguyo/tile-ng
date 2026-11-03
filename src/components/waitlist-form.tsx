@@ -138,7 +138,7 @@ export function WaitlistForm({
               spellCheck={false}
             />
             {referral.state === "checking" && (
-              <p className="text-xs text-muted-foreground">Checking this referral codeâ€¦</p>
+              <p className="text-xs text-muted-foreground">Checking this referral code...</p>
             )}
             {referral.state === "invalid" && (
               <p className="text-xs text-amber-600 dark:text-amber-500">
@@ -177,7 +177,7 @@ export function WaitlistForm({
         >
           {pending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Joiningâ€¦
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Joining...
             </>
           ) : (
             (formContent.submit ?? "Join the Waitlist")

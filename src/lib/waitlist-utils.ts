@@ -210,7 +210,7 @@ export function isUnboundedRewardMax(max: number) {
 }
 
 export function formatRewardRange(tier: Pick<FoundingReward, "min" | "max">) {
-  return isUnboundedRewardMax(tier.max) ? `#${tier.min}+` : `#${tier.min}â€“${tier.max}`;
+  return isUnboundedRewardMax(tier.max) ? `#${tier.min}+` : `#${tier.min}-${tier.max}`;
 }
 
 export function getFoundingReward(position?: number): FoundingReward {

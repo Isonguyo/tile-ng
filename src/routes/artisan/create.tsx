@@ -331,7 +331,7 @@ function ArtisanCreatePage() {
         const fileExt = profilePhoto.name.split(".").pop();
 
         // âŒ OLD: `artisans/${user.id}/avatar-${Date.now()}.${fileExt}`
-        // âœ… NEW: Start directly with user.id
+        // New: NEW: Start directly with user.id
         const filePath = `${user.id}/artisan-avatar-${Date.now()}.${fileExt}`;
 
         const { error: avatarErr } = await supabase.storage
@@ -348,7 +348,7 @@ function ArtisanCreatePage() {
           const fileExt = file.name.split(".").pop();
 
           // âŒ OLD: `artisans/${user.id}/portfolio-${crypto.randomUUID()}.${fileExt}`
-          // âœ… NEW: Start directly with user.id
+          // New: NEW: Start directly with user.id
           const filePath = `${user.id}/artisan-portfolio-${crypto.randomUUID()}.${fileExt}`;
 
           const { error: portErr } = await supabase.storage.from("listings").upload(filePath, file);
@@ -528,9 +528,9 @@ function ArtisanCreatePage() {
                 <div className="mt-6 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-5">
                   <h3 className="mb-4 font-semibold text-white">How it works</h3>
                   <div className="space-y-3 text-sm text-slate-400">
-                    <p>1ï¸âƒ£ Create your artisan profile</p>
-                    <p>2ï¸âƒ£ Upload your portfolio</p>
-                    <p>3ï¸âƒ£ Customers contact you directly</p>
+                    <p>1. Create your artisan profile</p>
+                    <p>2. Upload your portfolio</p>
+                    <p>3. Customers contact you directly</p>
                   </div>
                 </div>
 
@@ -942,7 +942,7 @@ function ArtisanCreatePage() {
                   </Label>
                   <div className="relative rounded-md shadow-sm">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                      <span className="text-muted-foreground text-sm">â‚¦</span>
+                      <span className="text-muted-foreground text-sm">NGN </span>
                     </div>
                     <Input
                       id="starting_price"
@@ -953,7 +953,7 @@ function ArtisanCreatePage() {
                     />
                   </div>
                   <p className="text-[11px] leading-5 text-slate-500">
-                    Example: Starting from â‚¦15,000 per square meter or project base rate.
+                    Example: Starting from NGN 15,000 per square meter or project base rate.
                   </p>
                 </div>
 
@@ -1150,14 +1150,14 @@ function ArtisanCreatePage() {
                         experience
                       </span>
                       <span className="flex items-center gap-1 text-slate-400">
-                        <MapPin className="h-3.5 w-3.5" /> {selectedStateName || "Lagos"} â€¢{" "}
+                        <MapPin className="h-3.5 w-3.5" /> {selectedStateName || "Lagos"} -{" "}
                         {selectedLgaName || "Ikeja"}
                       </span>
                     </div>
 
                     {watch.starting_price && (
                       <div className="mt-4 rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-4 py-1.5 text-xs font-bold text-emerald-100">
-                        Starting From â‚¦{Number(watch.starting_price).toLocaleString()}
+                        Starting From NGN {Number(watch.starting_price).toLocaleString()}
                       </div>
                     )}
                   </div>
@@ -1208,17 +1208,17 @@ function ArtisanCreatePage() {
                       <div
                         className={`rounded-lg border p-2 ${watch.offers_home_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}
                       >
-                        Home Service {watch.offers_home_service ? "âœ“" : "âœ—"}
+                        Home Service {watch.offers_home_service ? "Yes" : "No"}
                       </div>
                       <div
                         className={`rounded-lg border p-2 ${watch.offers_emergency_service ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}
                       >
-                        Emergency {watch.offers_emergency_service ? "âœ“" : "âœ—"}
+                        Emergency {watch.offers_emergency_service ? "Yes" : "No"}
                       </div>
                       <div
                         className={`rounded-lg border p-2 ${watch.available_weekends ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "opacity-40"}`}
                       >
-                        Weekends {watch.available_weekends ? "âœ“" : "âœ—"}
+                        Weekends {watch.available_weekends ? "Yes" : "No"}
                       </div>
                     </div>
                   </div>

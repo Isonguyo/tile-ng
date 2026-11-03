@@ -158,7 +158,7 @@ function AdminWaitlistPage() {
       <div className="min-h-screen bg-background">
         <SiteHeader />
         <div className="container mx-auto px-4 py-24 text-center text-muted-foreground">
-          Loadingâ€¦
+          Loading...
         </div>
       </div>
     );
@@ -209,7 +209,7 @@ function AdminWaitlistPage() {
           <Stat
             label="Total members"
             value={total}
-            hint={`${stats?.today ?? 0} today â€¢ ${stats?.week ?? 0} this week`}
+            hint={`${stats?.today ?? 0} today - ${stats?.week ?? 0} this week`}
           />
           <Stat label="Buyers" value={stats?.buyers ?? 0} />
           <Stat label="Sellers" value={stats?.sellers ?? 0} />
@@ -221,7 +221,7 @@ function AdminWaitlistPage() {
           <Stat
             label="Conversion"
             value={`${conversion}%`}
-            hint={`${visits} visits â€¢ ${stats?.join_clicks ?? 0} clicks`}
+            hint={`${visits} visits - ${stats?.join_clicks ?? 0} clicks`}
           />
         </div>
 
@@ -255,7 +255,7 @@ function AdminWaitlistPage() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9"
-                placeholder="Search name, email, stateâ€¦"
+                placeholder="Search name, email, state..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
@@ -279,16 +279,16 @@ function AdminWaitlistPage() {
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.full_name}</TableCell>
                     <TableCell className="text-xs">{r.email}</TableCell>
-                    <TableCell className="text-xs">{r.phone ?? "â€”"}</TableCell>
+                    <TableCell className="text-xs">{r.phone ?? " - "}</TableCell>
                     <TableCell className="text-xs">
-                      {[r.city, r.state].filter(Boolean).join(", ") || "â€”"}
+                      {[r.city, r.state].filter(Boolean).join(", ") || " - "}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="capitalize">
                         {r.user_type}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{r.referral_code ?? "â€”"}</TableCell>
+                    <TableCell className="text-xs">{r.referral_code ?? " - "}</TableCell>
                     <TableCell className="text-xs">
                       {new Date(r.created_at).toLocaleDateString()}
                     </TableCell>

@@ -71,9 +71,9 @@ function useAdminRpc(key: string, fn: string, enabled: boolean) {
 }
 
 function fmt(value?: string | null) {
-  if (!value) return "â€”";
+  if (!value) return " - ";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "â€”" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? " - " : date.toLocaleString();
 }
 
 function collectImageCandidates(value: unknown, field = ""): string[] {
@@ -663,7 +663,7 @@ function DirectoryPage() {
           </div>
           <h1 className="mt-5 text-2xl font-black">Admins only</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            You donâ€™t have permission to view the platform directory.
+            You don't have permission to view the platform directory.
           </p>
           <Button asChild className="mt-6 rounded-xl">
             <Link to="/">Go home</Link>
@@ -740,7 +740,7 @@ function DirectoryPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-11 rounded-xl border-border/60 bg-background/70 pl-9 pr-10"
-                placeholder="Search anythingâ€¦"
+                placeholder="Search anything..."
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
@@ -886,7 +886,7 @@ function LoadingDirectory() {
     <div className="grid min-h-48 place-items-center rounded-2xl border border-dashed border-border/70 bg-card/30">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
-        Loading directory recordsâ€¦
+        Loading directory records...
       </div>
     </div>
   );

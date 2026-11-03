@@ -834,7 +834,7 @@ function Index() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
                 <Badge className="mb-3 gap-1 rounded-full border border-emerald-300/15 bg-emerald-300/[0.07] px-3 text-emerald-200">
-                  ðŸ”¥ Trending Professionals
+                   Trending Professionals
                 </Badge>
                 <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Find Skilled Artisans Near You
@@ -890,7 +890,7 @@ function Index() {
                     </p>
 
                     <p className="mt-2 flex items-center justify-center gap-1 text-xs text-slate-400 sm:justify-start">
-                      ðŸ“ {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "Nigeria"}
+                       {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "Nigeria"}
                     </p>
 
                     <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-3">

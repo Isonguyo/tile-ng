@@ -65,7 +65,7 @@ function ForgotPage() {
   return (
     <AuthLayout
       title="Forgot password?"
-      description="Enter your email and weâ€™ll send a secure reset link to your inbox."
+      description="Enter your email and we'll send a secure reset link to your inbox."
       backTo="/login"
       backLabel="Back to sign in"
       compact
@@ -77,7 +77,7 @@ function ForgotPage() {
             <div>
               <p className="font-semibold">Check your inbox</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                If {email} is registered, weâ€™ve sent a secure reset link.
+                If {email} is registered, we've sent a secure reset link.
               </p>
             </div>
           </div>
@@ -101,14 +101,14 @@ function ForgotPage() {
               <p className="text-sm text-red-600">{errors.email.message}</p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Weâ€™ll never share your email with third parties.
+                We'll never share your email with third parties.
               </p>
             )}
           </div>
 
           <Button type="submit" disabled={busy || !isValid} className="w-full">
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {busy ? "Sending reset linkâ€¦" : "Send reset link"}
+            {busy ? "Sending reset link..." : "Send reset link"}
           </Button>
         </form>
       )}

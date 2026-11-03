@@ -199,7 +199,7 @@ function ChatPage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <LoadingSpinner label="Loading chatâ€¦" />
+        <LoadingSpinner label="Loading chat..." />
       </div>
     );
 
@@ -218,7 +218,7 @@ function ChatPage() {
           )}
           {messages.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-8">
-              Say hi to start the conversation ðŸ‘‹
+              Say hi to start the conversation 
             </p>
           )}
           {messages.map((m) => {
@@ -252,7 +252,7 @@ function ChatPage() {
           {otherTyping && (
             <div className="flex justify-start">
               <div className="bg-card border rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-muted-foreground italic">
-                typingâ€¦
+                typing...
               </div>
             </div>
           )}
@@ -264,7 +264,7 @@ function ChatPage() {
           <Input
             value={text}
             onChange={(e) => onTyping(e.target.value)}
-            placeholder="Type a messageâ€¦"
+            placeholder="Type a message..."
             disabled={sending}
             autoFocus
           />

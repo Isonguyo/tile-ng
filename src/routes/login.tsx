@@ -139,7 +139,7 @@ function LoginPage() {
             <p className="text-sm text-red-600">{errors.email.message}</p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Weâ€™ll keep your account secure with Supabase auth.
+              We'll keep your account secure with Supabase auth.
             </p>
           )}
         </div>
@@ -186,7 +186,7 @@ function LoginPage() {
           className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
         >
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {busy ? "Signing inâ€¦" : "Sign in"}
+          {busy ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 

@@ -248,7 +248,7 @@ export function WaitlistProfile({
                 Your referral code
               </p>
               <p className="mt-1 font-mono text-xl font-black tracking-wider">
-                {status?.referral_token ?? "â€”"}
+                {status?.referral_token ?? " - "}
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Button

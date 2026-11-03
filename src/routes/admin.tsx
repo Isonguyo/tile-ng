@@ -739,7 +739,7 @@ function Admin() {
 
   // Marketplace health score
   const health = useMemo(() => {
-    if (!dash) return { score: 0, label: "â€”" };
+    if (!dash) return { score: 0, label: " - " };
     const reports = dash.reports_open;
     const kyc = dash.kyc_pending;
     const pending = dash.listings_pending;
@@ -1093,7 +1093,7 @@ function Admin() {
                         fontSize={11}
                         stroke="currentColor"
                         className="text-muted-foreground opacity-70"
-                        tickFormatter={(v) => `â‚¦${(v / 1000).toFixed(0)}k`}
+                        tickFormatter={(v) => `NGN ${(v / 1000).toFixed(0)}k`}
                       />
                       <RTooltip
                         formatter={(v: number) => formatNaira(v)}
@@ -1267,7 +1267,7 @@ function Admin() {
                           onClick={() => setInspectId(l.seller_id)}
                           className="font-medium hover:text-primary underline-offset-2 hover:underline text-left transition-colors"
                         >
-                          {l.seller_name ?? "â€”"}
+                          {l.seller_name ?? " - "}
                         </button>
                         <div className="text-xs text-muted-foreground">
                           {l.account_age_days}d account age
@@ -1325,7 +1325,7 @@ function Admin() {
                   </p>
                 </div>
                 <Badge variant="outline" className="font-mono text-xs font-bold">
-                  {artisansFetching ? "Loadingâ€¦" : `${pendingArtisans.length} pending`}
+                  {artisansFetching ? "Loading..." : `${pendingArtisans.length} pending`}
                 </Badge>
               </div>
             </Card>
@@ -1347,7 +1347,7 @@ function Admin() {
                   {artisansFetching && pendingArtisans.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                        Loading artisan review queueâ€¦
+                        Loading artisan review queue...
                       </TableCell>
                     </TableRow>
                   )}
@@ -1388,10 +1388,10 @@ function Admin() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm font-medium">
-                        {artisan.profession ?? "â€”"}
+                        {artisan.profession ?? " - "}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {[artisan.lga, artisan.state].filter(Boolean).join(", ") || "â€”"}
+                        {[artisan.lga, artisan.state].filter(Boolean).join(", ") || " - "}
                       </TableCell>
                       <TableCell className="text-sm">{artisan.years_experience ?? 0} yrs</TableCell>
                       <TableCell>
@@ -1551,7 +1551,7 @@ function Admin() {
                           {r.entity_type}
                         </Badge>
                         <div className="font-mono text-[10px] text-muted-foreground mt-1">
-                          {r.entity_id.slice(0, 8)}â€¦
+                          {r.entity_id.slice(0, 8)}...
                         </div>
                       </TableCell>
                       <TableCell className="text-sm max-w-xs">
@@ -1560,7 +1560,7 @@ function Admin() {
                           <div className="text-xs text-muted-foreground truncate">{r.details}</div>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs">{r.reporter_name ?? "â€”"}</TableCell>
+                      <TableCell className="text-xs">{r.reporter_name ?? " - "}</TableCell>
                       <TableCell className="text-xs font-mono whitespace-nowrap">
                         {timeAgo(r.created_at)}
                       </TableCell>
@@ -1608,12 +1608,12 @@ function Admin() {
                           {p.full_name}
                         </button>
                       </TableCell>
-                      <TableCell className="text-sm">{p.phone ?? "â€”"}</TableCell>
+                      <TableCell className="text-sm">{p.phone ?? " - "}</TableCell>
                       <TableCell>
                         <Badge className="capitalize text-[10px]">{p.kyc_status}</Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">
-                        {p.kyc_doc_url ? "uploaded" : "â€”"}
+                        {p.kyc_doc_url ? "uploaded" : " - "}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -1688,7 +1688,7 @@ function Admin() {
                         {formatNaira(Number(t.amount))}
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
-                        {t.reference ?? "â€”"}
+                        {t.reference ?? " - "}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1705,7 +1705,7 @@ function Admin() {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Search users by name or emailâ€¦"
+                placeholder="Search users by name or email..."
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
                 className="pl-9 h-10 border-border/60 bg-card/60"
@@ -1739,11 +1739,11 @@ function Admin() {
                           className="hover:text-primary underline-offset-2 hover:underline text-left flex items-center gap-1.5 font-semibold"
                         >
                           <UserSearch className="h-3.5 w-3.5 text-muted-foreground" />
-                          {u.full_name ?? "â€”"}
+                          {u.full_name ?? " - "}
                         </button>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {u.email ?? "â€”"}
+                        {u.email ?? " - "}
                       </TableCell>
                       <TableCell>
                         <Badge className="capitalize text-[10px]">{u.subscription_tier}</Badge>
@@ -1763,7 +1763,7 @@ function Admin() {
                           {u.signupSource}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs capitalize">{u.kyc_status ?? "â€”"}</TableCell>
+                      <TableCell className="text-xs capitalize">{u.kyc_status ?? " - "}</TableCell>
                       <TableCell className="text-right font-mono font-semibold">
                         {u.active_ads}
                       </TableCell>
@@ -1851,11 +1851,11 @@ function Admin() {
                       className="hover:bg-muted/30 transition-colors"
                     >
                       <TableCell className="font-mono font-bold text-xs">
-                        #{entry.queue_position ?? "â€”"}
+                        #{entry.queue_position ?? " - "}
                       </TableCell>
-                      <TableCell className="font-medium">{entry.full_name ?? "â€”"}</TableCell>
+                      <TableCell className="font-medium">{entry.full_name ?? " - "}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {entry.email ?? "â€”"}
+                        {entry.email ?? " - "}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize text-[10px]">
@@ -1863,7 +1863,7 @@ function Admin() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {[entry.city, entry.state].filter(Boolean).join(", ") || "â€”"}
+                        {[entry.city, entry.state].filter(Boolean).join(", ") || " - "}
                       </TableCell>
                       <TableCell>
                         {entry.auth_user_id ? (
@@ -1877,7 +1877,7 @@ function Admin() {
                         )}
                       </TableCell>
                       <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                        {entry.created_at ? timeAgo(entry.created_at) : "â€”"}
+                        {entry.created_at ? timeAgo(entry.created_at) : " - "}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1913,7 +1913,7 @@ function Admin() {
                   Listings
                 </p>
                 <p className="mt-1 text-2xl font-black">
-                  {prelaunchFetching ? "â€¦" : prelaunchListings.length}
+                  {prelaunchFetching ? "..." : prelaunchListings.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Approved and waiting for launch</p>
               </Card>
@@ -1922,7 +1922,7 @@ function Admin() {
                   Artisan Profiles
                 </p>
                 <p className="mt-1 text-2xl font-black">
-                  {prelaunchArtisansFetching ? "â€¦" : prelaunchArtisans.length}
+                  {prelaunchArtisansFetching ? "..." : prelaunchArtisans.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Approved and waiting for launch</p>
               </Card>
@@ -1932,7 +1932,7 @@ function Admin() {
                 </p>
                 <p className="mt-1 text-2xl font-black">
                   {prelaunchFetching || prelaunchArtisansFetching
-                    ? "â€¦"
+                    ? "..."
                     : prelaunchListings.length + prelaunchArtisans.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Private until Marketplace Launch</p>
@@ -1956,7 +1956,7 @@ function Admin() {
                     {prelaunchFetching && prelaunchListings.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                          Loading pre-launch listingsâ€¦
+                          Loading pre-launch listings...
                         </TableCell>
                       </TableRow>
                     )}
@@ -2002,7 +2002,7 @@ function Admin() {
                   </p>
                 </div>
                 <Badge variant="outline" className="w-fit">
-                  {prelaunchArtisansFetching ? "Loadingâ€¦" : `${prelaunchArtisans.length} profiles`}
+                  {prelaunchArtisansFetching ? "Loading..." : `${prelaunchArtisans.length} profiles`}
                 </Badge>
               </div>
               <div className="overflow-x-auto">
@@ -2021,7 +2021,7 @@ function Admin() {
                     {prelaunchArtisansFetching && prelaunchArtisans.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                          Loading approved artisan profilesâ€¦
+                          Loading approved artisan profiles...
                         </TableCell>
                       </TableRow>
                     )}
@@ -2037,11 +2037,11 @@ function Admin() {
                         <TableCell className="font-semibold">
                           {artisan.full_name ?? "Unnamed artisan"}
                         </TableCell>
-                        <TableCell>{artisan.profession ?? "â€”"}</TableCell>
+                        <TableCell>{artisan.profession ?? " - "}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {artisan.location ||
                             [artisan.lga, artisan.state].filter(Boolean).join(", ") ||
-                            "â€”"}
+                            " - "}
                         </TableCell>
                         <TableCell>
                           <Badge className="capitalize">
@@ -2129,7 +2129,7 @@ function RejectArtisanModal({
         <Textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Explain what the artisan needs to update or fixâ€¦"
+          placeholder="Explain what the artisan needs to update or fix..."
           rows={4}
           className="mt-2"
         />
@@ -2223,7 +2223,7 @@ function PendingTitle({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {l.title} â€” Images ({urls.length})
+              {l.title}  -  Images ({urls.length})
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
@@ -2300,7 +2300,7 @@ function QueueCard({
   icon: React.ComponentType<{ className?: string }>;
   onClick?: () => void;
 }) {
-  const isEmpty = count === 0 || count === "â‚¦0";
+  const isEmpty = count === 0 || count === "NGN 0";
   return (
     <button
       onClick={onClick}
@@ -2396,7 +2396,7 @@ function ReportActions({
   const resolve = async () => {
     const confirmed = await confirm({
       title: "Resolve this report?",
-      description: `The action â€œ${action}â€ will be applied to this ${report.entity_type} report.`,
+      description: `The action "${action}" will be applied to this ${report.entity_type} report.`,
       confirmLabel: "Resolve report",
       destructive: action !== "dismiss",
     });
@@ -2455,7 +2455,7 @@ function ReportActions({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              placeholder="Provide audit context for this actionâ€¦"
+              placeholder="Provide audit context for this action..."
               className="mt-1"
             />
           </div>
@@ -2559,7 +2559,7 @@ function BroadcastPanel() {
         </div>
         <Button onClick={send} disabled={sending} className="w-full h-10 font-semibold">
           <Bell className="h-4 w-4 mr-2" />
-          {sending ? "Dispatching Broadcastâ€¦" : "Dispatch Broadcast"}
+          {sending ? "Dispatching Broadcast..." : "Dispatch Broadcast"}
         </Button>
       </div>
     </Card>
@@ -2711,7 +2711,7 @@ function PlatformSettings({
               Approved Listings
             </p>
             <p className="mt-1 text-2xl font-black">
-              {prelaunchListingLoading ? "â€¦" : prelaunchListingCount}
+              {prelaunchListingLoading ? "..." : prelaunchListingCount}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">Waiting for Marketplace Launch.</p>
           </div>
@@ -2721,7 +2721,7 @@ function PlatformSettings({
               Approved Artisan Profiles
             </p>
             <p className="mt-1 text-2xl font-black">
-              {prelaunchArtisanLoading ? "â€¦" : prelaunchArtisanCount}
+              {prelaunchArtisanLoading ? "..." : prelaunchArtisanCount}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">Waiting for Marketplace Launch.</p>
           </div>
@@ -2749,7 +2749,7 @@ function PlatformSettings({
 
         <p className="text-xs text-muted-foreground">
           {prelaunchListingLoading || prelaunchArtisanLoading
-            ? "Loading approved content totalsâ€¦"
+            ? "Loading approved content totals..."
             : `${prelaunchListingCount + prelaunchArtisanCount} total approved items are waiting for launch.`}
         </p>
 
@@ -2769,7 +2769,7 @@ function PlatformSettings({
               ) : (
                 <Rocket className="h-4 w-4 mr-2" />
               )}
-              {launching ? "Launching Marketplaceâ€¦" : "Launch Marketplace Now"}
+              {launching ? "Launching Marketplace..." : "Launch Marketplace Now"}
             </Button>
           )}
         </div>
@@ -3006,7 +3006,7 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
         </SheetHeader>
         {isLoading && (
           <div className="py-20 text-center text-muted-foreground text-sm">
-            Fetching user recordsâ€¦
+            Fetching user records...
           </div>
         )}
         {data && (
@@ -3017,7 +3017,7 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-base truncate">{data.full_name ?? "Anonymous User"}</p>
-                <p className="text-xs text-muted-foreground truncate">{data.email ?? "â€”"}</p>
+                <p className="text-xs text-muted-foreground truncate">{data.email ?? " - "}</p>
                 <div className="flex items-center gap-1.5 mt-2">
                   <Badge className="capitalize text-[10px]">{data.subscription_tier}</Badge>
                   {data.is_verified && (
@@ -3054,9 +3054,9 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
               <InspectStat label="Wallet Balance" value={formatNaira(data.wallet_balance)} />
               <InspectStat label="Wallet Transactions" value={data.wallet_txns} />
               <InspectStat label="KYC Status" value={data.kyc_status} />
-              <InspectStat label="Phone Number" value={data.phone ?? "â€”"} />
-              <InspectStat label="State" value={data.state ?? "â€”"} />
-              <InspectStat label="Shop Slug" value={data.shop_slug ?? "â€”"} />
+              <InspectStat label="Phone Number" value={data.phone ?? " - "} />
+              <InspectStat label="State" value={data.state ?? " - "} />
+              <InspectStat label="Shop Slug" value={data.shop_slug ?? " - "} />
               <InspectStat label="Artisan Status" value={data.is_artisan ? "Yes" : "No"} />
               <InspectStat label="Account Created" value={timeAgo(data.created_at)} />
               <InspectStat
@@ -3064,7 +3064,7 @@ function UserInspector({ id, onClose }: { id: string | null; onClose: () => void
                 value={
                   data.subscription_until
                     ? new Date(data.subscription_until).toLocaleDateString()
-                    : "â€”"
+                    : " - "
                 }
               />
             </div>
@@ -3208,7 +3208,7 @@ function RolesPanel() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search user by name or emailâ€¦"
+            placeholder="Search user by name or email..."
             className="h-10 border-border/60 bg-background/50"
           />
           <Button type="submit" className="h-10 font-semibold px-4">
@@ -3219,10 +3219,10 @@ function RolesPanel() {
         {term.trim().length >= 2 && (
           <div className="rounded-xl border border-border/60 divide-y divide-border/40 overflow-hidden bg-background/40">
             {isFetching && (
-              <p className="p-4 text-xs text-muted-foreground">Searching user directoryâ€¦</p>
+              <p className="p-4 text-xs text-muted-foreground">Searching user directory...</p>
             )}
             {!isFetching && results.length === 0 && (
-              <p className="p-4 text-xs text-muted-foreground">No users match â€œ{term}â€.</p>
+              <p className="p-4 text-xs text-muted-foreground">No users match "{term}".</p>
             )}
             {results.map((r) => (
               <div
@@ -3231,7 +3231,7 @@ function RolesPanel() {
               >
                 <div>
                   <p className="font-bold text-sm">{r.full_name ?? "Unnamed user"}</p>
-                  <p className="text-xs text-muted-foreground">{r.email ?? "â€”"}</p>
+                  <p className="text-xs text-muted-foreground">{r.email ?? " - "}</p>
                 </div>
                 <RoleButtons row={r} />
               </div>
@@ -3260,8 +3260,8 @@ function RolesPanel() {
             )}
             {staff.map((s) => (
               <TableRow key={s.user_id} className="hover:bg-muted/30 transition-colors">
-                <TableCell className="font-bold text-sm">{s.full_name ?? "â€”"}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{s.email ?? "â€”"}</TableCell>
+                <TableCell className="font-bold text-sm">{s.full_name ?? " - "}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{s.email ?? " - "}</TableCell>
                 <TableCell className="space-x-1">
                   {(s.roles ?? []).map((r) => (
                     <Badge key={r} className="capitalize text-[10px] font-semibold">

@@ -219,7 +219,7 @@ function VerifyEmailPage() {
             <CheckCircle2 className="h-9 w-9" />
           </div>
 
-          <h2 className="mt-5 text-xl font-bold">You're verified! ðŸŽ‰</h2>
+          <h2 className="mt-5 text-xl font-bold">You're verified! </h2>
 
           <p className="mt-2 text-sm text-muted-foreground">
             {email
@@ -234,7 +234,7 @@ function VerifyEmailPage() {
           <p className="mt-3 text-xs text-muted-foreground">
             {waitlistLinked
               ? "Your early-access information has been linked to this account."
-              : "We're finishing your account setupâ€¦"}
+              : "We're finishing your account setup..."}
           </p>
 
           <Button onClick={continueToTile} className="mt-6 w-full">

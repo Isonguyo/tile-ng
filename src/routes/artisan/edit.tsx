@@ -180,7 +180,7 @@ function EditArtisanProfilePage() {
       <div className="min-h-screen bg-[#06120d] text-slate-100">
         <SiteHeader />
         <div className="container mx-auto max-w-3xl px-4 py-24 text-center text-slate-400">
-          Loading your artisan profileâ€¦
+          Loading your artisan profile...
         </div>
       </div>
     );
@@ -243,7 +243,7 @@ function EditArtisanProfilePage() {
               </p>
               <h2 className="mt-1 text-xl font-bold text-white">Make a strong first impression</h2>
               <p className="mt-1 max-w-xl text-sm leading-5 text-slate-400">
-                Use a clear, well-lit photo so customers can recognize who theyâ€™re contacting.
+                Use a clear, well-lit photo so customers can recognize who they're contacting.
               </p>
 
               <label className="mt-4 inline-flex">
@@ -436,7 +436,7 @@ function EditArtisanProfilePage() {
               disabled={saving}
               className="h-11 rounded-xl bg-[#35d879] px-6 font-bold text-[#04120a] hover:bg-[#52e98f]"
             >
-              {saving ? "Saving profileâ€¦" : "Save changes"}
+              {saving ? "Saving profile..." : "Save changes"}
             </Button>
           </div>
         </Card>

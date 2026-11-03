@@ -414,7 +414,7 @@ function ArtisanDetailPage() {
                 label="Starting Price"
                 value={
                   artisan.starting_price
-                    ? `â‚¦${Number(artisan.starting_price).toLocaleString()}`
+                    ? `NGN ${Number(artisan.starting_price).toLocaleString()}`
                     : "Custom Quote"
                 }
               />

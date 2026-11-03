@@ -155,7 +155,7 @@ export function ResetPage() {
 
         <Button type="submit" disabled={busy || !ready || !isValid} className="w-full">
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {busy ? "Updating passwordâ€¦" : "Update password"}
+          {busy ? "Updating password..." : "Update password"}
         </Button>
       </form>
     </AuthLayout>

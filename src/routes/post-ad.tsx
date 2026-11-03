@@ -83,12 +83,12 @@ type ListingPhoto = { id: string; file: File; previewUrl: string };
 const DRAFT_KEY = "tile-post-ad-draft";
 const MAX_PHOTO_SIZE = 30 * 1024 * 1024;
 const CATEGORY_META: Record<string, { icon: string; subtitle: string }> = {
-  phones: { icon: "ðŸ“±", subtitle: "Electronics, mobile and accessories" },
-  fashion: { icon: "ðŸ‘—", subtitle: "Style, wearables and beauty" },
-  cars: { icon: "ðŸš—", subtitle: "Vehicles and auto gear" },
-  property: { icon: "ðŸ ", subtitle: "Homes, apartments and rentals" },
-  furniture: { icon: "ðŸª‘", subtitle: "Interior pieces and dÃ©cor" },
-  electronics: { icon: "ðŸ’»", subtitle: "Laptops, consoles and gadgets" },
+  phones: { icon: "", subtitle: "Electronics, mobile and accessories" },
+  fashion: { icon: "", subtitle: "Style, wearables and beauty" },
+  cars: { icon: "", subtitle: "Vehicles and auto gear" },
+  property: { icon: " ", subtitle: "Homes, apartments and rentals" },
+  furniture: { icon: "", subtitle: "Interior pieces and decor" },
+  electronics: { icon: "", subtitle: "Laptops, consoles and gadgets" },
 };
 
 function PostAd() {
@@ -697,7 +697,7 @@ function PostAd() {
             </p>
             <div className="mt-3 space-y-1 text-sm text-muted-foreground">
               {planSummary.map((item) => (
-                <p key={item}>â€¢ {item}</p>
+                <p key={item}>- {item}</p>
               ))}
             </div>
             {unlimitedListings ? (
@@ -752,7 +752,7 @@ function PostAd() {
                   }}
                 >
                   <div className="text-left">
-                    <h3 className="font-bold text-lg">ðŸ›’ Sell Something</h3>
+                    <h3 className="font-bold text-lg"> Sell Something</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Quick listings, photos and built-in buyer messaging.
                     </p>
@@ -767,7 +767,7 @@ function PostAd() {
                   onClick={() => nav({ to: "/artisan/create" })}
                 >
                   <div className="text-left">
-                    <h3 className="font-bold text-lg">ðŸ›  Offer a Service</h3>
+                    <h3 className="font-bold text-lg">  Offer a Service</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Create an artisan profile with portfolios and bookings.
                     </p>
@@ -785,7 +785,7 @@ function PostAd() {
                   }
                 >
                   <div className="text-left">
-                    <h3 className="font-bold text-lg">ðŸª Open Your Own Shop</h3>
+                    <h3 className="font-bold text-lg"> Open Your Own Shop</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Create a branded storefront, share a custom URL and unlock analytics.
                     </p>
@@ -802,14 +802,14 @@ function PostAd() {
               <div className="rounded-2xl bg-muted/30 p-4">
                 <p className="text-3xl font-bold">{profile?.is_verified ? "96" : "84"}%</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Phone verified â€¢ Email verified â€¢{" "}
+                  Phone verified - Email verified -{" "}
                   {profile?.kyc_status === "verified" ? "KYC verified" : "KYC pending"}
                 </p>
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>â€¢ Better trust means better conversion.</p>
-                <p>â€¢ Premium plans unlock promotions and analytics.</p>
-                <p>â€¢ Buyers feel safer when listings are polished and verified.</p>
+                <p>- Better trust means better conversion.</p>
+                <p>- Premium plans unlock promotions and analytics.</p>
+                <p>- Buyers feel safer when listings are polished and verified.</p>
               </div>
             </Card>
           </div>
@@ -915,7 +915,7 @@ function PostAd() {
                 <span className="rounded-full bg-accent/10 px-2 py-1 text-accent">
                   {draftStatus}
                 </span>
-                <span>â€¢</span>
+                <span>-</span>
                 <span>Listing quality {qualityScore}%</span>
               </div>
 
@@ -951,7 +951,7 @@ function PostAd() {
                       {CATEGORIES.filter((c) => c.type === "goods").map((c) => {
                         const isSelected = watch.category === c.slug;
                         const meta = CATEGORY_META[c.slug] ?? {
-                          icon: "ðŸ“¦",
+                          icon: "",
                           subtitle: "Popular listing",
                         };
                         return (
@@ -1036,7 +1036,7 @@ function PostAd() {
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <Label>Price (â‚¦)</Label>
+                          <Label>Price (NGN )</Label>
                           <Input type="number" {...form.register("price")} placeholder="420000" />
                           {form.formState.errors.price && (
                             <p className="text-sm text-destructive">
@@ -1213,7 +1213,7 @@ function PostAd() {
                           <div>
                             <p className="font-semibold">
                               {isPreparingPhotos
-                                ? "Optimizing your photosâ€¦"
+                                ? "Optimizing your photos..."
                                 : "Drag photos here or browse"}
                             </p>
                             <p className="text-sm text-muted-foreground">
@@ -1348,10 +1348,10 @@ function PostAd() {
                         <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                           <span>
                             {watch.price
-                              ? `â‚¦${Number(watch.price).toLocaleString()}`
+                              ? `NGN ${Number(watch.price).toLocaleString()}`
                               : "Price not set"}
                           </span>
-                          <span>â€¢</span>
+                          <span>-</span>
                           <span>
                             {watch.condition
                               ? watch.condition.replace(/_/g, " ")
@@ -1403,9 +1403,9 @@ function PostAd() {
               <Card className="p-5">
                 <h3 className="font-semibold">Trust signals</h3>
                 <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  <p>â€¢ Phone verified</p>
-                  <p>â€¢ Email verified</p>
-                  <p>â€¢ {profile?.kyc_status === "verified" ? "KYC verified" : "KYC pending"}</p>
+                  <p>- Phone verified</p>
+                  <p>- Email verified</p>
+                  <p>- {profile?.kyc_status === "verified" ? "KYC verified" : "KYC pending"}</p>
                 </div>
               </Card>
             </div>

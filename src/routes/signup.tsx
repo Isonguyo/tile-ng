@@ -218,7 +218,7 @@ function SignupPage() {
       toast.success(
         fromWaitlist
           ? "Account created. Your early-access setup is ready."
-          : "Account created. Youâ€™re ready to explore Tile Marketplace.",
+          : "Account created. You're ready to explore Tile Marketplace.",
       );
       nav({ to: "/dashboard" });
       return;
@@ -316,7 +316,7 @@ function SignupPage() {
             noValidate
           >
             <div className="space-y-2">
-              <Label>Iâ€™m signing up as</Label>
+              <Label>I'm signing up as</Label>
               <RadioGroup
                 value={accountType}
                 onValueChange={(value) => setValue("account_type", value as AccountType)}
@@ -494,7 +494,7 @@ function SignupPage() {
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
             >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {busy ? "Creating accountâ€¦" : "Create account"}
+              {busy ? "Creating account..." : "Create account"}
             </Button>
           </form>
 

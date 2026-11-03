@@ -258,7 +258,7 @@ function Dashboard() {
       <div className="min-h-screen bg-[#06120d] text-slate-100">
         <SiteHeader />
         <div className="container mx-auto flex min-h-[40vh] items-center justify-center px-4 text-sm text-slate-400">
-          Preparing your Tile dashboardâ€¦
+          Preparing your Tile dashboard...
         </div>
       </div>
     );
@@ -646,7 +646,7 @@ function Dashboard() {
                     </div>
                     {myListings.length === 0 ? (
                       <p className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-5 text-sm text-slate-400">
-                        You havenâ€™t posted anything yet. Create a listing to get discovered.
+                        You haven't posted anything yet. Create a listing to get discovered.
                       </p>
                     ) : (
                       <ul className="divide-y divide-white/[0.07]">
@@ -817,7 +817,7 @@ function Dashboard() {
                       <p className="text-xs font-medium text-slate-400">Rating</p>
 
                       <p className="mt-1 font-semibold text-slate-100">
-                        â­ {(profile.avg_rating ?? 0).toFixed(1)}
+                         {(profile.avg_rating ?? 0).toFixed(1)}
                       </p>
                     </div>
                   </div>
@@ -842,7 +842,7 @@ function SupportPriorityCard({
   const urgent = tier === "vip";
   const priority = entitlements?.priority_support === true;
   const label = urgent
-    ? "Priority Support Â· Urgent"
+    ? "Priority Support  |  Urgent"
     : priority
       ? "Priority Support"
       : "Standard Support";
@@ -860,7 +860,7 @@ function SupportPriorityCard({
         </span>
         <div>
           <p className="font-semibold text-slate-100">
-            {entitlementsLoading ? "Checking support priorityâ€¦" : label}
+            {entitlementsLoading ? "Checking support priority..." : label}
           </p>
           <p className="mt-1 text-xs text-slate-400">
             {priority
@@ -905,7 +905,7 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
     setLoading(false);
     setConfirming(false);
     if (error) return showError(error, "We couldn't confirm your top-up. Please try again.");
-    toast.success("Payment confirmed â€” wallet credited");
+    toast.success("Payment confirmed  -  wallet credited");
     setOpen(false);
     onTopup();
   };
@@ -1029,7 +1029,7 @@ function WalletCard({ balance, onTopup }: { balance: number; onTopup: () => void
                     disabled={loading || expiry === 0}
                     className="h-11 w-full rounded-xl bg-[#35d879] font-bold text-[#04120a] hover:bg-[#52e98f] disabled:bg-white/10 disabled:text-slate-500"
                   >
-                    {confirming ? "Verifying transferâ€¦" : "I've sent the transfer â€” confirm"}
+                    {confirming ? "Verifying transfer..." : "I've sent the transfer  -  confirm"}
                   </Button>
                 </>
               )}
@@ -1126,7 +1126,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
         .from("profiles")
         .update({ kyc_status: "pending", kyc_doc_url: path })
         .eq("id", user.id);
-      toast.success("KYC submitted â€” awaiting review");
+      toast.success("KYC submitted  -  awaiting review");
       onUpload();
     } catch (err) {
       showError(err, "We couldn't upload your verification document. Please try again.");
@@ -1170,7 +1170,7 @@ function KycCard({ status, onUpload }: { status: string; onUpload: () => void })
             variant="outline"
             className="rounded-xl border-white/15 bg-white/[0.03] text-slate-100 hover:bg-white/[0.08] hover:text-white"
           >
-            <span>{busy ? "Uploadingâ€¦" : "Upload government ID"}</span>
+            <span>{busy ? "Uploading..." : "Upload government ID"}</span>
           </Button>
         </label>
       )}
@@ -1272,7 +1272,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
                 <Input
                   value={form.whatsapp}
                   onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                  placeholder="+234â€¦"
+                  placeholder="+234..."
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -1292,7 +1292,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
                 </div>
               </div>
               <div>
-                <Label>Account name (Paystack verified â€” simulated)</Label>
+                <Label>Account name (Paystack verified  -  simulated)</Label>
                 <Input
                   value={form.bank_account_name}
                   onChange={(e) => setForm({ ...form, bank_account_name: e.target.value })}
@@ -1301,7 +1301,7 @@ function MerchantOnboarding({ onDone }: { onDone: () => void }) {
             </div>
             <DialogFooter>
               <Button disabled={busy} onClick={submit} className="bg-accent text-accent-foreground">
-                {busy ? "Savingâ€¦" : "Open my shop"}
+                {busy ? "Saving..." : "Open my shop"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1490,7 +1490,7 @@ function ShopLinkCard({
                 <p className="text-sm font-semibold text-slate-200">Custom Shop URL</p>
                 <p className="mt-1 text-xs text-slate-500">
                   {entitlementsLoading
-                    ? "Checking your plan accessâ€¦"
+                    ? "Checking your plan access..."
                     : canUseCustomSlug
                       ? "Choose a short, memorable URL for your storefront."
                       : "Available with Lite and above."}
@@ -1523,7 +1523,7 @@ function ShopLinkCard({
                   disabled={savingSlug || customSlug.trim() === currentSlug}
                   className="h-10 shrink-0 rounded-xl bg-[#35d879] px-4 font-semibold text-[#04120a] hover:bg-[#52e98f]"
                 >
-                  {savingSlug ? "Savingâ€¦" : "Save URL"}
+                  {savingSlug ? "Saving..." : "Save URL"}
                 </Button>
               </div>
             )}
@@ -1536,7 +1536,7 @@ function ShopLinkCard({
         >
           {entitlementsLoading ? (
             <div className="mx-auto flex min-h-[280px] max-w-[240px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/10 p-5 text-center text-sm text-slate-400">
-              Checking shop QR accessâ€¦
+              Checking shop QR access...
             </div>
           ) : hasQrEntitlement ? (
             <div className="mx-auto max-w-[240px]">
@@ -1563,7 +1563,7 @@ function ShopLinkCard({
                   />
                 </div>
                 <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                  Tile Â· {currentSlug}
+                  Tile  |  {currentSlug}
                 </p>
               </div>
               <Button
@@ -1706,7 +1706,7 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
     await Promise.all([qc.invalidateQueries({ queryKey: ["merchant-shop-profile", userId] }), qc.invalidateQueries({ queryKey: ["shop", form.shop_slug] }), Promise.resolve(onSaved())]);
   };
 
-  if (isLoading) return <Card className={`p-5 ${DASHBOARD_CARD_CLASS}`}>Loading shop detailsâ€¦</Card>;
+  if (isLoading) return <Card className={`p-5 ${DASHBOARD_CARD_CLASS}`}>Loading shop details...</Card>;
   const statusLabel = shop?.shop_status === "pending" ? "Pending Review" : (shop?.shop_status ?? "draft").replace(/^./, (s) => s.toUpperCase());
   const uploadField = (kind: "logo" | "cover", label: string, src: string | null, preview: string | null, remove: () => void) => (
     <div className="space-y-2 rounded-xl border border-white/10 p-3">
@@ -1735,7 +1735,7 @@ function ShopManagementCard({ userId, onSaved }: { userId: string; onSaved: () =
         <div><Label>WhatsApp number</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} /></div>
         <div className="md:col-span-2"><Label>Business description</Label><Textarea rows={4} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} /></div>
       </div>
-      <div className="flex flex-wrap gap-2"><Button type="button" disabled={busy} onClick={() => void save()}>{busy ? "Savingâ€¦" : "Save Shop Details"}</Button><Button asChild type="button" variant="outline"><Link to="/post-ad">Upload Product</Link></Button><Button type="button" variant="outline" disabled={busy} onClick={() => void submitForReview()}>{busy ? "Submittingâ€¦" : shop?.shop_status === "rejected" ? "Edit and Resubmit" : "Submit Shop for Review"}</Button></div>
+      <div className="flex flex-wrap gap-2"><Button type="button" disabled={busy} onClick={() => void save()}>{busy ? "Saving..." : "Save Shop Details"}</Button><Button asChild type="button" variant="outline"><Link to="/post-ad">Upload Product</Link></Button><Button type="button" variant="outline" disabled={busy} onClick={() => void submitForReview()}>{busy ? "Submitting..." : shop?.shop_status === "rejected" ? "Edit and Resubmit" : "Submit Shop for Review"}</Button></div>
       <div className="space-y-3 border-t border-white/10 pt-4"><div className="flex items-center justify-between gap-3"><h4 className="font-semibold text-slate-100">Shop products</h4><span className="text-xs text-slate-400">{inventory.length} products</span></div>{inventory.length === 0 ? <p className="text-sm text-slate-400">Your existing and new product ads will appear here automatically.</p> : inventory.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{item.title}</p><Badge variant="outline" className="mt-1 capitalize">{item.status === "pending" ? "Pending Review" : item.status}</Badge>{item.status === "rejected" && item.rejection_reason && <p className="mt-1 text-xs text-red-200">{item.rejection_reason}</p>}</div>{item.status === "approved" && (!item.expires_at || new Date(item.expires_at).getTime() > Date.now()) && <Button size="sm" variant="outline" onClick={async () => { const { error } = await rpcUntyped("set_shop_listing_pin", { _listing_id: item.id, _pin: !item.shop_pinned_at }); if (error) return showError(error, "We couldn't update the shop pin."); toast.success(item.shop_pinned_at ? "Product unpinned" : "Product pinned"); await qc.invalidateQueries({ queryKey: ["merchant-shop-listings", userId] }); await qc.invalidateQueries({ queryKey: ["shop-listings", userId] }); }}>{item.shop_pinned_at ? "Unpin" : "Pin to shop"}</Button>}</div>)}</div>
     </Card>
   );
@@ -1968,16 +1968,14 @@ function BillingCard({
               ) : null}
             </div>
             <p className="mt-3 text-2xl font-extrabold tracking-tight text-emerald-300">
-              {p.price == null ? "â€”" : formatNaira(p.price)}
+              {p.price == null ? " - " : formatNaira(p.price)}
               <span className="ml-1 text-xs font-medium text-slate-500">/ 30 days</span>
             </p>
             <div className="my-4 h-px bg-white/[0.07]" />
             <ul className="flex-1 space-y-2.5 text-xs leading-5 text-slate-400">
               {p.perks.map((x) => (
                 <li key={x} className="flex gap-2.5">
-                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-300/10 text-[10px] text-emerald-300">
-                    âœ“
-                  </span>
+                  <span className="shrink-0 font-semibold text-emerald-300">Included:</span>
                   <span>{x}</span>
                 </li>
               ))}
@@ -2015,7 +2013,7 @@ function BillingCard({
             </p>
           </div>
           <span className="text-[10px] text-slate-500">
-            {entitlementsLoading ? "Checking accessâ€¦" : "Updated with your plan"}
+            {entitlementsLoading ? "Checking access..." : "Updated with your plan"}
           </span>
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -2173,7 +2171,7 @@ function ListingRow({
       })
       .eq("id", l.id);
     if (error) return showError(error, "We couldn't save your listing changes. Please try again.");
-    toast.success("Ad updated â€” pending re-review");
+    toast.success("Ad updated  -  pending re-review");
     setEditOpen(false);
     onChange();
   };
@@ -2321,7 +2319,7 @@ function ListingRow({
               onClick={promote}
             >
               <Sparkles className="h-3 w-3 mr-1" />
-              {promoting ? "Checkingâ€¦" : hasActiveTopAd ? "Promoted" : "Promote"}
+              {promoting ? "Checking..." : hasActiveTopAd ? "Promoted" : "Promote"}
             </Button>
           )}
           <Button
@@ -2357,7 +2355,7 @@ function ListingRow({
                 Listing Performance
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                {stats.views} unique view{stats.views === 1 ? "" : "s"} Â· {stats.chats} chat
+                {stats.views} unique view{stats.views === 1 ? "" : "s"}  |  {stats.chats} chat
                 {stats.chats === 1 ? "" : "s"}
               </p>
             </div>
@@ -2453,7 +2451,7 @@ function ListingRow({
       )}
       {l.status === "expired" && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs text-slate-300">
-          <AlertTriangle className="h-3 w-3" /> Expired â€” hidden from buyers and deleted 30 days
+          <AlertTriangle className="h-3 w-3" /> Expired  -  hidden from buyers and deleted 30 days
           after expiry. Republished ads get standard (free) visibility.
           <Button
             size="sm"
@@ -2491,7 +2489,7 @@ function ListingRow({
               />
             </div>
             <div>
-              <Label>Price (â‚¦)</Label>
+              <Label>Price (NGN )</Label>
               <Input
                 type="number"
                 value={editForm.price}
@@ -2560,7 +2558,7 @@ function ArtisanProfileCard({
 
         <div className="rounded-xl border border-white/[0.07] bg-[#07170f]/60 p-4">
           <p className="text-xs font-medium text-slate-400">Rating</p>
-          <p className="mt-1 font-semibold text-slate-100">â­ {profile.avg_rating ?? 0}</p>
+          <p className="mt-1 font-semibold text-slate-100"> {profile.avg_rating ?? 0}</p>
         </div>
       </div>
 

@@ -81,7 +81,7 @@ function InboxPage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <LoadingSpinner label="Loading inboxâ€¦" />
+        <LoadingSpinner label="Loading inbox..." />
       </div>
     );
 

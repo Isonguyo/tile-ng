@@ -85,7 +85,7 @@ function AcceptStaffInvitation() {
             </p>
           )}
           {token && loading && (
-            <p className="mt-3 text-sm text-slate-400">Checking your Tile sign-inâ€¦</p>
+            <p className="mt-3 text-sm text-slate-400">Checking your Tile sign-in...</p>
           )}
           {token && !loading && !user && (
             <>
@@ -108,7 +108,7 @@ function AcceptStaffInvitation() {
           )}
           {state === "accepting" && (
             <p role="status" className="mt-4 text-sm text-slate-300">
-              Accepting your invitationâ€¦
+              Accepting your invitation...
             </p>
           )}
           {state === "error" && (
@@ -147,7 +147,7 @@ function AcceptStaffInvitation() {
           )}
           {token && !user && (
             <p className="mt-4 text-xs text-slate-500">
-              Your invitation token is only sent to Tileâ€™s authenticated acceptance RPC. Never share
+              Your invitation token is only sent to Tile's authenticated acceptance RPC. Never share
               it publicly.
             </p>
           )}

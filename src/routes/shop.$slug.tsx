@@ -381,7 +381,7 @@ function ShopPage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <LoadingSpinner label="Loading shopâ€¦" />
+        <LoadingSpinner label="Loading shop..." />
       </div>
     );
   if (!shop)
@@ -564,7 +564,7 @@ function ShopPage() {
                   <Users className="h-4 w-4" />
                   {followerCount} followers
                 </span>
-                {joinedYear && <span>â€¢ Since {joinedYear}</span>}
+                {joinedYear && <span>- Since {joinedYear}</span>}
               </div>
 
               {achievements.length > 0 && (
@@ -783,7 +783,7 @@ function ShopPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search title, category, locationâ€¦"
+                placeholder="Search title, category, location..."
                 className="w-full pl-9 pr-4 py-2 bg-muted/50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-background transition"
               />
             </div>
@@ -794,9 +794,9 @@ function ShopPage() {
                 className="w-full md:w-auto text-sm border bg-background rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
                 <option value="all">All Prices</option>
-                <option value="under-50k">Under â‚¦50,000</option>
-                <option value="50k-200k">â‚¦50,000 - â‚¦200,000</option>
-                <option value="above-200k">Above â‚¦200,000</option>
+                <option value="under-50k">Under NGN 50,000</option>
+                <option value="50k-200k">NGN 50,000 - NGN 200,000</option>
+                <option value="above-200k">Above NGN 200,000</option>
               </select>
               <select
                 value={sortBy}
@@ -921,7 +921,7 @@ function ShopPage() {
                                 </span>
                                 {(l.clicks_count ?? 0) > 0 && (
                                   <>
-                                    <span>â€¢</span>
+                                    <span>-</span>
                                     <span>{l.clicks_count} clicks</span>
                                   </>
                                 )}
@@ -949,7 +949,7 @@ function ShopPage() {
                             disabled={pinBusyId === l.id}
                             onClick={(event) => { event.preventDefault(); event.stopPropagation(); void togglePin(l); }}
                           >
-                            {pinBusyId === l.id ? "Savingâ€¦" : l.shop_pinned_at ? "Unpin" : "Pin"}
+                            {pinBusyId === l.id ? "Saving..." : l.shop_pinned_at ? "Unpin" : "Pin"}
                           </Button>
                         )}
                           </div>
@@ -1053,12 +1053,12 @@ function ShopPage() {
                     rows={3}
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Share your experience with this shopâ€¦"
+                    placeholder="Share your experience with this shop..."
                     className="bg-background"
                   />
                   <Button onClick={submitReview} disabled={busy} size="sm">
                     <Send className="h-4 w-4 mr-1.5" />
-                    {busy ? "Sendingâ€¦" : "Submit Review"}
+                    {busy ? "Sending..." : "Submit Review"}
                   </Button>
                 </div>
               )}
@@ -1077,7 +1077,7 @@ function ShopPage() {
               <div className="mt-6 space-y-4 divide-y">
                 {reviews.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    No reviews yet â€” be the first.
+                    No reviews yet  -  be the first.
                   </p>
                 )}
                 {reviews.map((r, i) => (
