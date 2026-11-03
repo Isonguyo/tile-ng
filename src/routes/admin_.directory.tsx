@@ -626,6 +626,10 @@ function ArtisanDirectoryCard({
 }
 
 function DirectoryPage() {
+  return <AdminDirectoryPanel />;
+}
+
+export function AdminDirectoryPanel({ embedded = false }: { embedded?: boolean }) {
   const { isAdmin, loading } = useAuth();
   const [query, setQuery] = useState("");
   const users = useAdminRpc("users", "admin_users_full", isAdmin);
@@ -643,6 +647,7 @@ function DirectoryPage() {
   const errors = [users.error, ads.error, artisans.error].filter(Boolean);
 
   if (loading) {
+    if (embedded) return <LoadingDirectory />;
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
@@ -654,6 +659,7 @@ function DirectoryPage() {
   }
 
   if (!isAdmin) {
+    if (embedded) return null;
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
@@ -674,29 +680,32 @@ function DirectoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--primary)/0.07),transparent_24rem)]">
-      <SiteHeader />
-      <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+    <div className={embedded ? "space-y-6" : "min-h-screen bg-[linear-gradient(180deg,hsl(var(--primary)/0.07),transparent_24rem)]"}>
+      {!embedded && <SiteHeader />}
+      <main className={embedded ? "space-y-6" : "mx-auto max-w-[1440px] space-y-6 px-4 py-5 sm:px-6 sm:py-8 lg:px-8"}>
         <section className="relative isolate overflow-hidden rounded-3xl border border-emerald-300/10 bg-slate-950 text-white shadow-2xl shadow-emerald-950/10">
           <div className="pointer-events-none absolute -right-20 -top-28 -z-10 h-80 w-80 rounded-full bg-emerald-400/15 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-36 left-1/3 -z-10 h-72 w-72 rounded-full bg-teal-400/10 blur-3xl" />
           <div className="flex flex-col gap-6 p-5 sm:p-8 lg:flex-row lg:items-end lg:justify-between lg:p-10">
             <div className="max-w-2xl">
-              <Link
-                to="/admin"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-100/70 transition hover:text-white"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" /> Admin control room
-              </Link>
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/[0.08] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
+              {!embedded && (
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-100/70 transition hover:text-white"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" /> Admin control room
+                </Link>
+              )}
+              <div className={`${embedded ? "" : "mt-5"} inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/[0.08] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200`}>
                 <Sparkles className="h-3.5 w-3.5" /> Platform intelligence
               </div>
               <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                Full directory
+                {embedded ? "Marketplace directory inspection" : "Full directory"}
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-                Search user accounts, marketplace listings, and artisan profiles from one place.
-                Review the submitted details, photos, and subscription status.
+                {embedded
+                  ? "Inspect user accounts, listings, and artisan profiles before launching the marketplace."
+                  : "Search user accounts, marketplace listings, and artisan profiles from one place. Review the submitted details, photos, and subscription status."}
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[420px]">

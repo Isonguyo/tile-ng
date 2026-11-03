@@ -42,6 +42,7 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from "lucide-react";
 
 export const Route = createFileRoute("/shop/$slug")({
@@ -855,6 +856,13 @@ function ShopPage() {
                     Products ({filteredGoods.length})
                   </TabsTrigger>
                 </TabsList>
+                {isOwn && (
+                  <Button asChild size="sm" className="shrink-0">
+                    <Link to="/post-ad" search={{ type: "goods" }}>
+                      <Plus className="mr-1.5 h-4 w-4" /> Add Product
+                    </Link>
+                  </Button>
+                )}
               </div>
 
               <TabsContent value="listings" className="mt-4 focus-visible:outline-none">

@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/post-ad")({
+  validateSearch: z.object({ type: z.literal("goods").optional() }),
   head: () => ({
     meta: [{ title: "Post an Ad — Tile Marketplace" }],
     links: [
@@ -92,6 +93,7 @@ const CATEGORY_META: Record<string, { icon: string; subtitle: string }> = {
 };
 
 function PostAd() {
+  const search = Route.useSearch();
   const { user, loading, profile } = useAuth();
   const queryClient = useQueryClient();
   const nav = useNavigate();
@@ -99,7 +101,7 @@ function PostAd() {
   const isMerchantStaff = staffContextQuery.data?.is_staff === true;
   const merchantOwnerId = isMerchantStaff ? staffContextQuery.data?.owner_id : user?.id;
 
-  const [mode, setMode] = useState<Mode>("home");
+  const [mode, setMode] = useState<Mode>(search.type === "goods" ? "sell" : "home");
   const [step, setStep] = useState(1);
   const [photos, setPhotos] = useState<ListingPhoto[]>([]);
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
@@ -126,6 +128,13 @@ function PostAd() {
   const formRef = useRef<HTMLFormElement>(null);
   const ownedPreviewUrls = useRef(new Set<string>());
   const isPreparingPhotosRef = useRef(false);
+
+  useEffect(() => {
+    if (search.type === "goods") {
+      setMode("sell");
+      setStep(1);
+    }
+  }, [search.type]);
 
   useEffect(
     () => () => {
@@ -323,6 +332,9 @@ function PostAd() {
   };
 
   const returnToChoice = () => {
+    if (search.type === "goods") {
+      void nav({ to: "/post-ad", search: {} });
+    }
     setMode("home");
     setStep(1);
     setSubmitted(false);
@@ -892,6 +904,14 @@ function PostAd() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
             <Card className="p-6">
+              {search.type === "goods" && (
+                <div className="mb-5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                  <p className="font-semibold text-primary">Add a product to your shop</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Choose a product category below. Your listing will use the usual review process.
+                  </p>
+                </div>
+              )}
               {isPrelaunch && (
                 <div className="mb-5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
                   <p className="font-semibold text-primary">Tile is currently in pre-launch.</p>

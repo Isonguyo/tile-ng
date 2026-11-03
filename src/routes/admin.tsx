@@ -83,6 +83,7 @@ import { useConfirmAction } from "@/components/confirm-action-provider";
 import { showError } from "@/lib/user-feedback";
 import { getSignedUrls } from "@/lib/storage";
 import { SignedImage } from "@/components/signed-image";
+import { AdminDirectoryPanel } from "@/routes/admin_.directory";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -2060,6 +2061,8 @@ function Admin() {
                 </Table>
               </div>
             </Card>
+
+            <AdminDirectoryPanel embedded />
           </TabsContent>
 
           {/*  PLATFORM SETTINGS  */}
