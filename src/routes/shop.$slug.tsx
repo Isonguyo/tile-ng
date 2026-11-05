@@ -44,7 +44,6 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
-  Plus,
 } from "lucide-react";
 
 export const Route = createFileRoute("/shop/$slug")({

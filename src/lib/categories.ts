@@ -83,8 +83,4 @@ export const LOCATIONS = [
 export const formatNaira = (n: number | null | undefined) =>
   n == null
     ? "—"
-    : new Intl.NumberFormat("en-NG", {
-        style: "currency",
-        currency: "NGN",
-        maximumFractionDigits: 0,
-      }).format(n);
+    : `NGN ${new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 }).format(n)}`;
