@@ -1696,7 +1696,7 @@ function Admin() {
                 </TableBody>
               </Table>
               <div className="p-3.5 text-xs text-muted-foreground border-t bg-muted/20">
-                Plan price tiers: Lite ₦5,000 | Pro ₦15,000 | VIP ₦40,000
+                Plan price tiers: Lite NGN 5,000 | Pro NGN 15,000 | VIP NGN 40,000
               </div>
             </Card>
           </TabsContent>
