@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, formatNaira } from "@/lib/categories";
 import { useAuth } from "@/lib/auth-context";
 import { usePlan, hasCapability } from "@/hooks/use-plan";
 import { useTileEntitlements, hasUnlimitedListings } from "@/hooks/use-tile-entitlements";
@@ -681,7 +681,7 @@ function PostAd() {
 
   const priceHint = watch.price
     ? Number(watch.price) > 0
-      ? `${new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(Number(watch.price) * 0.95)} average price`
+      ? `${formatNaira(Number(watch.price) * 0.95)} average price`
       : ""
     : "";
 
@@ -1056,7 +1056,7 @@ function PostAd() {
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <Label>Price (NGN )</Label>
+                          <Label>Price (NGN)</Label>
                           <Input type="number" {...form.register("price")} placeholder="420000" />
                           {form.formState.errors.price && (
                             <p className="text-sm text-destructive">

@@ -212,7 +212,7 @@ function ArtisanDetailPage() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return ((data ?? []) as ReviewRow[]) ?? [];
+      return (data ?? []) as ReviewRow[];
     },
   });
 
