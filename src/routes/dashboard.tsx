@@ -664,6 +664,7 @@ function Dashboard() {
                           <ListingRow
                             key={l.id}
                             l={l}
+                            ownerId={workspaceOwnerId ?? user!.id}
                             unlimitedPromotions={entitlements?.unlimited_promotions === true}
                             onChange={() => {
                               void qc.invalidateQueries({
@@ -719,7 +720,7 @@ function Dashboard() {
                     until={entitlements?.active_until ?? profile.subscription_until}
                     entitlements={entitlements}
                     entitlementsLoading={entitlementsLoading}
-                    onSelectSupport={() => setSupportOpen(true)}
+                    onSelectTab={() => setSupportOpen(true)}
                     onChange={async () => {
                       await refreshProfile();
                       await qc.invalidateQueries({ queryKey: ["tile-entitlements", user?.id] });
@@ -1911,7 +1912,7 @@ function BillingCard({
   until?: string | null;
   entitlements: TileEntitlements | null | undefined;
   entitlementsLoading: boolean;
-  onSelectTab: (tab: string) => void;
+  onSelectTab: () => void;
   onChange: () => void | Promise<void>;
 }) {
   const [selected, setSelected] = useState<"lite" | "pro" | "vip" | null>(null);
@@ -2138,7 +2139,7 @@ function BillingCard({
               onClick={(event) => {
                 if (capability.anchor === "#support") {
                   event.preventDefault();
-                  onSelectTab("support");
+                  onSelectTab();
                 }
               }}
               className="flex min-w-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:bg-white/[0.05]"
@@ -2170,6 +2171,7 @@ function BillingCard({
 
 function ListingRow({
   l,
+  ownerId,
   unlimitedPromotions,
   onChange,
 }: {
@@ -2182,6 +2184,7 @@ function ListingRow({
     expires_at?: string | null;
     promotion_expires_at?: string | null;
   };
+  ownerId: string;
   unlimitedPromotions: boolean;
   onChange: () => void;
 }) {
@@ -2253,7 +2256,7 @@ function ListingRow({
       destructive: true,
     });
     if (!confirmed) return;
-    const { error } = await supabase.from("listings").delete().eq("id", l.id);
+    const { error } = await supabase.from("listings").delete().eq("id", l.id).eq("user_id", ownerId);
     if (error) return showError(error, "We couldn't delete this listing. Please try again.");
     toast.success("Ad deleted");
     onChange();
@@ -2264,6 +2267,7 @@ function ListingRow({
       .from("listings")
       .select("title,description,price")
       .eq("id", l.id)
+      .eq("user_id", ownerId)
       .maybeSingle();
     if (data)
       setEditForm({
