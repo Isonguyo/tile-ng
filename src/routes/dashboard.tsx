@@ -85,11 +85,10 @@ import { useMerchantStaffContext } from "@/hooks/use-merchant-staff-context";
 import { fromUntyped } from "@/lib/db-untyped";
 import { SignedImage } from "@/components/signed-image";
 import { DialogDescription } from "@/components/ui/dialog";
+import { z } from "zod";
 
 export const Route = createFileRoute("/dashboard")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    tab: typeof search.tab === "string" ? search.tab : undefined,
-  }),
+  validateSearch: z.object({ tab: z.enum(["buyer", "merchant", "artisan"]).optional() }),
   head: () => ({
     meta: [{ title: "Dashboard — Tile Marketplace" }],
     links: [
@@ -150,6 +149,21 @@ function Dashboard() {
         .from("listings")
         .select("*")
         .eq("user_id", workspaceOwnerId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: myArtisanListings = [] } = useQuery({
+    queryKey: ["my-artisan-listings", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("type", "service")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -705,7 +719,7 @@ function Dashboard() {
                     until={entitlements?.active_until ?? profile.subscription_until}
                     entitlements={entitlements}
                     entitlementsLoading={entitlementsLoading}
-                    onSelectTab={setActiveDashboardTab}
+                    onSelectSupport={() => setSupportOpen(true)}
                     onChange={async () => {
                       await refreshProfile();
                       await qc.invalidateQueries({ queryKey: ["tile-entitlements", user?.id] });
@@ -822,7 +836,6 @@ function Dashboard() {
                     </div>
                   </div>
                 </Card>
-                    <ArtisanProfileCard profile={profile} />
                     <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
                       <div className="mb-4 flex items-center justify-between gap-3">
                         <div>
@@ -831,12 +844,15 @@ function Dashboard() {
                         </div>
                         <Button asChild size="sm" variant="outline"><Link to="/post-ad">Post a service</Link></Button>
                       </div>
-                      {myListings.filter((listing) => listing.type === "service").length === 0 ? (
+                      {myArtisanListings.length === 0 ? (
                         <p className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-5 text-sm text-slate-400">You have not posted a service listing yet.</p>
                       ) : (
                         <ul className="divide-y divide-white/[0.07]">
-                          {myListings.filter((listing) => listing.type === "service").map((listing) => (
-                            <ListingRow key={listing.id} l={listing} ownerId={workspaceOwnerId ?? user!.id} unlimitedPromotions={entitlements?.unlimited_promotions === true} onChange={() => void qc.invalidateQueries({ queryKey: ["my-listings", workspaceOwnerId] })} />
+                          {myArtisanListings.map((listing) => (
+                            <ListingRow key={listing.id} l={listing} ownerId={user!.id} unlimitedPromotions={entitlements?.unlimited_promotions === true} onChange={() => {
+                              void qc.invalidateQueries({ queryKey: ["my-artisan-listings", user?.id] });
+                              void qc.invalidateQueries({ queryKey: ["my-listings", workspaceOwnerId] });
+                            }} />
                           ))}
                         </ul>
                       )}
@@ -848,15 +864,15 @@ function Dashboard() {
           </div>
         </div>
       </main>
+      <Button
+        type="button"
+        onClick={() => setSupportOpen(true)}
+        className="fixed bottom-24 right-4 z-40 h-12 rounded-full bg-primary px-4 text-primary-foreground shadow-lg md:bottom-6 md:right-6"
+        aria-label="Open Tile Support"
+      >
+        <LifeBuoy className="mr-2 h-4 w-4" /> Support
+      </Button>
       <Dialog open={supportOpen} onOpenChange={setSupportOpen}>
-        <Button
-          type="button"
-          onClick={() => setSupportOpen(true)}
-          className="fixed bottom-24 right-4 z-40 h-12 rounded-full bg-primary px-4 text-primary-foreground shadow-lg md:bottom-6 md:right-6"
-          aria-label="Open Tile Support"
-        >
-          <LifeBuoy className="mr-2 h-4 w-4" /> Support
-        </Button>
         <DialogContent className="max-h-[88dvh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Tile Support</DialogTitle>
