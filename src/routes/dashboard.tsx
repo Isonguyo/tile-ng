@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { formatNaira, LOCATIONS } from "@/lib/categories";
+import { CATEGORIES, formatNaira, LOCATIONS } from "@/lib/categories";
 import {
   Heart,
   Package,
@@ -51,6 +51,7 @@ import {
   ArrowRight,
   CheckCircle2,
   LockKeyhole,
+  LifeBuoy,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -81,11 +82,13 @@ import {
   VipStaffSection,
 } from "@/components/vip-merchant-tools";
 import { useMerchantStaffContext } from "@/hooks/use-merchant-staff-context";
-import { scrollPageToTop } from "@/lib/form-navigation";
 import { fromUntyped } from "@/lib/db-untyped";
 import { SignedImage } from "@/components/signed-image";
+import { DialogDescription } from "@/components/ui/dialog";
+import { z } from "zod";
 
 export const Route = createFileRoute("/dashboard")({
+  validateSearch: z.object({ tab: z.enum(["buyer", "merchant", "artisan"]).optional() }),
   head: () => ({
     meta: [{ title: "Dashboard — Tile Marketplace" }],
     links: [
@@ -103,9 +106,13 @@ const DASHBOARD_CARD_CLASS =
 
 function Dashboard() {
   const { user, profile, loading, refreshProfile } = useAuth();
+  const search = Route.useSearch();
   const nav = useNavigate();
   const qc = useQueryClient();
-  const [activeDashboardTab, setActiveDashboardTab] = useState("buyer");
+  const [activeDashboardTab, setActiveDashboardTab] = useState(
+    search.tab === "merchant" || search.tab === "artisan" ? search.tab : "buyer",
+  );
+  const [supportOpen, setSupportOpen] = useState(false);
   const {
     data: entitlements,
     isLoading: entitlementsLoading,
@@ -142,6 +149,21 @@ function Dashboard() {
         .from("listings")
         .select("*")
         .eq("user_id", workspaceOwnerId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: myArtisanListings = [] } = useQuery({
+    queryKey: ["my-artisan-listings", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("type", "service")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -355,10 +377,7 @@ function Dashboard() {
           <div className="mt-8 sm:mt-10">
             <Tabs
               value={activeDashboardTab}
-              onValueChange={(value) => {
-                setActiveDashboardTab(value);
-                scrollPageToTop();
-              }}
+              onValueChange={setActiveDashboardTab}
               className="w-full"
             >
               <TabsList className="flex h-auto w-full max-w-full items-center justify-start gap-1 overflow-x-auto rounded-2xl border border-[#1b3b2a] bg-[#09170f]/90 p-1.5 shadow-lg shadow-black/20 sm:w-fit [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -376,20 +395,11 @@ function Dashboard() {
                   Merchant Hub
                 </TabsTrigger>
 
-                {profile.is_artisan && (
-                  <TabsTrigger
-                    value="artisan"
-                    className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/[0.05] hover:text-white data-[state=active]:bg-[#35d879] data-[state=active]:text-[#04120a] data-[state=active]:shadow-[0_4px_16px_rgba(53,216,121,0.18)] sm:px-6"
-                  >
-                    Artisan Hub
-                  </TabsTrigger>
-                )}
-
                 <TabsTrigger
-                  value="support"
+                  value="artisan"
                   className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/[0.05] hover:text-white data-[state=active]:bg-[#35d879] data-[state=active]:text-[#04120a] data-[state=active]:shadow-[0_4px_16px_rgba(53,216,121,0.18)] sm:px-6"
                 >
-                  Support
+                  Artisan Hub
                 </TabsTrigger>
               </TabsList>
 
@@ -709,7 +719,7 @@ function Dashboard() {
                     until={entitlements?.active_until ?? profile.subscription_until}
                     entitlements={entitlements}
                     entitlementsLoading={entitlementsLoading}
-                    onSelectTab={setActiveDashboardTab}
+                    onSelectSupport={() => setSupportOpen(true)}
                     onChange={async () => {
                       await refreshProfile();
                       await qc.invalidateQueries({ queryKey: ["tile-entitlements", user?.id] });
@@ -726,20 +736,24 @@ function Dashboard() {
               </TabsContent>
 
               <TabsContent
-                value="support"
-                className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6"
-              >
-                <SupportPriorityCard
-                  entitlements={entitlements}
-                  entitlementsLoading={entitlementsLoading || entitlementsError}
-                />
-                <SupportCenter mode="customer" />
-              </TabsContent>
-
-              <TabsContent
                 value="artisan"
                 className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none sm:mt-6"
               >
+                {!profile.is_artisan ? (
+                  <Card className={`p-6 sm:p-8 ${DASHBOARD_CARD_CLASS}`}>
+                    <div className="mx-auto max-w-xl py-5 text-center">
+                      <Briefcase className="mx-auto h-10 w-10 text-emerald-300" />
+                      <h2 className="mt-4 text-2xl font-bold text-white">Create your artisan profile</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">
+                        Add your skills, service area, experience and portfolio so customers can find you.
+                      </p>
+                      <Button asChild className="mt-5 rounded-xl bg-[#35d879] font-semibold text-[#04120a] hover:bg-[#52e98f]">
+                        <Link to="/artisan/create">Create Artisan Profile</Link>
+                      </Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <>
                 <Card className={`overflow-hidden p-5 sm:p-7 ${DASHBOARD_CARD_CLASS}`}>
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -822,11 +836,54 @@ function Dashboard() {
                     </div>
                   </div>
                 </Card>
+                    <Card className={`p-5 sm:p-6 ${DASHBOARD_CARD_CLASS}`}>
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-white">Your service listings</h3>
+                          <p className="mt-1 text-xs text-slate-400">Edit, renew or remove services you posted.</p>
+                        </div>
+                        <Button asChild size="sm" variant="outline"><Link to="/post-ad">Post a service</Link></Button>
+                      </div>
+                      {myArtisanListings.length === 0 ? (
+                        <p className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-5 text-sm text-slate-400">You have not posted a service listing yet.</p>
+                      ) : (
+                        <ul className="divide-y divide-white/[0.07]">
+                          {myArtisanListings.map((listing) => (
+                            <ListingRow key={listing.id} l={listing} ownerId={user!.id} unlimitedPromotions={entitlements?.unlimited_promotions === true} onChange={() => {
+                              void qc.invalidateQueries({ queryKey: ["my-artisan-listings", user?.id] });
+                              void qc.invalidateQueries({ queryKey: ["my-listings", workspaceOwnerId] });
+                            }} />
+                          ))}
+                        </ul>
+                      )}
+                    </Card>
+                  </>
+                )}
               </TabsContent>
             </Tabs>
           </div>
         </div>
       </main>
+      <Button
+        type="button"
+        onClick={() => setSupportOpen(true)}
+        className="fixed bottom-24 right-4 z-40 h-12 rounded-full bg-primary px-4 text-primary-foreground shadow-lg md:bottom-6 md:right-6"
+        aria-label="Open Tile Support"
+      >
+        <LifeBuoy className="mr-2 h-4 w-4" /> Support
+      </Button>
+      <Dialog open={supportOpen} onOpenChange={setSupportOpen}>
+        <DialogContent className="max-h-[88dvh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tile Support</DialogTitle>
+            <DialogDescription>Manage your existing support tickets and messages.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <SupportPriorityCard entitlements={entitlements} entitlementsLoading={entitlementsLoading || entitlementsError} />
+            <SupportCenter mode="customer" />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
