@@ -73,14 +73,28 @@ export function ResetPage() {
 
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: values.password });
-    setBusy(false);
     if (error) {
+      setBusy(false);
       toast.error(
         friendlyAuthError(error.message, "We couldn't update your password. Please try again."),
       );
       return;
     }
-    toast.success("Password updated successfully.");
+
+    // Password recovery is a security event: revoke refresh sessions across devices.
+    // Existing access JWTs can remain valid until their configured expiry.
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "global" });
+    setBusy(false);
+
+    if (signOutError) {
+      toast.error(
+        "Your password was changed, but we couldn't revoke every active session. Please sign in again and contact support.",
+      );
+      nav({ to: "/login" });
+      return;
+    }
+
+    toast.success("Password updated. All active sessions have been signed out.");
     nav({ to: "/login" });
   };
 
