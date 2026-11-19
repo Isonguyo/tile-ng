@@ -94,6 +94,7 @@ function WaitListPage() {
   const profileRef = useRef<HTMLDivElement>(null);
   const [done, setDone] = useState<null | "joined" | "exists">(null);
   const [statusEmail, setStatusEmail] = useState("");
+  const [statusAccessToken, setStatusAccessToken] = useState("");
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState("");
   const [statusData, setStatusData] = useState<WaitlistStatus | null>(null);
@@ -263,17 +264,22 @@ function WaitListPage() {
   useEffect(() => {
     if (!statusHydrated) return;
     const email = joinedProfile?.email;
-    if (!email) return;
+    const accessToken = joinedProfile?.status_access_token;
+    if (!email || !accessToken) return;
 
     let active = true;
     void (async () => {
       try {
-        const data = await waitlistRpc("get_my_waitlist_status", { _email: email });
+        const data = await waitlistRpc("get_my_waitlist_status", {
+          _email: email,
+          _access_token: accessToken,
+        });
         const result = parseWaitlistStatus(data);
         if (!active || result?.status !== "found") return;
-        setJoinedProfile(result);
-        setStatusData(result);
-        persistWaitlistStatusLocal(result);
+        const securedResult = { ...result, status_access_token: accessToken };
+        setJoinedProfile(securedResult);
+        setStatusData(securedResult);
+        persistWaitlistStatusLocal(securedResult);
       } catch {
         // Keep the cached member view if the refresh fails.
       }
@@ -283,7 +289,7 @@ function WaitListPage() {
       active = false;
     };
     // Refresh once per hydration, keyed on the known member email.
-  }, [statusHydrated, joinedProfile?.email]);
+  }, [statusHydrated, joinedProfile?.email, joinedProfile?.status_access_token]);
 
   const persistWaitlistStatus = (status: WaitlistStatus) => {
     setJoinedProfile(status);
@@ -294,26 +300,35 @@ function WaitListPage() {
     const email = statusEmail.trim().toLowerCase();
     setStatusError("");
 
+    const accessToken = statusAccessToken.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       setStatusError("Enter the email address you used to join the wait-list.");
+      return;
+    }
+    if (!/^[a-f0-9]{64}$/i.test(accessToken)) {
+      setStatusError("Enter the private 64-character access key issued when you joined.");
       return;
     }
 
     setStatusLoading(true);
 
     try {
-      const data = await waitlistRpc("get_my_waitlist_status", { _email: email });
+      const data = await waitlistRpc("get_my_waitlist_status", {
+        _email: email,
+        _access_token: accessToken,
+      });
 
       const result = parseWaitlistStatus(data);
 
       if (result?.status !== "found") {
         setStatusData(null);
-        setStatusError("We couldn't find that email on the Tile wait-list.");
+        setStatusError("We couldn't verify those details. Check your email and private access key.");
         return;
       }
 
-      setStatusData(result);
-      persistWaitlistStatus(result);
+      const securedResult = { ...result, status_access_token: accessToken };
+      setStatusData(securedResult);
+      persistWaitlistStatus(securedResult);
       setDone("exists");
       setForm((current) => ({
         ...current,
@@ -343,7 +358,11 @@ function WaitListPage() {
   const referralCount = joinedProfile?.referrals_count ?? statusData?.referrals_count ?? 0;
 
   const continueToAccountSetup = () => {
-    saveWaitlistAccountContext(form.email, form.user_type);
+    saveWaitlistAccountContext(
+      form.email,
+      form.user_type,
+      joinedProfile?.status_access_token ?? statusData?.status_access_token,
+    );
     window.location.href = "/signup?from=waitlist";
   };
 
@@ -388,10 +407,15 @@ function WaitListPage() {
         return;
       }
       if (status === "exists") {
-        setDone("exists");
-        setStatusData(result);
-        persistWaitlistStatus(result);
-        toast.success("You're already on the wait-list.");
+        setDone(null);
+        setJoinedProfile(null);
+        setStatusData(null);
+        setStatusEmail(form.email);
+        setStatusError(
+          result.message ??
+            "This email already has a wait-list entry. Enter the private access key issued when you joined to retrieve its details.",
+        );
+        toast.info("This email already has a wait-list entry. Member details require the private access key.");
         return;
       }
 
@@ -688,7 +712,7 @@ function WaitListPage() {
               <div>
                 <h2 className="text-2xl font-black">Already joined?</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Check your position, reward and referral code with the email you used to join.
+                  Check your position, reward and referral code with your email and private access key.
                 </p>
               </div>
             </div>
@@ -699,6 +723,15 @@ function WaitListPage() {
                 value={statusEmail}
                 onChange={(e) => setStatusEmail(e.target.value)}
                 placeholder="you@example.com"
+              />
+              <Input
+                type="text"
+                value={statusAccessToken}
+                onChange={(e) => setStatusAccessToken(e.target.value.trim())}
+                placeholder="Private status access key"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={64}
               />
               <Button
                 onClick={checkWaitlistStatus}

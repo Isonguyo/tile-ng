@@ -81,6 +81,16 @@ export function WaitlistProfile({
     }
   };
 
+  const copyStatusAccessKey = async () => {
+    if (!status?.status_access_token) return;
+    try {
+      await navigator.clipboard.writeText(status.status_access_token);
+      toast.success("Private status access key copied");
+    } catch {
+      toast.error("Unable to copy automatically");
+    }
+  };
+
   const shareToWhatsApp = () => {
     if (!shareLink) return;
     const text = `Join Tile and get early access: ${shareLink}`;
@@ -138,6 +148,22 @@ export function WaitlistProfile({
           <p className="mt-1 text-3xl font-black">{referralCount}</p>
         </div>
       </div>
+
+      {status?.status_access_token && (
+        <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+          <h3 className="font-bold">Private status access key</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Keep this key somewhere private. Tile requires it with your email to retrieve your
+            wait-list details. Anyone who has this key can access that status, so do not share it.
+          </p>
+          <p className="mt-3 break-all rounded-lg border bg-background p-3 font-mono text-xs">
+            {status.status_access_token}
+          </p>
+          <Button onClick={copyStatusAccessKey} variant="outline" size="sm" className="mt-3">
+            <Copy className="mr-2 h-4 w-4" /> Copy private key
+          </Button>
+        </div>
+      )}
 
       <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/5 p-5">
         <div className="flex items-start gap-3">

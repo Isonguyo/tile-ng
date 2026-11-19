@@ -35,6 +35,7 @@ type WaitlistContext = {
   email?: string;
   user_type?: "buyer" | "seller" | "artisan" | "all";
   account_type?: AccountType;
+  status_access_token?: string;
 };
 
 const typeIcons: Record<AccountType, typeof ShoppingBag> = {
@@ -148,20 +149,28 @@ function SignupPage() {
     return () => window.clearTimeout(timer);
   }, [cooldown]);
 
-  const linkWaitlistIfNeeded = async () => {
-    if (!fromWaitlist) return;
+  const linkWaitlistIfNeeded = async (): Promise<boolean> => {
+    const accessToken = waitlistContext?.status_access_token;
+    const waitlistEmail = waitlistContext?.email;
+    if (!fromWaitlist || !accessToken || !waitlistEmail) return false;
 
-    const { error } = await rpcUntyped("link_my_waitlist_account");
+    const { data, error } = await rpcUntyped("link_my_waitlist_account", {
+      _email: waitlistEmail,
+      _access_token: accessToken,
+    });
     if (error) {
       console.error("Unable to link wait-list account:", error);
-      return;
+      return false;
     }
+
+    if ((data as { status?: string } | null)?.status !== "linked") return false;
 
     try {
       window.sessionStorage.removeItem("tile_waitlist_context");
     } catch {
       // Ignore cleanup failures.
     }
+    return true;
   };
 
   const onSubmit = async (values: SignupFormValues) => {
@@ -213,11 +222,13 @@ function SignupPage() {
     }
 
     if (data.session) {
-      await linkWaitlistIfNeeded();
+      const waitlistLinked = await linkWaitlistIfNeeded();
 
       toast.success(
         fromWaitlist
-          ? "Account created. Your early-access setup is ready."
+          ? waitlistLinked
+            ? "Account created. Your early-access setup is linked."
+            : "Account created. Your Tile account is ready, but your older wait-list entry needs secure access-key recovery before it can be linked."
           : "Account created. You're ready to explore Tile Marketplace.",
       );
       nav({ to: "/dashboard" });

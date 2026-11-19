@@ -123,6 +123,7 @@ export type WaitlistStatus = {
   created_at?: string;
   auth_user_id?: string | null;
   account_created_at?: string | null;
+  status_access_token?: string;
   reward?: WaitlistReward;
 };
 
@@ -381,6 +382,7 @@ export const waitlistStatusSchema: z.ZodType<WaitlistStatus> = z.object({
   created_at: optionalString,
   auth_user_id: z.string().nullable().optional(),
   account_created_at: z.string().nullable().optional(),
+  status_access_token: optionalString,
   reward: waitlistRewardSchema.optional(),
 });
 
@@ -493,7 +495,11 @@ export function getRememberedReferralCode() {
   }
 }
 
-export function saveWaitlistAccountContext(email: string, userType: string) {
+export function saveWaitlistAccountContext(
+  email: string,
+  userType: string,
+  statusAccessToken?: string,
+) {
   try {
     window.sessionStorage.setItem(
       WAITLIST_CONTEXT_KEY,
@@ -501,6 +507,7 @@ export function saveWaitlistAccountContext(email: string, userType: string) {
         email,
         user_type: userType,
         account_type: getPrelaunchAccountType(userType),
+        status_access_token: statusAccessToken,
         created_at: new Date().toISOString(),
       }),
     );

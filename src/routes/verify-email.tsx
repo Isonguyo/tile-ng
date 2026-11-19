@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { friendlyAuthError } from "@/lib/auth-errors";
 import { AuthLayout } from "@/components/auth/auth-layout";
+import { WAITLIST_CONTEXT_KEY } from "@/lib/waitlist-utils";
 import { MailCheck, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 type VerificationState = "checking" | "pending" | "verified" | "error";
@@ -33,6 +34,7 @@ function VerifyEmailPage() {
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
   const [waitlistLinked, setWaitlistLinked] = useState(false);
+  const [waitlistLinkNeedsRecovery, setWaitlistLinkNeedsRecovery] = useState(false);
 
   // Countdown for resend button
   useEffect(() => {
@@ -110,7 +112,25 @@ function VerifyEmailPage() {
     if (waitlistLinked) return;
 
     try {
-      const { data, error } = await rpcUntyped("link_my_waitlist_account");
+      const raw = window.sessionStorage.getItem(WAITLIST_CONTEXT_KEY);
+      if (!raw) {
+        setWaitlistLinked(true);
+        return;
+      }
+
+      const context = JSON.parse(raw) as {
+        email?: string;
+        status_access_token?: string;
+      };
+      if (!context.email || !context.status_access_token) {
+        setWaitlistLinkNeedsRecovery(true);
+        return;
+      }
+
+      const { data, error } = await rpcUntyped("link_my_waitlist_account", {
+        _email: context.email,
+        _access_token: context.status_access_token,
+      });
 
       if (error) {
         console.error("Waitlist account link failed:", error);
@@ -122,15 +142,14 @@ function VerifyEmailPage() {
         setWaitlistLinked(true);
 
         try {
-          window.sessionStorage.removeItem("tile_waitlist_context");
+          window.sessionStorage.removeItem(WAITLIST_CONTEXT_KEY);
         } catch {
           // Ignore storage cleanup failures.
         }
 
         toast.success("Your wait-list and Tile Marketplace account are now connected.");
       } else {
-        // Direct signups may legitimately return "not_found".
-        setWaitlistLinked(true);
+        setWaitlistLinkNeedsRecovery(true);
       }
     } catch (error) {
       console.error("Waitlist account link failed:", error);
@@ -233,8 +252,10 @@ function VerifyEmailPage() {
 
           <p className="mt-3 text-xs text-muted-foreground">
             {waitlistLinked
-              ? "Your early-access information has been linked to this account."
-              : "We're finishing your account setup..."}
+              ? "Your account verification is complete."
+              : waitlistLinkNeedsRecovery
+                ? "This wait-list entry predates private access keys. Contact Tile support for identity-verified recovery before linking it to this account."
+                : "We're finishing your account setup..."}
           </p>
 
           <Button onClick={continueToTile} className="mt-6 w-full">

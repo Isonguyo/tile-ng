@@ -34,3 +34,11 @@ A normal follow-up commit does not remove secrets from earlier Git objects.
 - Treat views that execute with the view owner's privileges as security-sensitive. Test visibility and grants before changing them to invoker security.
 - Reconcile repository migration files with the live Supabase migration history before applying schema changes to production.
 - Do not use a production schema change as a substitute for a reviewed, version-controlled migration.
+
+
+## Wait-list privacy
+
+- Wait-list profile details must never be returned from an email-only lookup.
+- New members receive a random private status access key once; only its SHA-256 hash is stored in the database.
+- Status lookup and account linking require the private key. Duplicate join attempts return no existing member details.
+- Entries created before private keys were introduced require identity-verified recovery by an administrator using the admin-only key reissue RPC. Administrators must verify ownership out-of-band before sharing the new key.
