@@ -1,7 +1,7 @@
 ﻿import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Users, Download, Search, ArrowLeft, ShieldAlert, TrendingUp } from "lucide-react";
+import { Users, Download, Search, ArrowLeft, ShieldAlert, TrendingUp, Copy, KeyRound } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -28,6 +28,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin_/waitlist")({
   head: () => ({
@@ -73,7 +74,62 @@ function Stat({ label, value, hint }: { label: string; value: string | number; h
 
 function AdminWaitlistPage() {
   const { isAdmin, loading } = useAuth();
+  const queryClient = useQueryClient();
   const [q, setQ] = useState("");
+  const [issuingKeyFor, setIssuingKeyFor] = useState<string | null>(null);
+  const [issuedKey, setIssuedKey] = useState<{
+    full_name: string;
+    email: string;
+    token: string;
+  } | null>(null);
+
+  const issueWaitlistAccessKey = async (member: Row) => {
+    const confirmed = window.confirm(
+      `Before continuing, confirm that you independently verified control of ${member.email} using contact information already on file. Issuing a key replaces any previous key.`,
+    );
+    if (!confirmed || issuingKeyFor) return;
+
+    setIssuingKeyFor(member.id);
+    setIssuedKey(null);
+    try {
+      const { data, error } = await rpcUntyped("admin_issue_waitlist_access_key", {
+        _waitlist_id: member.id,
+      });
+      if (error) throw error;
+
+      const result = (data ?? {}) as {
+        status?: string;
+        full_name?: string;
+        email?: string;
+        status_access_token?: string;
+      };
+      if (result.status !== "issued" || !result.status_access_token) {
+        throw new Error("The access key could not be issued.");
+      }
+
+      setIssuedKey({
+        full_name: result.full_name ?? member.full_name,
+        email: result.email ?? member.email,
+        token: result.status_access_token,
+      });
+      toast.success("A new private waitlist access key has been issued.");
+      await queryClient.invalidateQueries({ queryKey: ["waitlist-rows"] });
+    } catch {
+      toast.error("Could not issue the private key. Verify your admin access and try again.");
+    } finally {
+      setIssuingKeyFor(null);
+    }
+  };
+
+  const copyIssuedKey = async () => {
+    if (!issuedKey) return;
+    try {
+      await navigator.clipboard.writeText(issuedKey.token);
+      toast.success("Private access key copied.");
+    } catch {
+      toast.error("Unable to copy automatically. Select and copy the key manually.");
+    }
+  };
 
   const { data: stats } = useQuery({
     queryKey: ["waitlist-stats"],
@@ -248,6 +304,45 @@ function AdminWaitlistPage() {
           </div>
         </Card>
 
+        <Card className="mt-6 border-amber-500/25 bg-amber-500/[0.03] p-5">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+            <div>
+              <h2 className="font-bold">Legacy member access recovery</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Older waitlist records do not have private access keys. Verify the member through a
+                known contact channel before issuing a key. The action replaces any previous key;
+                the raw key is shown only once and is not stored in the database.
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {issuedKey && (
+          <Card className="mt-4 border-emerald-500/30 p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-bold">Private access key issued</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  For {issuedKey.full_name} ({issuedKey.email}). Share it only with the verified
+                  member through the verified contact channel.
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={() => setIssuedKey(null)}>
+                Close
+              </Button>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <code className="min-w-0 flex-1 break-all rounded-lg border bg-muted/30 p-3 text-xs">
+                {issuedKey.token}
+              </code>
+              <Button type="button" onClick={copyIssuedKey} className="shrink-0">
+                <Copy className="mr-2 h-4 w-4" /> Copy key
+              </Button>
+            </div>
+          </Card>
+        )}
+
         <Card className="mt-6 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-bold">Latest signups</h2>
@@ -272,6 +367,7 @@ function AdminWaitlistPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Referral</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Access key</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -292,11 +388,23 @@ function AdminWaitlistPage() {
                     <TableCell className="text-xs">
                       {new Date(r.created_at).toLocaleDateString()}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={issuingKeyFor !== null}
+                        onClick={() => void issueWaitlistAccessKey(r)}
+                      >
+                        <KeyRound className="mr-1.5 h-3.5 w-3.5" />
+                        {issuingKeyFor === r.id ? "Issuing..." : "Issue / reissue"}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       No waitlist members yet.
                     </TableCell>
                   </TableRow>
