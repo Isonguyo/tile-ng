@@ -10,44 +10,41 @@ DROP FUNCTION IF EXISTS public.admin_list_invite_codes();
 DROP FUNCTION IF EXISTS public.redeem_admin_code(text);
 DROP TABLE IF EXISTS public.admin_invite_codes;
 
--- 2. Create the single owner admin account ------------------------
---    Email:    princewillisonguyo@gmail.com
---    Password: TiLe$098Gh23Bc
+-- 2. Grant the owner admin role to an EXISTING Supabase Auth account.
+--    Before running this script:
+--      1. Create the account through Supabase Auth (Dashboard or approved invite flow).
+--      2. Replace the placeholder below with that account's email address.
+--    This script never creates Auth users, sets passwords, or edits auth.users.
 DO $$
-DECLARE _uid uuid;
+DECLARE
+  _owner_email text := 'REPLACE_WITH_EXISTING_AUTH_USER_EMAIL';
+  _uid uuid;
 BEGIN
-  SELECT id INTO _uid FROM auth.users WHERE lower(email) = 'princewillisonguyo@gmail.com';
-
-  IF _uid IS NULL THEN
-    _uid := gen_random_uuid();
-    INSERT INTO auth.users (
-      instance_id, id, aud, role, email, encrypted_password,
-      email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-      created_at, updated_at
-    ) VALUES (
-      '00000000-0000-0000-0000-000000000000', _uid, 'authenticated', 'authenticated',
-      'princewillisonguyo@gmail.com',
-      extensions.crypt('TiLe$098Gh23Bc', extensions.gen_salt('bf')),
-      now(),
-      '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"full_name":"Tile Owner"}'::jsonb,
-      now(), now()
-    );
-    INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
-    VALUES (gen_random_uuid(), _uid, _uid::text,
-      jsonb_build_object('sub', _uid::text, 'email', 'princewillisonguyo@gmail.com', 'email_verified', true),
-      'email', now(), now(), now());
-  ELSE
-    UPDATE auth.users
-      SET encrypted_password = extensions.crypt('TiLe$098Gh23Bc', extensions.gen_salt('bf')),
-          email_confirmed_at = COALESCE(email_confirmed_at, now()),
-          updated_at = now()
-      WHERE id = _uid;
+  IF _owner_email = 'REPLACE_WITH_EXISTING_AUTH_USER_EMAIL'
+     OR position('@' IN _owner_email) = 0 THEN
+    RAISE EXCEPTION 'Set _owner_email to the email of an existing Supabase Auth user before running this script';
   END IF;
 
-  INSERT INTO public.profiles (id, full_name) VALUES (_uid, 'Tile Owner') ON CONFLICT (id) DO NOTHING;
-  INSERT INTO public.user_roles (user_id, role) VALUES (_uid, 'admin') ON CONFLICT (user_id, role) DO NOTHING;
-  INSERT INTO public.user_roles (user_id, role) VALUES (_uid, 'user')  ON CONFLICT (user_id, role) DO NOTHING;
+  SELECT id
+    INTO _uid
+    FROM auth.users
+   WHERE lower(email) = lower(trim(_owner_email));
+
+  IF _uid IS NULL THEN
+    RAISE EXCEPTION 'No Auth user exists for the supplied email. Create the account through Supabase Auth first.';
+  END IF;
+
+  INSERT INTO public.profiles (id, full_name)
+  VALUES (_uid, 'Tile Owner')
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (_uid, 'admin')
+  ON CONFLICT (user_id, role) DO NOTHING;
+
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (_uid, 'user')
+  ON CONFLICT (user_id, role) DO NOTHING;
 END $$;
 
 -- 3. Role management RPCs used by the Admin Cabin -----------------
