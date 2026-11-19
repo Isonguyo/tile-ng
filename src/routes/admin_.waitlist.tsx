@@ -157,7 +157,9 @@ function AdminWaitlistPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("waitlist")
-        .select("*")
+        .select(
+          "id,full_name,email,phone,state,city,user_type,referral_code,source,created_at",
+        )
         .order("created_at", { ascending: false })
         .limit(1000);
       if (error) throw error;
