@@ -42,3 +42,18 @@ A normal follow-up commit does not remove secrets from earlier Git objects.
 - New members receive a random private status access key once; only its SHA-256 hash is stored in the database.
 - Status lookup and account linking require the private key. Duplicate join attempts return no existing member details.
 - Entries created before private keys were introduced require identity-verified recovery by an administrator using the admin-only key reissue RPC. Administrators must verify ownership out-of-band before sharing the new key.
+
+
+## Published profile access
+
+- The `public_profiles` view runs with caller permissions (SECURITY INVOKER).
+- Anonymous access to `profiles` is column-limited to fields required for public shop and artisan pages. Contact, KYC and wallet fields are not granted to anonymous users.
+- Public profile rows must meet marketplace launch and approval conditions. Authenticated owners and staff retain the existing private-preview RLS policy.
+- Public artisan-profile RPC responses redact phone, WhatsApp and email fields. Contact endpoints independently enforce launch, approval and ownership/admin visibility.
+
+## RPC privilege rules
+
+- Admin RPCs must not be executable by `anon`; authenticated callers must pass an in-function administrator-role check.
+- Trigger-only functions must not be directly executable through the Data API.
+- SECURITY DEFINER RPCs accepting a user or record identifier must verify ownership or an explicit administrative permission.
+- Test-only moderation RPCs and legacy wait-list insertion RPCs are not exposed through the Data API.
