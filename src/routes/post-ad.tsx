@@ -25,7 +25,6 @@ import { useTileEntitlements, hasUnlimitedListings } from "@/hooks/use-tile-enti
 import { useMerchantStaffContext } from "@/hooks/use-merchant-staff-context";
 import { MerchantHealthCard, QuotaBar } from "@/components/merchant-health";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadListingImages } from "@/lib/storage";
 import { optimizeListingImage } from "@/lib/listing-image";
 import { toast } from "sonner";
 import { showError } from "@/lib/user-feedback";
@@ -80,6 +79,13 @@ type FormVals = z.output<typeof schema>;
 
 type Mode = "home" | "sell";
 type ListingPhoto = { id: string; file: File; previewUrl: string };
+type DraftProduct = {
+  id: string;
+  values: FormVals;
+  photos: ListingPhoto[];
+  coverPhotoId: string | null;
+  location: string;
+};
 
 const DRAFT_KEY = "tile-post-ad-draft";
 const MAX_PHOTO_SIZE = 30 * 1024 * 1024;
@@ -104,6 +110,9 @@ function PostAd() {
   const [mode, setMode] = useState<Mode>(search.type === "goods" ? "sell" : "home");
   const [step, setStep] = useState(1);
   const [photos, setPhotos] = useState<ListingPhoto[]>([]);
+  const [batchProducts, setBatchProducts] = useState<DraftProduct[]>([]);
+  const [editingBatchProductId, setEditingBatchProductId] = useState<string | null>(null);
+  const [submittedListingCount, setSubmittedListingCount] = useState(0);
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
   const [isPreparingPhotos, setIsPreparingPhotos] = useState(false);
   const [photoPreparation, setPhotoPreparation] = useState<{
@@ -339,7 +348,69 @@ function PostAd() {
     setStep(1);
     setSubmitted(false);
     setSubmittedListingId(null);
+    setSubmittedListingCount(0);
+    ownedPreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    ownedPreviewUrls.current.clear();
+    setBatchProducts([]);
+    setEditingBatchProductId(null);
+    setPhotos([]);
+    setCoverPhotoId(null);
     scrollPageToTop();
+  };
+
+  const createDraftProduct = (values: FormVals): DraftProduct => {
+    const selectedState = states.find((state) => state.id === values.state_id);
+    const selectedLga = lgas.find((lga) => lga.id === values.lga_id);
+    return {
+      id: editingBatchProductId ?? crypto.randomUUID(),
+      values: { ...values },
+      photos: [...photos],
+      coverPhotoId,
+      location: [selectedLga?.name, selectedState?.name].filter(Boolean).join(", "),
+    };
+  };
+
+  const handleAddAnotherProduct = (values: FormVals) => {
+    if (isPreparingPhotosRef.current || submitting) return;
+    const draft = createDraftProduct(values);
+    setBatchProducts((current) =>
+      editingBatchProductId
+        ? current.map((product) => (product.id === editingBatchProductId ? draft : product))
+        : [...current, draft],
+    );
+    form.reset({
+      category: "",
+      title: "",
+      description: "",
+      state_id: values.state_id,
+      lga_id: values.lga_id,
+      phone: values.phone,
+      price: undefined,
+      condition: undefined,
+      brand: "",
+    });
+    setPhotos([]);
+    setCoverPhotoId(null);
+    setEditingBatchProductId(null);
+    setDetectedLocation(null);
+    goToStep(1);
+    toast.success("Product added to your batch. Add the next one.");
+  };
+
+  const handleSwitchBatchProduct = (product: DraftProduct, currentValues: FormVals) => {
+    if (product.id === editingBatchProductId) return;
+    const currentDraft = createDraftProduct(currentValues);
+    setBatchProducts((current) =>
+      editingBatchProductId
+        ? current.map((item) => (item.id === editingBatchProductId ? currentDraft : item))
+        : [...current, currentDraft],
+    );
+    form.reset(product.values);
+    setPhotos(product.photos);
+    setCoverPhotoId(product.coverPhotoId);
+    setEditingBatchProductId(product.id);
+    setDetectedLocation(null);
+    goToStep(1);
   };
 
   const addPhotos = async (incoming: FileList | File[]) => {
@@ -553,81 +624,161 @@ function PostAd() {
       toast.error("Please wait while your photos are being prepared.");
       return;
     }
-
     if (postingDisabled) {
       toast.error("Posting is temporarily disabled by Tile.");
       return;
     }
+
+    const currentProduct = createDraftProduct(vals);
+    const productsToSubmit = editingBatchProductId
+      ? batchProducts.map((product) =>
+          product.id === editingBatchProductId ? currentProduct : product,
+        )
+      : [...batchProducts, currentProduct];
+
+    if (!productsToSubmit.length) {
+      toast.error("Add at least one product before submitting.");
+      return;
+    }
+
     setSubmitting(true);
-    setSubmittingStage("Checking plan limits");
+    const uploadedPaths: string[] = [];
+    let listingsInserted = false;
+
     try {
-      if (!unlimitedListings) {
-        const { data: ok, error: qErr } = await supabase.rpc("check_post_quota", {
+      setSubmittingStage("Checking your listing allowance");
+      const { data: planRows, error: planError } = await supabase.rpc("get_plan_limits");
+      if (planError) throw planError;
+      const quota = (Array.isArray(planRows) ? planRows[0] : planRows) as
+        | { tier?: string; max_goods?: number | null; used_goods?: number | null }
+        | null;
+      if (!quota) throw new Error("We couldn't verify your listing allowance. Please try again.");
+
+      const paidTier = ["lite", "pro", "vip"].includes(String(quota.tier ?? "").toLowerCase());
+      if (!paidTier && !unlimitedListings) {
+        const { data: canPost, error: quotaError } = await supabase.rpc("check_post_quota", {
           _type: "goods",
         });
-        if (qErr) throw qErr;
-        if (!ok) {
-          toast.error("Your current plan has reached the listing limit.");
-          setSubmitting(false);
-          return;
+        if (quotaError) throw quotaError;
+
+        const maxGoods = Number(quota.max_goods ?? 5);
+        const usedGoods = Number(quota.used_goods ?? 0);
+        const remaining = Math.max(0, Math.min(maxGoods, 5) - usedGoods);
+        if (!canPost || productsToSubmit.length > remaining) {
+          throw new Error(
+            remaining > 0 && productsToSubmit.length > remaining
+              ? `Your Free plan has room for ${remaining} more product listing${remaining === 1 ? "" : "s"}. Remove ${productsToSubmit.length - remaining} product${productsToSubmit.length - remaining === 1 ? "" : "s"} from this batch or upgrade your plan.`
+              : "Your Free plan has reached its 5-product listing limit. Upgrade your plan to submit more products.",
+          );
         }
       }
 
-      setSubmittingStage("Uploading photos");
-      let imagePaths: string[] = [];
-      if (photos.length) {
-        const coverIndex = photos.findIndex((photo) => photo.id === coverPhotoId);
+      const listingRows: Array<{
+        user_id: string;
+        type: "goods";
+        category: string;
+        title: string;
+        description: string;
+        location: string;
+        phone: string;
+        price: number | null;
+        condition: FormVals["condition"] | null;
+        brand: string | null;
+        images: string[];
+        status: "pending";
+      }> = [];
+
+      for (const [productIndex, product] of productsToSubmit.entries()) {
+        const imagePaths: string[] = [];
+        const coverIndex = product.photos.findIndex(
+          (photo) => photo.id === product.coverPhotoId,
+        );
         const orderedPhotos =
           coverIndex > 0
-            ? [photos[coverIndex], ...photos.filter((_, index) => index !== coverIndex)]
-            : photos;
-        imagePaths = await uploadListingImages(
-          merchantOwnerId,
-          orderedPhotos.map((photo) => photo.file),
-          (uploaded, total) => setSubmittingStage(`Uploading photo ${uploaded} of ${total}`),
-        );
-      }
+            ? [
+                product.photos[coverIndex],
+                ...product.photos.filter((_, index) => index !== coverIndex),
+              ]
+            : product.photos;
 
-      const selectedState = states.find((s) => s.id === vals.state_id);
-      const selectedLga = lgas.find((l) => l.id === vals.lga_id);
-      const location = [selectedLga?.name, selectedState?.name].filter(Boolean).join(", ");
+        for (const [photoIndex, photo] of orderedPhotos.entries()) {
+          setSubmittingStage(
+            `Product ${productIndex + 1} of ${productsToSubmit.length}: uploading photo ${photoIndex + 1} of ${orderedPhotos.length}`,
+          );
+          const extension = photo.file.name.split(".").pop() ?? "jpg";
+          const storagePath = `${merchantOwnerId}/${crypto.randomUUID()}.${extension}`;
+          const { error: uploadError } = await supabase.storage
+            .from("listings")
+            .upload(storagePath, photo.file, { upsert: false });
+          if (uploadError) throw uploadError;
+          uploadedPaths.push(storagePath);
+          imagePaths.push(storagePath);
+        }
 
-      setSubmittingStage("Submitting for review");
-      const { data, error } = await supabase
-        .from("listings")
-        .insert({
+        listingRows.push({
           user_id: merchantOwnerId,
           type: "goods",
-          category: vals.category,
-          title: vals.title,
-          description: vals.description,
-          location,
-          phone: vals.phone,
-          price: vals.price ?? null,
-          condition: vals.condition ?? null,
-          brand: vals.brand ?? null,
+          category: product.values.category,
+          title: product.values.title,
+          description: product.values.description,
+          location: product.location,
+          phone: product.values.phone,
+          price: product.values.price ?? null,
+          condition: product.values.condition ?? null,
+          brand: product.values.brand ?? null,
           images: imagePaths,
           status: "pending",
-        })
-        .select()
-        .single();
+        });
+      }
 
-      if (error) throw error;
+      setSubmittingStage(
+        `Sending ${productsToSubmit.length} product${productsToSubmit.length === 1 ? "" : "s"} for Admin review`,
+      );
+      const { data: insertedListings, error: insertError } = await supabase
+        .from("listings")
+        .insert(listingRows)
+        .select("id,title,status");
+      if (insertError) throw insertError;
+      if (!insertedListings || insertedListings.length !== productsToSubmit.length) {
+        throw new Error(
+          "Tile could not confirm that every product was submitted. Check your Merchant Hub before retrying.",
+        );
+      }
+      listingsInserted = true;
 
       window.localStorage.removeItem(DRAFT_KEY);
-      setSubmittedListingId(data.id);
+      setSubmittedListingCount(insertedListings.length);
+      setSubmittedListingId(insertedListings.length === 1 ? insertedListings[0].id : null);
       setPromotionState("idle");
       setPromotionStats(null);
+      setBatchProducts([]);
+      setEditingBatchProductId(null);
+      setPhotos([]);
+      setCoverPhotoId(null);
+      ownedPreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      ownedPreviewUrls.current.clear();
       setSubmitted(true);
-      toast.success("Listing submitted for review");
+      toast.success(
+        insertedListings.length === 1
+          ? "Product submitted for Admin review."
+          : `${insertedListings.length} products submitted for Admin review.`,
+      );
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["my-listings", merchantOwnerId] }),
         queryClient.invalidateQueries({ queryKey: ["merchant-shop-listings", merchantOwnerId] }),
         queryClient.invalidateQueries({ queryKey: ["shop-listings", merchantOwnerId] }),
+        queryClient.invalidateQueries({ queryKey: ["plan-limits"] }),
       ]);
     } catch (e) {
-      console.error("POST AD ERROR:", e);
-      showError(e, "We couldn't post your ad. Please check the details and try again.");
+      console.error("POST PRODUCT BATCH ERROR:", e);
+      if (!listingsInserted && uploadedPaths.length) {
+        const { error: cleanupError } = await supabase.storage.from("listings").remove(uploadedPaths);
+        if (cleanupError) console.error("Could not clean up uploaded batch photos:", cleanupError);
+      }
+      showError(
+        e,
+        "We couldn't submit this product batch. Your product details are still available to retry.",
+      );
     } finally {
       setSubmitting(false);
       setSubmittingStage("Preparing your listing");
@@ -830,9 +981,13 @@ function PostAd() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
               <Check className="h-7 w-7" />
             </div>
-            <h2 className="text-2xl font-bold">Listing submitted successfully.</h2>
+            <h2 className="text-2xl font-bold">
+              {submittedListingCount === 1
+                ? "Product submitted successfully."
+                : `${submittedListingCount} products submitted successfully.`}
+            </h2>
             <p className="text-muted-foreground">
-              Your listing is now pending Admin review.
+              Your product batch is now pending Admin review.
               {isPrelaunch
                 ? " Because Tile is still in pre-launch, it will remain private even after approval until Admin launches the marketplace."
                 : " Once approved, it can become publicly visible."}
@@ -845,7 +1000,7 @@ function PostAd() {
                 Create another
               </Button>
             </div>
-            {submittedListingId && (
+            {submittedListingId && submittedListingCount === 1 && (
               <div className="rounded-2xl border bg-muted/20 p-5 text-left">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -938,6 +1093,86 @@ function PostAd() {
                 <span>-</span>
                 <span>Listing quality {qualityScore}%</span>
               </div>
+
+              {batchProducts.length > 0 && (
+                <section className="mb-6 rounded-2xl border bg-card/70 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">Your product batch</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Scroll sideways to review the products you've added.
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
+                      {batchProducts.length + (editingBatchProductId ? 0 : 1)} product
+                      {batchProducts.length + (editingBatchProductId ? 0 : 1) === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
+                    {batchProducts.map((product, index) => {
+                      const isActive = product.id === editingBatchProductId;
+                      return (
+                        <button
+                          key={product.id}
+                          type="button"
+                          disabled={submitting || isPreparingPhotos || step !== 4 || isActive}
+                          onClick={() =>
+                            void form.handleSubmit(
+                              (values) => handleSwitchBatchProduct(product, values),
+                              onInvalid,
+                            )()
+                          }
+                          className={`flex w-64 shrink-0 snap-start items-center gap-3 rounded-xl border p-3 text-left transition-colors disabled:cursor-default disabled:opacity-100 ${isActive ? "border-accent bg-accent/10" : "border-border bg-background hover:border-accent/40"}`}
+                          title={step === 4 ? "Edit this product" : "Finish the current product preview before switching"}
+                        >
+                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+                            {product.photos[0] ? (
+                              <img src={product.photos[0].previewUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="grid h-full place-items-center text-muted-foreground">
+                                <ImagePlus className="h-5 w-5" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs text-muted-foreground">
+                              Product {index + 1} · {product.values.category}
+                            </p>
+                            <p className="mt-1 truncate text-sm font-semibold">
+                              {product.values.title}
+                            </p>
+                            <p className="mt-1 text-xs text-accent">
+                              {isActive ? "Currently editing" : "Ready for review"}
+                            </p>
+                          </div>
+                          {step === 4 && !isActive && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                        </button>
+                      );
+                    })}
+                    {!editingBatchProductId && (
+                      <div className="flex w-64 shrink-0 snap-start items-center gap-3 rounded-xl border border-dashed border-accent/40 bg-accent/[0.04] p-3">
+                        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
+                          <ImagePlus className="h-6 w-6" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+                            Product {batchProducts.length + 1}
+                          </p>
+                          <p className="mt-1 truncate text-sm font-semibold">
+                            {watch.title || "New product in progress"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">Currently being added</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {step !== 4 && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Complete this product and open Preview to switch back and edit another one.
+                    </p>
+                  )}
+                </section>
+              )}
 
               <div className="mb-6 flex flex-wrap gap-2">
                 {["Category", "Details", "Photos", "Preview"].map((label, index) => {
@@ -1349,7 +1584,14 @@ function PostAd() {
 
                 {step === 4 && (
                   <>
-                    <h2 className="text-xl font-semibold">Preview your listing</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2 className="text-xl font-semibold">Preview your product</h2>
+                      <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
+                        {editingBatchProductId
+                          ? `Editing product ${batchProducts.findIndex((product) => product.id === editingBatchProductId) + 1} of ${batchProducts.length}`
+                          : `Product ${batchProducts.length + 1} of ${batchProducts.length + 1}`}
+                      </span>
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       Review the listing exactly as buyers will see it before publishing.
                     </p>
@@ -1387,23 +1629,32 @@ function PostAd() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex justify-between pt-4 border-t">
+                    <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                       <Button type="button" variant="outline" onClick={prevStep}>
                         <ChevronLeft className="mr-2 h-4 w-4" />
                         Back
                       </Button>
-                      <Button
-                        type="submit"
-                        disabled={submitting || postingDisabled || isPreparingPhotos}
-                        className="bg-accent text-accent-foreground"
-                      >
-                        <Check className="mr-2 h-4 w-4" />
-                        {submitting
-                          ? submittingStage
-                          : isPrelaunch
-                            ? "Submit for Admin Review"
-                            : "Publish listing"}
-                      </Button>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={submitting || postingDisabled || isPreparingPhotos}
+                          onClick={form.handleSubmit(handleAddAnotherProduct, onInvalid)}
+                        >
+                          <ImagePlus className="mr-2 h-4 w-4" />
+                          Add another product
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={submitting || postingDisabled || isPreparingPhotos}
+                          className="bg-accent text-accent-foreground"
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          {submitting
+                            ? submittingStage
+                            : `Submit ${batchProducts.length + (editingBatchProductId ? 0 : 1)} product${batchProducts.length + (editingBatchProductId ? 0 : 1) === 1 ? "" : "s"} for Admin Review`}
+                        </Button>
+                      </div>
                     </div>
                   </>
                 )}
