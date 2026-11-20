@@ -987,10 +987,14 @@ function PostAd() {
                 : `${submittedListingCount} products submitted successfully.`}
             </h2>
             <p className="text-muted-foreground">
-              Your product batch is now pending Admin review.
+              {submittedListingCount === 1
+                ? "Your product is now pending Admin review."
+                : "All your products are now pending Admin review."}
               {isPrelaunch
-                ? " Because Tile is still in pre-launch, it will remain private even after approval until Admin launches the marketplace."
-                : " Once approved, it can become publicly visible."}
+                ? submittedListingCount === 1
+                  ? " Because Tile is still in pre-launch, it will remain private even after approval until Admin launches the marketplace."
+                  : " Because Tile is still in pre-launch, they will remain private even after approval until Admin launches the marketplace."
+                : " Once approved, they can become publicly visible."}
             </p>
             <div className="flex justify-center gap-3">
               <Button asChild variant="outline">
