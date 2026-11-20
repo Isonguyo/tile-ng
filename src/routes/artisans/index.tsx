@@ -1,7 +1,7 @@
 ﻿import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search,
   MapPin,
@@ -58,6 +58,14 @@ function ArtisanDirectoryPage() {
   const [qLga, setQLga] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("rating");
+  const [heroRotation, setHeroRotation] = useState(0);
+
+  // Rotate featured artisan cards on desktop only. Keep the mobile hero stable.
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) return;
+    const timer = window.setInterval(() => setHeroRotation((current) => current + 1), 20_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const {
     data: artisans = [],
@@ -126,6 +134,12 @@ function ArtisanDirectoryPage() {
   const featuredArtisans = useMemo(() => {
     return artisans.filter((artisan) => isPremiumTier(artisan.subscription_tier)).slice(0, 3);
   }, [artisans]);
+
+  const heroArtisans = useMemo(() => {
+    if (artisans.length <= 4) return artisans;
+    const start = heroRotation % artisans.length;
+    return Array.from({ length: 4 }, (_, index) => artisans[(start + index) % artisans.length]);
+  }, [artisans, heroRotation]);
 
   return (
     <div className="min-h-screen bg-[#06120d] text-slate-100 selection:bg-emerald-300/20">
@@ -207,7 +221,7 @@ function ArtisanDirectoryPage() {
                 <span />
                 <i />
               </div>
-              {artisans.slice(0, 4).map((artisan, index) => (
+              {heroArtisans.map((artisan, index) => (
                 <article key={artisan.id} className={"tile-pro-card tile-pro-card-" + (index + 1)}>
                   <div className="tile-pro-photo-wrap">
                     <SignedImage
