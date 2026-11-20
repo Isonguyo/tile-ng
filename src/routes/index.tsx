@@ -126,7 +126,7 @@ function Index() {
   const [featuredProductImage, setFeaturedProductImage] = useState<string | null>(null);
 
   // Marketplace Feed state
-  const [activeTab, setActiveTab] = useState<"all" | "goods" | "service" | "featured">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "fashion" | "appliances" | "promoted">("all");
   const [sortBy, setSortBy] = useState<
     "recommended" | "newest" | "oldest" | "popular" | "price-low" | "price-high"
   >("recommended");
@@ -157,9 +157,11 @@ function Index() {
       const { data, error } = await rpcUntyped("search_listings", {
         _q: q || null,
         _location: loc && loc !== "all" ? loc : null,
-        _category: cat || null,
-        _type: activeTab === "goods" || activeTab === "service" ? activeTab : null,
-        _limit: 150,
+        _category:
+          activeTab === "fashion" || activeTab === "appliances" ? activeTab : cat || null,
+        _type: activeTab === "all" ? null : "goods",
+        // Fetch the full public product result window before narrowing to active promotions.
+        _limit: activeTab === "promoted" ? 300 : 150,
       });
       if (error) throw new Error(error.message);
       return ((data as SearchListingRow[]) || []).map((r) => ({
@@ -366,16 +368,9 @@ function Index() {
   const processedListings = useMemo(() => {
     let result = [...listings];
 
-    switch (activeTab) {
-      case "goods":
-        result = result.filter((l) => l.type === "goods");
-        break;
-      case "service":
-        result = result.filter((l) => l.type === "service");
-        break;
-      case "featured":
-        result = result.filter((l) => l.is_promoted);
-        break;
+    if (activeTab === "promoted") {
+      // search_listings exposes is_promoted only for currently active, eligible promotions.
+      result = result.filter((l) => l.type === "goods" && l.is_promoted);
     }
 
     switch (sortBy) {
@@ -1125,7 +1120,13 @@ function Index() {
                 <h2 className="text-xl font-black tracking-tight text-white">
                   {isFiltering
                     ? `Search Results ${activeCategoryLabel ? `in ${activeCategoryLabel}` : ""}`
-                    : "Explore Marketplace Feed"}
+                    : activeTab === "fashion"
+                      ? "Fashion Products"
+                      : activeTab === "appliances"
+                        ? "Appliances"
+                        : activeTab === "promoted"
+                          ? "Promoted Products"
+                          : "Explore Marketplace Feed"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
                   Showing {processedListings.length} approved listings across chosen filters.
@@ -1146,22 +1147,22 @@ function Index() {
                       All
                     </TabsTrigger>
                     <TabsTrigger
-                      value="goods"
+                      value="fashion"
                       className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]"
                     >
-                      Goods
+                      Fashion
                     </TabsTrigger>
                     <TabsTrigger
-                      value="service"
+                      value="appliances"
                       className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]"
                     >
-                      Services
+                      Appliances
                     </TabsTrigger>
                     <TabsTrigger
-                      value="featured"
+                      value="promoted"
                       className="rounded-lg text-xs font-bold text-slate-400 data-[state=active]:bg-emerald-300 data-[state=active]:text-[#06120d]"
                     >
-                      Featured
+                      Promoted
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
