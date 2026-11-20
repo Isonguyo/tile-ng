@@ -60,9 +60,8 @@ function ArtisanDirectoryPage() {
   const [sortBy, setSortBy] = useState("rating");
   const [heroRotation, setHeroRotation] = useState(0);
 
-  // Rotate featured artisan cards on desktop only. Keep the mobile hero stable.
+  // Rotate featured artisan cards on both desktop and mobile every 20 seconds.
   useEffect(() => {
-    if (window.matchMedia("(max-width: 767px)").matches) return;
     const timer = window.setInterval(() => setHeroRotation((current) => current + 1), 20_000);
     return () => window.clearInterval(timer);
   }, []);
