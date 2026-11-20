@@ -413,6 +413,35 @@ function PostAd() {
     goToStep(1);
   };
 
+  const removeBatchProduct = (productId: string) => {
+    const product = batchProducts.find((item) => item.id === productId);
+    if (!product) return;
+    product.photos.forEach((photo) => {
+      URL.revokeObjectURL(photo.previewUrl);
+      ownedPreviewUrls.current.delete(photo.previewUrl);
+    });
+    setBatchProducts((current) => current.filter((item) => item.id !== productId));
+    if (editingBatchProductId === productId) {
+      form.reset({
+        category: "",
+        title: "",
+        description: "",
+        state_id: watch.state_id,
+        lga_id: watch.lga_id,
+        phone: watch.phone,
+        price: undefined,
+        condition: undefined,
+        brand: "",
+      });
+      setPhotos([]);
+      setCoverPhotoId(null);
+      setEditingBatchProductId(null);
+      setDetectedLocation(null);
+      goToStep(1);
+    }
+    toast.success("Product removed from your batch.");
+  };
+
   const addPhotos = async (incoming: FileList | File[]) => {
     if (isPreparingPhotosRef.current || submitting) return;
 
@@ -1116,41 +1145,55 @@ function PostAd() {
                     {batchProducts.map((product, index) => {
                       const isActive = product.id === editingBatchProductId;
                       return (
-                        <button
+                        <div
                           key={product.id}
-                          type="button"
-                          disabled={submitting || isPreparingPhotos || step !== 4 || isActive}
-                          onClick={() =>
-                            void form.handleSubmit(
-                              (values) => handleSwitchBatchProduct(product, values),
-                              onInvalid,
-                            )()
-                          }
-                          className={`flex w-64 shrink-0 snap-start items-center gap-3 rounded-xl border p-3 text-left transition-colors disabled:cursor-default disabled:opacity-100 ${isActive ? "border-accent bg-accent/10" : "border-border bg-background hover:border-accent/40"}`}
-                          title={step === 4 ? "Edit this product" : "Finish the current product preview before switching"}
+                          className={`relative flex w-64 shrink-0 snap-start items-center rounded-xl border p-2 transition-colors ${isActive ? "border-accent bg-accent/10" : "border-border bg-background"}`}
                         >
-                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
-                            {product.photos[0] ? (
-                              <img src={product.photos[0].previewUrl} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="grid h-full place-items-center text-muted-foreground">
-                                <ImagePlus className="h-5 w-5" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs text-muted-foreground">
-                              Product {index + 1} · {product.values.category}
-                            </p>
-                            <p className="mt-1 truncate text-sm font-semibold">
-                              {product.values.title}
-                            </p>
-                            <p className="mt-1 text-xs text-accent">
-                              {isActive ? "Currently editing" : "Ready for review"}
-                            </p>
-                          </div>
-                          {step === 4 && !isActive && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
-                        </button>
+                          <button
+                            type="button"
+                            disabled={submitting || isPreparingPhotos || step !== 4 || isActive}
+                            onClick={() =>
+                              void form.handleSubmit(
+                                (values) => handleSwitchBatchProduct(product, values),
+                                onInvalid,
+                              )()
+                            }
+                            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 pr-7 text-left disabled:cursor-default disabled:opacity-100"
+                            title={step === 4 ? "Edit this product" : "Finish the current product preview before switching"}
+                          >
+                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+                              {product.photos[0] ? (
+                                <img src={product.photos[0].previewUrl} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="grid h-full place-items-center text-muted-foreground">
+                                  <ImagePlus className="h-5 w-5" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs text-muted-foreground">
+                                Product {index + 1} · {product.values.category}
+                              </p>
+                              <p className="mt-1 truncate text-sm font-semibold">
+                                {product.values.title}
+                              </p>
+                              <p className="mt-1 text-xs text-accent">
+                                {isActive ? "Currently editing" : "Ready for review"}
+                              </p>
+                            </div>
+                            {step === 4 && !isActive && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Remove ${product.values.title} from batch`}
+                            title="Remove product"
+                            disabled={submitting || isPreparingPhotos || step !== 4}
+                            onClick={() => removeBatchProduct(product.id)}
+                            className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       );
                     })}
                     {!editingBatchProductId && (
