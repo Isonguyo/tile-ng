@@ -124,6 +124,12 @@ function Index() {
   const [searchInput, setSearchInput] = useState(q ?? "");
   const [selectedLocation, setSelectedLocation] = useState(loc ?? "all");
   const [featuredProductImage, setFeaturedProductImage] = useState<string | null>(null);
+  const [heroRotation, setHeroRotation] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setHeroRotation((current) => current + 1), 20_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Marketplace Feed state
   const [activeTab, setActiveTab] = useState<"all" | "fashion" | "appliances" | "promoted">("all");
@@ -317,7 +323,9 @@ function Index() {
     [publicCatalog],
   );
 
-  const featuredListing = trendingListings[0];
+  const featuredListing = trendingListings.length
+    ? trendingListings[heroRotation % trendingListings.length]
+    : undefined;
   const featuredImagePath = featuredListing?.images?.[0];
   useEffect(() => {
     if (!featuredImagePath) {
@@ -403,8 +411,10 @@ function Index() {
     return result;
   }, [listings, activeTab, sortBy]);
 
-  const featuredStore = vendors[0];
-  const featuredArtisan = featuredArtisans[0];
+  const featuredStore = vendors.length ? vendors[heroRotation % vendors.length] : undefined;
+  const featuredArtisan = featuredArtisans.length
+    ? featuredArtisans[heroRotation % featuredArtisans.length]
+    : undefined;
 
   const executeSearch = (e: React.FormEvent) => {
     e.preventDefault();
