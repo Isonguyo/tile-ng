@@ -22,6 +22,7 @@ export type PaymentRequest = {
   status: string;
   admin_note?: string | null;
   expires_at?: string | null;
+  order_expires_at?: string | null;
   created_at?: string | null;
   submitted_at?: string | null;
 };
@@ -55,7 +56,8 @@ export function requestAmount(r: PaymentRequest) {
 }
 
 function isExpired(r: PaymentRequest) {
-  return r.status === "awaiting_payment" && !!r.expires_at && new Date(r.expires_at) < new Date();
+  const expiry = r.expires_at ?? r.order_expires_at;
+  return r.status === "awaiting_payment" && !!expiry && new Date(expiry) < new Date();
 }
 
 export function isOpenRequest(r: PaymentRequest) {
@@ -186,7 +188,7 @@ export function BankTransferPanel({ selectedTier, onDone }: { selectedTier: "lit
               <span className="text-slate-400">Payment code:</span> <b>{awaiting.payment_code}</b>
               {awaiting.payment_code && <button type="button" aria-label="Copy payment code" onClick={() => copy(awaiting.payment_code!)} className="text-emerald-300"><Copy className="h-4 w-4" /></button>}
             </p>
-            {awaiting.expires_at && <p><span className="text-slate-400">Order expires:</span> {new Date(awaiting.expires_at).toLocaleString()}</p>}
+            {(awaiting.expires_at ?? awaiting.order_expires_at) && <p><span className="text-slate-400">Order expires:</span> {new Date((awaiting.expires_at ?? awaiting.order_expires_at)!).toLocaleString()}</p>}
           </div>
           <p className="text-xs text-slate-400">
             {s!.instructions ?? s!.transfer_instructions ?? "Transfer the exact amount and put the payment code in the transfer narration/description."}
