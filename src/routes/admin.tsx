@@ -196,11 +196,11 @@ function Admin() {
 
   // Mission Control aggregated stats
   const { data: pendingPayments = [] } = useQuery({
-    queryKey: ["admin-subscription-payments", "pending_review"],
+    queryKey: ["admin-subscription-payments", "pending"],
     enabled: isAdmin,
     queryFn: async () => {
       const { data, error } = await rpcUntyped("admin_list_subscription_payment_requests", {
-        _status: "pending_review",
+        _status: "pending",
       });
       if (error) throw error;
       return Array.isArray(data) ? data : [];
