@@ -1,4 +1,4 @@
-﻿import { LegalFooter } from "@/components/legal-footer";
+import { LegalFooter } from "@/components/legal-footer";
 import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { SignedImage } from "@/components/signed-image";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { ListingCard, type ListingCardData } from "@/components/listing-card";
+import { ListingPagination } from "@/components/listing-pagination";
 import { CATEGORIES, LOCATIONS, formatNaira } from "@/lib/categories";
 import { getSignedUrl } from "@/lib/storage";
 import { fromUntyped } from "@/lib/db-untyped";
@@ -136,6 +137,12 @@ function Index() {
   const [sortBy, setSortBy] = useState<
     "recommended" | "newest" | "oldest" | "popular" | "price-low" | "price-high"
   >("recommended");
+  const [listingsPage, setListingsPage] = useState(1);
+  const LISTINGS_PER_PAGE = 20;
+
+  useEffect(() => {
+    setListingsPage(1);
+  }, [q, loc, cat, activeTab, sortBy]);
 
   // Smooth scroll to listings container when search params update
   useEffect(() => {
@@ -167,7 +174,7 @@ function Index() {
           activeTab === "fashion" || activeTab === "appliances" ? activeTab : cat || null,
         _type: activeTab === "all" ? null : "goods",
         // Fetch the full public product result window before narrowing to active promotions.
-        _limit: activeTab === "promoted" ? 300 : 150,
+        _limit: 300,
       });
       if (error) throw new Error(error.message);
       return ((data as SearchListingRow[]) || []).map((r) => ({
@@ -410,6 +417,12 @@ function Index() {
 
     return result;
   }, [listings, activeTab, sortBy]);
+
+  const totalListingPages = Math.max(1, Math.ceil(processedListings.length / LISTINGS_PER_PAGE));
+  const visibleListings = processedListings.slice(
+    (listingsPage - 1) * LISTINGS_PER_PAGE,
+    listingsPage * LISTINGS_PER_PAGE,
+  );
 
   const featuredStore = vendors.length ? vendors[heroRotation % vendors.length] : undefined;
   const featuredArtisan = featuredArtisans.length
@@ -1139,7 +1152,9 @@ function Index() {
                           : "Explore Marketplace Feed"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  Showing {processedListings.length} approved listings across chosen filters.
+                  {processedListings.length === 0
+                    ? "No listings to display."
+                    : `Showing ${(listingsPage - 1) * LISTINGS_PER_PAGE + 1}–${Math.min(listingsPage * LISTINGS_PER_PAGE, processedListings.length)} of ${processedListings.length} approved listings.`}
                 </p>
               </div>
 
@@ -1224,10 +1239,17 @@ function Index() {
               </Card>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {processedListings.map((l) => (
+                {visibleListings.map((l) => (
                   <ListingCard key={l.id} l={l} />
                 ))}
               </div>
+            )}
+            {processedListings.length > LISTINGS_PER_PAGE && (
+              <ListingPagination
+                page={listingsPage}
+                totalPages={totalListingPages}
+                onPageChange={setListingsPage}
+              />
             )}
           </main>
         </section>

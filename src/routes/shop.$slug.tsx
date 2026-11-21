@@ -1,4 +1,4 @@
-﻿import { rpcUntyped } from "@/lib/waitlist-rpc";
+import { rpcUntyped } from "@/lib/waitlist-rpc";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ import { showError } from "@/lib/user-feedback";
 import { ShopLogoEditor } from "@/components/shop/shop-logo-editor";
 import { hasVerifiedVendorBadge } from "@/lib/vendor-badges";
 import { SignedImage } from "@/components/signed-image";
+import { ListingPagination } from "@/components/listing-pagination";
 import {
   Share2,
   Phone,
@@ -71,6 +72,8 @@ function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("featured");
+  const [shopListingsPage, setShopListingsPage] = useState(1);
+  const SHOP_LISTINGS_PER_PAGE = 10;
   const [bannerIdx, setBannerIdx] = useState(0);
 
   const [rating, setRating] = useState(0);
@@ -379,6 +382,19 @@ function ShopPage() {
     });
     return applySort(base);
   }, [goods, searchQuery, selectedCategory, priceRange, sortBy]);
+
+  useEffect(() => {
+    setShopListingsPage(1);
+  }, [searchQuery, selectedCategory, priceRange, sortBy, slug]);
+
+  const totalShopListingPages = Math.max(
+    1,
+    Math.ceil(filteredGoods.length / SHOP_LISTINGS_PER_PAGE),
+  );
+  const visibleShopListings = filteredGoods.slice(
+    (shopListingsPage - 1) * SHOP_LISTINGS_PER_PAGE,
+    shopListingsPage * SHOP_LISTINGS_PER_PAGE,
+  );
 
   if (isLoading)
     return (
@@ -914,7 +930,7 @@ function ShopPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
-                    {filteredGoods.map((l) => {
+                    {visibleShopListings.map((l) => {
                       const favs = (favoritesCounts as Record<string, number>)[l.id] ?? 0;
                       const views = l.views_count ?? 0;
                       const lowStock = views > 20 && views < 60;
@@ -1003,6 +1019,13 @@ function ShopPage() {
                       );
                     })}
                   </div>
+                )}
+                {filteredGoods.length > SHOP_LISTINGS_PER_PAGE && (
+                  <ListingPagination
+                    page={shopListingsPage}
+                    totalPages={totalShopListingPages}
+                    onPageChange={setShopListingsPage}
+                  />
                 )}
               </TabsContent>
 
