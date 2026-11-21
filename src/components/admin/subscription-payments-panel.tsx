@@ -18,7 +18,7 @@ import { STATUS_LABEL, useManualPaymentSettings } from "@/components/billing/ban
 
 type AdminRequest = Record<string, unknown> & { id: string; status: string };
 
-const FILTERS = ["pending_review", "awaiting_payment", "approved", "rejected", "cancelled", "all"] as const;
+const FILTERS = ["pending", "awaiting_payment", "approved", "rejected", "cancelled", "all"] as const;
 
 function str(r: AdminRequest, ...keys: string[]) {
   for (const k of keys) if (r[k] != null && r[k] !== "") return String(r[k]);
@@ -57,7 +57,7 @@ function ProofImage({ path }: { path: string }) {
 }
 
 export function SubscriptionPaymentsPanel() {
-  const [status, setStatus] = useState<string>("pending_review");
+  const [status, setStatus] = useState<string>("pending");
   const { data = [], isLoading, error } = useAdminPaymentRequests(status);
   const qc = useQueryClient();
   const confirm = useConfirmAction();
@@ -185,8 +185,8 @@ export function ManualPaymentSettingsCard() {
       _bank_name: form.bank.trim(),
       _account_name: form.name.trim(),
       _account_number: form.number.trim(),
-      _instructions: form.instructions.trim() || null,
-      _is_enabled: form.enabled,
+      _transfer_instructions: form.instructions.trim() || null,
+      _enabled: form.enabled,
     });
     setSaving(false);
     if (error) return showError(error, "Settings could not be saved.");
