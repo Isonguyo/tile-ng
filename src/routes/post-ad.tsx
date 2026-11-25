@@ -866,19 +866,19 @@ function PostAd() {
     : "";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen w-full min-w-0 overflow-x-clip bg-background">
       <SiteHeader />
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <main className="container mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-4 sm:py-8">
+        <div className="mb-5 flex min-w-0 flex-col gap-4 sm:mb-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Post on Tile</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="break-words text-2xl font-bold sm:text-3xl">Post on Tile</h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base>
               {mode === "home"
                 ? "Pick the right path for your business and publish with confidence."
                 : "A plan-aware posting flow built for trust, conversion and premium growth."}
             </p>
           </div>
-          <div className="rounded-2xl border bg-card p-4 min-w-[260px] shadow-sm">
+          <div className="w-full min-w-0 rounded-2xl border bg-card p-3 shadow-sm sm:p-4 lg:w-[280px] lg:shrink-0">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold">Your plan</p>
               <BadgeCheck className="h-4 w-4 text-accent" />
@@ -922,8 +922,8 @@ function PostAd() {
         </div>
 
         {mode === "home" ? (
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <Card className="p-6 space-y-6">
+          <div className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
+            <Card className="p-4 sm:p-6 space-y-6">
               <div>
                 <h2 className="text-2xl font-bold">What do you want to do today?</h2>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -987,7 +987,7 @@ function PostAd() {
               </div>
             </Card>
 
-            <Card className="p-6 space-y-4">
+            <Card className="p-4 sm:p-6 space-y-4">
               <div className="flex items-center gap-2 text-accent font-semibold">
                 <ShieldCheck className="h-5 w-5" /> Trust score
               </div>
@@ -1006,7 +1006,7 @@ function PostAd() {
             </Card>
           </div>
         ) : submitted ? (
-          <Card className="p-8 text-center space-y-4">
+          <Card className="min-w-0 space-y-4 p-4 text-center sm:p-8">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
               <Check className="h-7 w-7" />
             </div>
@@ -1025,9 +1025,9 @@ function PostAd() {
                   : " Because Tile is still in pre-launch, they will remain private even after approval until Admin launches the marketplace."
                 : " Once approved, they can become publicly visible."}
             </p>
-            <div className="flex justify-center gap-3">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
               <Button asChild variant="outline">
-                <Link to="/dashboard">View dashboard</Link>
+                <Link to="/dashboard" className="w-full sm:w-auto">View dashboard</Link>
               </Button>
               <Button className="bg-accent text-accent-foreground" onClick={returnToChoice}>
                 Create another
@@ -1090,8 +1090,8 @@ function PostAd() {
             )}
           </Card>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-            <Card className="p-6">
+          <div className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(16rem,0.75fr)]">
+            <Card className="min-w-0 p-3 sm:p-5 lg:p-6">
               {search.type === "goods" && (
                 <div className="mb-5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
                   <p className="font-semibold text-primary">Add a product to your shop</p>
@@ -1128,8 +1128,8 @@ function PostAd() {
               </div>
 
               {batchProducts.length > 0 && (
-                <section className="mb-6 rounded-2xl border bg-card/70 p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
+                <section className="mb-5 min-w-0 rounded-2xl border bg-card/70 p-3 sm:mb-6 sm:p-4">
+                  <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="font-semibold">Your product batch</h3>
                       <p className="text-xs text-muted-foreground">
@@ -1141,13 +1141,14 @@ function PostAd() {
                       {batchProducts.length + (editingBatchProductId ? 0 : 1) === 1 ? "" : "s"}
                     </span>
                   </div>
-                  <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
+                  <div role="list" aria-label="Products in this submission" className="flex min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 pr-2 [scrollbar-width:thin] touch-pan-x">
                     {batchProducts.map((product, index) => {
                       const isActive = product.id === editingBatchProductId;
                       return (
                         <div
                           key={product.id}
-                          className={`relative flex w-64 shrink-0 snap-start items-center rounded-xl border p-2 transition-colors ${isActive ? "border-accent bg-accent/10" : "border-border bg-background"}`}
+                          role="listitem"
+                          className={`relative flex w-[82%] min-w-[14rem] max-w-[18rem] shrink-0 snap-center items-center rounded-xl border p-2 transition-colors ${isActive ? "border-accent bg-accent/10" : "border-border bg-background"}`}
                         >
                           <button
                             type="button"
@@ -1197,7 +1198,8 @@ function PostAd() {
                       );
                     })}
                     {!editingBatchProductId && (
-                      <div className="flex w-64 shrink-0 snap-start items-center gap-3 rounded-xl border border-dashed border-accent/40 bg-accent/[0.04] p-3">
+                      <div role="listitem"
+                        className="flex w-[82%] min-w-[14rem] max-w-[18rem] shrink-0 snap-center items-center gap-3 rounded-xl border border-dashed border-accent/40 bg-accent/[0.04] p-3 sm:w-64">
                         <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
                           <ImagePlus className="h-6 w-6" />
                         </div>
@@ -1213,6 +1215,7 @@ function PostAd() {
                       </div>
                     )}
                   </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground sm:hidden">Swipe sideways to browse your product cards.</p>
                   {step !== 4 && (
                     <p className="mt-2 text-xs text-muted-foreground">
                       Complete this product and open Preview to switch back and edit another one.
@@ -1221,13 +1224,13 @@ function PostAd() {
                 </section>
               )}
 
-              <div className="mb-6 flex flex-wrap gap-2">
+              <div className="mb-5 grid grid-cols-2 gap-2 sm:mb-6 sm:grid-cols-4">
                 {["Category", "Details", "Photos", "Preview"].map((label, index) => {
                   const active = index + 1 === step;
                   return (
                     <div
                       key={label}
-                      className={`rounded-full border px-3 py-1 text-sm ${active ? "border-accent bg-accent/10 text-foreground" : "text-muted-foreground"}`}
+                      className={`flex min-w-0 items-center justify-center rounded-xl border px-2 py-2 text-center text-xs sm:rounded-full sm:px-3 sm:py-1 sm:text-sm ${active ? "border-accent bg-accent/10 text-foreground" : "text-muted-foreground"}`}
                     >
                       {index + 1} {label}
                     </div>
@@ -1238,18 +1241,18 @@ function PostAd() {
               <form
                 ref={formRef}
                 onSubmit={form.handleSubmit(onSubmit, onInvalid)}
-                className="space-y-5"
+                className="min-w-0 space-y-5"
                 noValidate
               >
                 {step === 1 && (
                   <>
-                    <h2 className="text-xl font-semibold">
+                    <h2 className="text-lg font-semibold sm:text-xl">
                       Pick a category <span className="text-destructive">*</span>
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Cards feel more premium and make it easier to browse your listing.
                     </p>
-                    <div data-field="category" className="grid gap-3 md:grid-cols-2 mt-4">
+                    <div data-field="category" className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                       {CATEGORIES.filter((c) => c.type === "goods").map((c) => {
                         const isSelected = watch.category === c.slug;
                         const meta = CATEGORY_META[c.slug] ?? {
@@ -1263,7 +1266,7 @@ function PostAd() {
                             onClick={() =>
                               form.setValue("category", c.slug, { shouldValidate: true })
                             }
-                            className={`rounded-2xl border p-4 text-left transition-all ${isSelected ? "border-accent bg-accent/10" : "border-border bg-card hover:bg-muted/50"}`}
+                            className={`w-full min-w-0 rounded-2xl border p-3 text-left transition-all sm:p-4 ${isSelected ? "border-accent bg-accent/10" : "border-border bg-card hover:bg-muted/50"}`}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div>
@@ -1285,11 +1288,11 @@ function PostAd() {
                         {form.formState.errors.category.message}
                       </p>
                     )}
-                    <div className="flex justify-between pt-4 border-t">
-                      <Button type="button" variant="outline" onClick={returnToChoice}>
+                    <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:justify-between">
+                      <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={returnToChoice}>
                         Cancel
                       </Button>
-                      <Button type="button" onClick={handleCategoryNext}>
+                      <Button type="button" className="w-full sm:w-auto" onClick={handleCategoryNext}>
                         Next <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
@@ -1298,7 +1301,7 @@ function PostAd() {
 
                 {step === 2 && (
                   <>
-                    <h2 className="text-xl font-semibold">Add details that convert</h2>
+                    <h2 className="text-lg font-semibold sm:text-xl">Add details that convert</h2>
                     <div className="space-y-4">
                       <div>
                         <Label>
@@ -1374,12 +1377,12 @@ function PostAd() {
                         </Select>
                       </div>
                     </div>
-                    <div className="flex justify-between pt-4 border-t">
-                      <Button type="button" variant="outline" onClick={prevStep}>
+                    <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:justify-between">
+                      <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={prevStep}>
                         <ChevronLeft className="mr-2 h-4 w-4" />
                         Back
                       </Button>
-                      <Button type="button" onClick={handleDetailsNext}>
+                      <Button type="button" className="w-full sm:w-auto" onClick={handleDetailsNext}>
                         Next <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
@@ -1388,10 +1391,10 @@ function PostAd() {
 
                 {step === 3 && (
                   <>
-                    <h2 className="text-xl font-semibold">Photos and location</h2>
-                    <div className="space-y-5 rounded-2xl border bg-muted/20 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
+                    <h2 className="text-lg font-semibold sm:text-xl">Photos and location</h2>
+                    <div className="min-w-0 space-y-4 rounded-2xl border bg-muted/20 p-3 sm:space-y-5 sm:p-5">
+                      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
                           <h3 className="font-semibold">Location</h3>
                           <p className="text-sm text-muted-foreground">
                             Use GPS or pick from the list.
@@ -1403,6 +1406,7 @@ function PostAd() {
                           size="sm"
                           onClick={handleDetectLocation}
                           disabled={detectingLocation}
+                          className="w-full sm:w-auto"
                         >
                           <MapPin className="mr-2 h-4 w-4" />
                           {detectingLocation ? "Detecting..." : "Detect my location"}
@@ -1477,7 +1481,7 @@ function PostAd() {
                         </span>
                       </div>
                       <div
-                        className={`rounded-2xl border-2 border-dashed p-5 text-center transition-all sm:p-6 ${dragActive ? "border-accent bg-accent/10" : "border-border"} ${isPreparingPhotos || submitting ? "opacity-70" : ""}`}
+                        className={`rounded-2xl border-2 border-dashed p-4 text-center transition-all sm:p-6 ${dragActive ? "border-accent bg-accent/10" : "border-border"} ${isPreparingPhotos || submitting ? "opacity-70" : ""}`}
                         onDragOver={(event) => {
                           event.preventDefault();
                           if (!isPreparingPhotos && !submitting) setDragActive(true);
@@ -1527,7 +1531,7 @@ function PostAd() {
                         </label>
                       </div>
                       {photos.length > 0 && (
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                           {photos.map((photo, index) => (
                             <div key={photo.id} className="min-w-0 rounded-2xl border p-2.5 sm:p-3">
                               <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-muted">
@@ -1544,14 +1548,14 @@ function PostAd() {
                                   </div>
                                 )}
                               </div>
-                              <div className="mt-2 flex items-center justify-between gap-2">
+                              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <p
-                                  className="min-w-0 truncate text-xs font-medium text-muted-foreground"
+                                  className="w-full min-w-0 truncate text-xs font-medium text-muted-foreground sm:w-auto sm:flex-1"
                                   title={photo.file.name}
                                 >
                                   {photo.file.name}
                                 </p>
-                                <div className="flex shrink-0 gap-1">
+                                <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto sm:shrink-0">
                                   <Button
                                     type="button"
                                     size="icon"
@@ -1617,12 +1621,12 @@ function PostAd() {
                       )}
                     </div>
 
-                    <div className="flex justify-between pt-4 border-t">
-                      <Button type="button" variant="outline" onClick={prevStep}>
+                    <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:justify-between">
+                      <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={prevStep}>
                         <ChevronLeft className="mr-2 h-4 w-4" />
                         Back
                       </Button>
-                      <Button type="button" onClick={handlePreviewNext}>
+                      <Button type="button" className="w-full sm:w-auto" onClick={handlePreviewNext}>
                         Preview <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
@@ -1632,7 +1636,7 @@ function PostAd() {
                 {step === 4 && (
                   <>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h2 className="text-xl font-semibold">Preview your product</h2>
+                      <h2 className="text-lg font-semibold sm:text-xl">Preview your product</h2>
                       <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
                         {editingBatchProductId
                           ? `Editing product ${batchProducts.findIndex((product) => product.id === editingBatchProductId) + 1} of ${batchProducts.length}`
@@ -1642,15 +1646,15 @@ function PostAd() {
                     <p className="text-sm text-muted-foreground">
                       Review the listing exactly as buyers will see it before publishing.
                     </p>
-                    <div className="space-y-4 rounded-2xl border bg-muted/20 p-5">
+                    <div className="min-w-0 space-y-4 rounded-2xl border bg-muted/20 p-3 sm:p-5">
                       <div className="rounded-2xl bg-background p-4">
                         <p className="text-xs font-semibold uppercase tracking-wide text-accent">
                           Preview
                         </p>
-                        <h3 className="mt-2 text-xl font-semibold">
+                        <h3 className="mt-2 break-words text-lg font-semibold sm:text-xl">
                           {watch.title || "Your title goes here"}
                         </h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <p className="mt-2 break-words text-sm text-muted-foreground">
                           {watch.description ||
                             "Add a clear description with condition, specs and pricing."}
                         </p>
@@ -1677,7 +1681,7 @@ function PostAd() {
                       </div>
                     </div>
                     <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                      <Button type="button" variant="outline" onClick={prevStep}>
+                      <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={prevStep}>
                         <ChevronLeft className="mr-2 h-4 w-4" />
                         Back
                       </Button>
@@ -1685,6 +1689,7 @@ function PostAd() {
                         <Button
                           type="button"
                           variant="outline"
+                          className="w-full whitespace-normal sm:w-auto"
                           disabled={submitting || postingDisabled || isPreparingPhotos}
                           onClick={form.handleSubmit(handleAddAnotherProduct, onInvalid)}
                         >
@@ -1694,7 +1699,7 @@ function PostAd() {
                         <Button
                           type="submit"
                           disabled={submitting || postingDisabled || isPreparingPhotos}
-                          className="bg-accent text-accent-foreground"
+                          className="w-full whitespace-normal text-center leading-snug sm:w-auto bg-accent text-accent-foreground"
                         >
                           <Check className="mr-2 h-4 w-4" />
                           {submitting
@@ -1708,8 +1713,8 @@ function PostAd() {
               </form>
             </Card>
 
-            <div className="space-y-4">
-              <Card className="p-5">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-1">
+              <Card className="min-w-0 p-4 sm:p-5">
                 <h3 className="font-semibold">Manage your business</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Your active plan features and Top Ad allowance are shown in your Merchant Hub.
@@ -1718,7 +1723,7 @@ function PostAd() {
                   <Link to="/dashboard">Open Merchant Hub</Link>
                 </Button>
               </Card>
-              <Card className="p-5">
+              <Card className="min-w-0 p-4 sm:p-5">
                 <h3 className="font-semibold">Trust signals</h3>
                 <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                   <p>- Phone verified</p>
@@ -1729,7 +1734,7 @@ function PostAd() {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
